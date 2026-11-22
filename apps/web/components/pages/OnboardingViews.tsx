@@ -11,7 +11,7 @@ export function OnboardingAvatarView({ locale, name, avatar, next }: OnboardingA
   const t = makeT(locale);
   return (
     <>
-      <StepHeader step={1} t={t} locale={locale} title={t("onb.avatar.title")} />
+      <StepHeader step={1} t={t} locale={locale} title={t("onb.avatar.title")} compact />
       <AvatarStep locale={locale} name={name} avatar={avatar} next={next} />
     </>
   );

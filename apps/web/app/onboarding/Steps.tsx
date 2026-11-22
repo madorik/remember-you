@@ -1,12 +1,14 @@
 "use client";
 
 import { emptySection, type AvatarConfig, type DateSpec, type Locale, type ReminderOffset, type SafetyData } from "@readme/core";
+import Link from "next/link";
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { finishOnboarding, saveAvatar, saveFood } from "@/app/actions/card";
 import { Heart, SKY_STAR, Sparkle, Squiggle, Star, Tape, type TapeColor } from "@/components/diary";
-import { AvatarBuilder } from "@/components/editors/AvatarBuilder";
+import { AvatarBuilder, NameField } from "@/components/editors/AvatarBuilder";
 import { DateSpecPicker, ReminderPicker } from "@/components/editors/DatesEditor";
+import { Icon } from "@/components/marks";
 import { SafetyEditor } from "@/components/editors/SafetyEditor";
 import { SpicyScale } from "@/components/editors/TasteEditor";
 import { useT } from "@/components/editors/shared";
@@ -38,24 +40,20 @@ function SheetTape({ color, vertical = false }: { color: TapeColor; vertical?: b
 }
 
 /**
- * 프로필 고치기: 머리 줄(제목 · 오른쪽 끝 저장, 위에 붙어 늘 보인다) 아래에 이름 칸. 내 프로필과 사람 프로필이 같이 쓴다
+ * 프로필 고치기 머리 줄: 뒤로 · 제목 · 오른쪽 끝 저장(위에 붙어 늘 보인다). 한 줄이라 아래 캐릭터 만들기가 한 화면에 들어온다.
+ * 이름 칸은 캐릭터 만들기(AvatarBuilder) 미리보기 옆에 있다. 내 프로필과 사람 프로필이 같이 쓴다
  */
-export function ProfileHeader({ title, name, nameLabel, save, required = true }: { title: string; name: string; nameLabel: string; save: string; required?: boolean }) {
+export function ProfileHeader({ title, back, backLabel, save }: { title: string; back: string; backLabel: string; save: string }) {
   return (
-    <>
-      <div className="sticky z-30 flex items-center gap-3 bg-bg pb-3 pl-6 pr-4 pt-1.5" style={{ top: "var(--sat)" }}>
-        <h1 className="min-w-0 flex-1 truncate text-[34px] font-normal leading-[1.25]">
-          <span className="hl px-1">{title}</span>
-        </h1>
-        <Submit className="!h-11 shrink-0 !rounded-full !px-[22px] !text-[19px] !shadow-[0_3px_0_var(--color-mango-deep)]">{save}</Submit>
-      </div>
-      <div className="px-4">
-        <label className="mb-5 flex min-h-14 items-center gap-3 rounded-2xl bg-paper px-4 shadow-[inset_0_0_0_1.5px_var(--color-ink),0_3px_0_var(--color-sky)]">
-          <span className="shrink-0 text-[17px] text-muted">{nameLabel}</span>
-          <input name="name" defaultValue={name} required={required} maxLength={40} className="h-[52px] min-w-0 flex-1 bg-transparent text-[24px] outline-none" />
-        </label>
-      </div>
-    </>
+    <div className="sticky z-30 flex items-center gap-1 bg-bg pb-2 pl-2 pr-4 pt-1.5" style={{ top: "var(--sat)" }}>
+      <Link href={back} prefetch={false} aria-label={backLabel} className="flex h-11 w-11 shrink-0 items-center justify-center">
+        <Icon name="back" size={24} />
+      </Link>
+      <h1 className="min-w-0 flex-1 truncate text-[32px] font-normal leading-[1.25]">
+        <span className="hl px-1">{title}</span>
+      </h1>
+      <Submit className="!h-11 shrink-0 !rounded-full !px-[22px] !text-[19px] !shadow-[0_3px_0_var(--color-mango-deep)]">{save}</Submit>
+    </div>
   );
 }
 
@@ -66,6 +64,7 @@ export function AvatarStep({
   next,
   mode = "onboarding",
   title = "",
+  back = "/me",
 }: {
   locale: Locale;
   name: string;
@@ -74,6 +73,8 @@ export function AvatarStep({
   mode?: "onboarding" | "edit";
   /** 고칠 때 머리 줄 제목(내 프로필) */
   title?: string;
+  /** 고칠 때 머리 줄의 뒤로 가기 주소 */
+  back?: string;
 }) {
   const t = useT(locale);
   const [value, setValue] = useState(avatar);
@@ -87,37 +88,25 @@ export function AvatarStep({
       <input type="hidden" name="mode" value={mode} />
     </>
   );
-  // 고칠 때: 제목 오른쪽에 닉네임 칸, 오른쪽 끝에 저장(위에 붙어 늘 보인다)
+  // 고칠 때: 한 줄 머리(뒤로 · 제목 · 저장, 위에 붙어 늘 보인다) 아래에 캐릭터 만들기(이름 칸은 미리보기 옆)
   if (!onboarding)
     return (
       <form action={saveAvatar} className="page-end flex flex-col">
         {hidden}
-        <ProfileHeader title={title} name={name} nameLabel={t("profile.nickname")} save={t("common.save")} />
-        <div className="px-4">
-          <AvatarBuilder value={value} onChange={setValue} locale={locale} />
+        <ProfileHeader title={title} back={back} backLabel={t("common.back")} save={t("common.save")} />
+        <div className="px-4 pt-3">
+          <AvatarBuilder value={value} onChange={setValue} locale={locale} side={<NameField label={t("profile.nickname")} value={name} />} />
         </div>
       </form>
     );
   return (
-    <form action={saveAvatar} className={SHEET}>
-      <SheetTape color="mango" />
+    <form action={saveAvatar} className={`${SHEET} !mt-2.5`}>
       {hidden}
-      <div className="px-4 pt-7">
-        {/* 온보딩은 미리보기 아래에 이름 칸 */}
-        <AvatarBuilder
-          value={value}
-          onChange={setValue}
-          locale={locale}
-          between={
-            <label className="mt-[18px] flex min-h-14 items-center gap-3 rounded-2xl bg-white px-4 shadow-[inset_0_0_0_1.5px_var(--color-ink),0_3px_0_var(--color-sky)]">
-              <span className="shrink-0 text-[17px] text-muted">{t("onb.avatar.name")}</span>
-              <input name="name" defaultValue={name} required maxLength={40} className="h-[52px] min-w-0 flex-1 bg-transparent text-[24px] outline-none" />
-            </label>
-          }
-        />
+      <div className="px-4 pt-4">
+        <AvatarBuilder value={value} onChange={setValue} locale={locale} side={<NameField label={t("onb.avatar.name")} value={name} />} tape="mango" paper />
       </div>
       {/* 시작 버튼은 늘 화면 아래에 붙어 보인다 */}
-      <div className="bottom-bar mt-auto bg-paper px-4 pt-4">
+      <div className="bottom-bar mt-auto bg-paper px-4 pt-3">
         <Submit>{t("onb.avatar.cta")}</Submit>
       </div>
     </form>
