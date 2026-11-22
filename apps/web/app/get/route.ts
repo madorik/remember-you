@@ -6,7 +6,8 @@ import { APP_STORE_URL, playPublic, playUrl, storeTarget } from "@/lib/store";
 import { isBot, platformOf, track } from "@/lib/track";
 
 // 앱 받기 주소(/get?from=answer&next=/request): 기기에 맞는 스토어로 보낸다(lib/store). 누른 것은 이용 기록으로(어디서 눌렀는지·기기)
-// 앱 공유하기(설정의 QR·링크, from=share)와 링크로 받은 기록에서 앱 받기(from=share_record)는 설치가 목적이라 아이폰도 App Store로 보낸다. 그 밖의 곳은 APP_STORE_URL 환경변수가 있을 때만 App Store, 없으면 웹으로 이어 쓴다
+// 아이폰은 어느 출처(앱 공유하기 share, 받은 기록 share_record, 답한 뒤 나도 물어보기 answer …)에서 눌렀든 App Store로 보낸다(APP_STORE_URL 환경변수로 다른 주소를 줄 수 있다).
+// 안드로이드·PC는 Play가 공개된 뒤(PLAY_PUBLIC=1)에 Play 스토어로, 그 전에는 웹 next로 이어 쓴다
 // 링크 미리보기(카카오톡·메신저 등)를 가져가는 로봇은 스토어로 보내면 미리보기가 비므로(Play는 비공개 테스트 중), 제목·설명·이미지만 있는 짧은 페이지를 준다
 
 const escape = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] as string);
@@ -45,7 +46,7 @@ export function GET(request: NextRequest) {
   const from = q.get("from") ?? "";
   const source = /^[a-z_]{2,20}$/.test(from) ? from : "link";
   if (source === "share" && isBot(ua)) return sharePreview(request);
-  const { url, os } = storeTarget(ua, { source, next: safeNext(q.get("next"), "/"), appStore: process.env.APP_STORE_URL || (source.startsWith("share") ? APP_STORE_URL : undefined) });
+  const { url, os } = storeTarget(ua, { source, next: safeNext(q.get("next"), "/"), appStore: process.env.APP_STORE_URL || undefined });
   if (!isBot(ua)) track("app_get", { source, os, platform: platformOf(ua) });
   return NextResponse.redirect(new URL(url, request.url), 302);
 }

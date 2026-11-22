@@ -4,6 +4,7 @@ import { emptySection, isEmptySection, sanitizeSection, type CardData, type Gift
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 import type { AnswerState } from "@/app/actions/request";
+import { GetAppLink } from "@/components/GetAppLink";
 import { useIsNative } from "@/components/native";
 import { DateSpecPicker } from "@/components/editors/DatesEditor";
 import { CultureEditor } from "@/components/editors/CultureEditor";
@@ -147,7 +148,7 @@ export function AnswerForm({
 
   if (state.sent) {
     const sent = answered;
-    // 답한 뒤: 나도 그 사람에게 물어보기. 웹에서는 앱 받기(기기에 맞는 스토어, 아이폰은 아직 웹으로 이어서), 앱 안에서는 바로 물어보기(로그인 안 했으면 로그인부터)
+    // 답한 뒤: 나도 그 사람에게 물어보기. 웹에서는 앱 받기(아이폰은 App Store, 안드로이드는 앱이 있으면 앱을 열고 없으면 Play 공개 전엔 웹), 앱 안에서는 바로 물어보기(로그인 안 했으면 로그인부터)
     const askBack = `/request?name=${encodeURIComponent(from)}`;
     const here = signedIn ? askBack : `/?next=${encodeURIComponent(askBack)}`;
     return (
@@ -171,9 +172,9 @@ export function AnswerForm({
             {t("answer.askBack")}
           </Link>
         ) : (
-          <a href={`/get?from=answer&next=${encodeURIComponent(here)}`} className="btn-primary w-full">
+          <GetAppLink href={`/get?from=answer&next=${encodeURIComponent(here)}`} appPath={askBack} className="btn-primary w-full">
             {t("answer.askBack")}
-          </a>
+          </GetAppLink>
         )}
         {state.savedMine ? (
           <Link href="/me" className="flex min-h-11 items-center justify-center text-[18px]">

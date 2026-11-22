@@ -153,12 +153,22 @@ test("물어보기(새 사람) → 앱 없이 웹에서 답하기 → 답이 내
   await dad.getByRole("button", { name: /건강 정보를 지수님에게 보내 저장하는 데 동의해요/ }).click();
   await dad.getByRole("button", { name: "보내기", exact: true }).click();
   await expect(dad.getByRole("heading", { name: "마음이 전해졌어요" })).toBeVisible();
-  // 나도 물어보기 = 앱 받기(/get: 아이폰은 웹으로 이어서 로그인 → 물어보기, 안드로이드·PC도 Play가 공개되기 전엔 같은 웹으로)
-  await expect(dad.getByRole("link", { name: "나도 물어보기" })).toHaveAttribute("href", /^\/get\?from=answer&next=%2F%3Fnext%3D%252Frequest%253Fname%253D/);
+  // 나도 물어보기 = 앱 받기(/get): 아이폰은 App Store(로그인 화면으로 가지 않는다), 안드로이드·PC는 Play가 공개되기 전엔 웹으로
+  const askBack = dad.getByRole("link", { name: "나도 물어보기" });
+  await expect(askBack).toHaveAttribute("href", /^\/get\?from=answer&next=%2F%3Fnext%3D%252Frequest%253Fname%253D/);
   const store = async (ua: string) => (await dad.request.get("/get?from=answer&next=%2Frequest", { headers: { "user-agent": ua }, maxRedirects: 0 })).headers().location ?? "";
   expect(await store("Mozilla/5.0 (Linux; Android 14) Chrome/130 Mobile Safari/537.36")).toMatch(/\/request$/);
   expect(await store("Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130 Safari/537.36")).toMatch(/\/request$/);
-  expect(await store("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Mobile/15E148")).toMatch(/\/request$/);
+  expect(await store("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Mobile/15E148")).toBe("https://apps.apple.com/kr/app/id6834970170");
+  // 안드로이드에서 누르면 앱이 있으면 앱 화면(kr.readme.app://request)을 열고, 없으면 같은 /get 주소로 가는 intent 주소로 간다
+  await dad.evaluate(() => Object.defineProperty(navigator, "userAgent", { get: () => "Mozilla/5.0 (Linux; Android 14) Chrome/130 Mobile Safari/537.36" }));
+  const cdp = await dad.context().newCDPSession(dad);
+  await cdp.send("Page.enable");
+  const requested: string[] = [];
+  cdp.on("Page.frameRequestedNavigation", (e) => requested.push(e.url));
+  await askBack.click();
+  await expect.poll(() => requested.find((u) => u.startsWith("intent://")) ?? "").toMatch(/^intent:\/\/request\?name=.+#Intent;scheme=kr\.readme\.app;package=kr\.readme\.app;S\.browser_fallback_url=https?%3A%2F%2F.+%2Fget%3Ffrom%3Danswer%26next%3D.+;end$/);
+  await cdp.detach();
   await shot(dad, "06-answer-done");
 
   // 같은 링크로 다시 답할 수 없다
