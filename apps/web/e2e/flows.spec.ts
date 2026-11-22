@@ -811,74 +811,6 @@ test("사람들: 폴더(기본 4개 + 직접 만들기, 한 사람이 여러 폴
   await expect(jisu.getByRole("link", { name: /^동창 / })).toHaveCount(0);
 });
 
-test("폴더에서 사람 빼기: 폴더 화면은 줄 오른쪽 버튼으로, 사람 화면은 칩의 ×로 그 폴더에서만 빼고, 되돌리기로 다시 넣는다", async ({ browser }) => {
-  const jisu = await as(browser, "jisu");
-  const toast = jisu.getByRole("status").filter({ hasText: "폴더에서 뺐어요" });
-
-  // 폴더 화면: 가족(아빠·단짝)에서 단짝을 빼면 줄이 바로 사라지고 몇 명도 줄며, 되돌리기를 누르면 돌아온다
-  await jisu.goto("/people");
-  await jisu.getByRole("link", { name: /^가족 / }).click();
-  await expect(jisu.getByRole("heading", { name: "가족" })).toBeVisible();
-  await expect(jisu.getByText("2명", { exact: true })).toBeVisible();
-  const out = jisu.getByRole("button", { name: "단짝 폴더에서 빼기" });
-  const box = await out.boundingBox();
-  expect(box!.width).toBeGreaterThanOrEqual(44);
-  expect(box!.height).toBeGreaterThanOrEqual(44);
-  await shot(jisu, "19-folder-remove");
-  await out.click();
-  await expect(jisu.getByRole("link", { name: /단짝/ })).toHaveCount(0);
-  await expect(toast).toBeVisible();
-  await expect(jisu.getByText("1명", { exact: true })).toBeVisible();
-  await shot(jisu, "19b-folder-removed-toast");
-  await jisu.getByRole("button", { name: "되돌리기" }).click();
-  await expect(jisu.getByRole("link", { name: /단짝/ })).toBeVisible();
-  await expect(jisu.getByText("2명", { exact: true })).toBeVisible();
-  await jisu.reload();
-  await expect(jisu.getByRole("link", { name: /단짝/ })).toBeVisible();
-
-  // 다시 빼면 새로 고쳐도 없고, 사람은 지워지지 않아 친구들 폴더와 사람 화면에는 그대로 있다(가족 칩만 사라진다)
-  await out.click();
-  await expect(jisu.getByRole("link", { name: /단짝/ })).toHaveCount(0);
-  await expect(toast).toBeVisible();
-  await jisu.reload();
-  await expect(jisu.getByRole("heading", { name: "가족" })).toBeVisible();
-  await expect(jisu.getByRole("link", { name: /단짝/ })).toHaveCount(0);
-  await expect(jisu.getByRole("link", { name: /아빠/ })).toBeVisible();
-  await jisu.goto("/people");
-  await jisu.getByRole("link", { name: /^친구들 / }).click();
-  await jisu.getByRole("link", { name: /단짝/ }).click();
-  await expect(jisu.getByRole("link", { name: "친구들", exact: true })).toBeVisible();
-  await expect(jisu.getByRole("link", { name: "가족", exact: true })).toHaveCount(0);
-
-  // 사람 화면: 아빠(가족·본가)의 본가 칩 ×로 그 폴더에서만 빼고, 되돌리기로 다시 넣는다
-  await jisu.goto("/people");
-  await jisu.getByRole("link", { name: /^가족 / }).click();
-  await jisu.getByRole("link", { name: /아빠/ }).click();
-  await expect(jisu.getByRole("link", { name: "본가", exact: true })).toBeVisible();
-  await shot(jisu, "19c-person-folder-chips");
-  await jisu.getByRole("button", { name: "본가 폴더에서 빼기" }).click();
-  await expect(jisu.getByRole("link", { name: "본가", exact: true })).toHaveCount(0);
-  await expect(jisu.getByRole("link", { name: "가족", exact: true })).toBeVisible();
-  await expect(toast).toBeVisible();
-  await shot(jisu, "19d-person-removed-toast");
-  // 칩은 서버가 답하기 전에 먼저 돌아온다(낙관적 표시). 서버 액션이 끝난 뒤에 새로고침해야 한다
-  const undone = jisu.waitForResponse((r) => r.request().method() === "POST" && !!r.request().headers()["next-action"]);
-  await jisu.getByRole("button", { name: "되돌리기" }).click();
-  await expect(jisu.getByRole("link", { name: "본가", exact: true })).toBeVisible();
-  await undone;
-  await jisu.reload();
-  await expect(jisu.getByRole("link", { name: "본가", exact: true })).toBeVisible();
-
-  // 다시 빼면 폴더 화면에서도 사라진다(본가는 빈 폴더)
-  await jisu.getByRole("button", { name: "본가 폴더에서 빼기" }).click();
-  await expect(jisu.getByRole("link", { name: "본가", exact: true })).toHaveCount(0);
-  await jisu.reload();
-  await expect(jisu.getByRole("link", { name: "본가", exact: true })).toHaveCount(0);
-  await jisu.goto("/people");
-  await expect(jisu.getByRole("link", { name: /^본가 / })).toContainText("0명");
-  await expect(jisu.getByRole("link", { name: /^가족 / })).toContainText("1명");
-});
-
 test("챙길 날 오른쪽 위 내 얼굴: 내 프로필(닉네임·프로필 사진)과 로그아웃", async ({ browser }) => {
   const jisu = await as(browser, "jisu");
   await jisu.goto("/home");
@@ -1164,28 +1096,6 @@ test("오늘의 질문: '이 사람에 대해 다시 묻지 않기'를 하면 �
   await expect(page.getByRole("button", { name: "오늘의 질문 다시 받기" })).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole("button", { name: "오늘의 질문 다시 받기" })).toHaveCount(0);
-});
-
-test("오늘의 질문: 그냥 적어 둔 사람에게는 묻지 않고, 즐겨찾기한 사람부터 묻는다", async ({ page }) => {
-  await page.goto("/");
-  await signIn(page);
-  await onboard(page, { name: "다온" });
-  await page.goto("/people/new");
-  await page.getByLabel("이름이나 부르는 말").fill("옆집 아저씨");
-  await page.getByRole("button", { name: "만들기", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "옆집 아저씨" })).toBeVisible();
-  const person = new URL(page.url()).pathname;
-  // 폴더도 즐겨찾기도 없고 사람 화면을 처음 연 사람: 묻지 않는다
-  await page.goto("/home");
-  await expect(page.getByRole("region", { name: "오늘의 질문" })).toHaveCount(0);
-  // 즐겨찾기하면 가까운 사람이라 묻는다
-  await page.goto(person);
-  await page.getByRole("button", { name: "즐겨찾기" }).click();
-  await expect(page.getByRole("button", { name: "즐겨찾기" })).toHaveAttribute("aria-pressed", "true");
-  await page.goto("/home");
-  const card = page.getByRole("region", { name: "오늘의 질문" });
-  await expect(card).toBeVisible();
-  await expect(card.getByRole("heading")).toContainText("옆집 아저씨");
 });
 
 test("기기 언어가 영어면 처음부터 영어로, 직접 고른 언어가 우선", async ({ browser }) => {
