@@ -12,6 +12,7 @@ import { CaptureBadge, struck, type CaptureBadgeLabels } from "@/components/Capt
 import { CaptureTargetSheet, type TargetSheetLabels } from "@/components/CaptureTargetSheet";
 import { OrganizeScene } from "@/components/OrganizeScene";
 import { TagChip } from "@/components/PersonRow";
+import { markSaved } from "@/components/ReviewAsk";
 import type { CaptureItem } from "@/lib/capture-ai";
 import { firstPick, retarget, siblingCount, whoOf, type CaptureTarget } from "@/lib/capture-target";
 import { insertMention, mentionAt, mentionLabel, resolveMentions, type MentionPerson } from "@/lib/mention";
@@ -740,6 +741,8 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
         return;
       }
       setLeaving(true);
+      // 체험이 아닌 저장이 끝나 홈으로 돌아가면, 홈이 이 표시를 보고 스토어 리뷰를 부탁할 수 있다
+      if (!tour) markSaved();
       // 체험: 방금 적은 사람이 있으면 그 사람에게 물어보기로(없으면 사람 고르기부터)
       const first = r.lines.map((l) => /^\/people\/([0-9a-f-]{36})$/i.exec(l.href)?.[1]).find(Boolean);
       router.push(tour ? `/request?tour=2${first ? `&to=${first}` : ""}` : "/home");

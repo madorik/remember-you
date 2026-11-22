@@ -15,6 +15,7 @@ import { Icon } from "@/components/marks";
 import { RemovePersonButton } from "@/components/RemovePersonButton";
 import { SectionBody } from "@/components/SectionBody";
 import { SectionIcon } from "@/components/SectionIcon";
+import { ReviewMoment } from "@/components/ReviewAsk";
 import { SeeAnswers } from "@/components/SeeAnswers";
 import type { PersonData } from "@/lib/pages/person.data";
 import { makeT } from "@/lib/t";
@@ -28,6 +29,9 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
   return (
     <>
       {answered ? <SeeAnswers contactId={p.contactId} /> : null}
+      {/* 물어본 답장을 확인하는 순간이 가장 좋을 때: 답을 읽을 틈을 두고 스토어 리뷰 부탁(앱에서만, 며칠 써 본 사람에게만).
+          열자마자 읽음 처리로 화면이 다시 그려져 answered가 false가 되니, 조건부로 붙이지 않고 늘 붙여 둔다 */}
+      <ReviewMoment source="answer" delay={4000} armed={answered} />
       <TopBar
         back={back}
         label={t("common.back")}

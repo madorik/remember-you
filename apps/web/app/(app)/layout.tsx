@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { AppTabBar } from "@/components/AppTabBar";
 import { NativeBridge } from "@/components/native";
 import { ResumeRefresh } from "@/components/ResumeRefresh";
+import { ReviewDays } from "@/components/ReviewAsk";
 import { SwipeTabs } from "@/components/SwipeTabs";
 import { aiConfigured } from "@/lib/ai";
 import { listPeople, requireSession, todayFor } from "@/lib/data";
@@ -33,6 +34,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <AppTabBar locale={locale} voice={aiConfigured()} />
       <SwipeTabs />
       <ResumeRefresh />
+      <ReviewDays />
       <NativeBridge
         locale={locale}
         appLock={s.profile.appLock}

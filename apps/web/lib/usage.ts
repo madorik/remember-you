@@ -1,7 +1,7 @@
 // 이용 기록에서 서버·화면이 같이 쓰는 것(서버 전용 아님): 기록 이름, 화면 주소 정리, 기능 이름(통계 화면용)
 
 /** 화면에서 보내는 기록. visit = 이번 방문의 첫 화면(유입 경로를 함께) */
-export const CLIENT_EVENTS = ["visit", "page_view", "page_time", "gift_click", "card_share"] as const;
+export const CLIENT_EVENTS = ["visit", "page_view", "page_time", "gift_click", "card_share", "review_ask"] as const;
 
 /** 서버(액션)에서 남기는 기능 기록 */
 export const SERVER_EVENTS = [
@@ -83,6 +83,7 @@ export const FEATURE_LABEL: Record<string, string> = {
   card_open: "가족 카드 열림",
   gift_done: "선물 완료",
   app_get: "앱 받기 누름",
+  review_ask: "스토어 리뷰 창 띄움",
 };
 
 /** 화면 이름(통계 화면용). 주소 모양 → 이름 */

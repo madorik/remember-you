@@ -9,6 +9,7 @@ import { FaceStack } from "@/components/FaceStack";
 import { HolidayPortrait } from "@/components/HolidayArt";
 import { NotificationBell, type BellItem } from "@/components/NotificationBell";
 import { ProfileMenu } from "@/components/ProfileMenu";
+import { ReviewMoment } from "@/components/ReviewAsk";
 import { HandCircle, Heart, MarginLine, Sparkle, SKY_STAR, Squiggle, Stamp, Star, Tape } from "@/components/diary";
 import { CheckGlyph, Icon } from "@/components/marks";
 import { eventName, eventsFor } from "@/lib/events";
@@ -98,6 +99,8 @@ export function HomeView({ locale, avatar, today, people, question: asked, answe
 
   return (
     <>
+      {/* 기록을 저장하고 돌아온 직후면(앱에서만, 며칠 써 본 사람에게만) 스토어 리뷰 부탁 */}
+      <ReviewMoment source="saved" when="saved" delay={2500} />
       <div className="relative flex items-center justify-between pl-5 pr-2.5">
         <Wordmark locale={locale} />
         <div className="flex items-center gap-0.5">
