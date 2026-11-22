@@ -1,21 +1,28 @@
 import { APP_ID, BRAND } from "@readme/core";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { setLocale } from "@/app/actions/auth";
 import { AuthButtons } from "@/components/AuthButtons";
 import { LegalLinks, Wordmark } from "@/components/chrome";
 import { Squiggle, Star, SKY_STAR } from "@/components/diary";
+import { FaqList } from "@/components/Faq";
 import { JsonLd } from "@/components/JsonLd";
 import { HeroHeadline, LoginHero } from "@/components/LoginHero";
 import { PROVIDERS } from "@/lib/auth";
 import { getSession } from "@/lib/data";
 import { demoEnabled } from "@/lib/demo-core";
+import { LANDING_UPDATED_ON, START_FAQ } from "@/lib/faq";
+import { GUIDES } from "@/lib/guides";
 import { makeT, requestLocale } from "@/lib/i18n";
 import { OPERATOR, SUPPORT_EMAIL } from "@/lib/legal";
 import { ogMetadata, siteDescription } from "@/lib/og";
 import { absoluteUrl, safeNext } from "@/lib/site";
+import { APP_STORE_URL } from "@/lib/store";
 
-// 시작 화면은 검색에 내보내는 첫 화면: 제목·설명·대표 주소와 구조화 데이터(서비스·앱·만든 곳)
+// 시작 화면은 검색에 내보내는 첫 화면: 제목·설명·대표 주소와 구조화 데이터(서비스·앱·만든 곳·자주 묻는 질문).
+// 화면 아래에는 자주 묻는 질문(접이식)과 선물 가이드 링크가 있다: 검색·AI가 읽을 글과 안쪽 길을 늘리려는 것. 앱 안(UA에 ReadmeApp)에서는 로그인 화면 하나로 두려고 그리지 않는다
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await requestLocale();
   const title = locale === "ko" ? "기억해유 - 사랑하는 사람들의 컨닝페이퍼 · 취향·생일·선물 추천" : BRAND.en.title;
@@ -39,11 +46,15 @@ export default async function Start({ searchParams }: { searchParams: Promise<{ 
 
   const locale = await requestLocale();
   const t = makeT(locale);
+  const web = !/ReadmeApp/.test((await headers()).get("user-agent") ?? "");
+  const faq = START_FAQ[locale];
 
   return (
     <main className="screen">
       <JsonLd
         data={[
+          // 눈에 보이는 질문과 같은 글(웹일 때만: 앱 안에서는 그리지 않으니 구조화 데이터도 내지 않는다)
+          ...(web ? [{ "@context": "https://schema.org", "@type": "FAQPage", inLanguage: locale, mainEntity: faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) }] : []),
           { "@context": "https://schema.org", "@type": "Organization", name: OPERATOR.ko, alternateName: OPERATOR.en, url: absoluteUrl("/"), email: SUPPORT_EMAIL, logo: absoluteUrl("/icon.png") },
           { "@context": "https://schema.org", "@type": "WebSite", name: BRAND.ko.name, alternateName: BRAND.en.name, url: absoluteUrl("/"), inLanguage: ["ko", "en"] },
           {
@@ -55,6 +66,8 @@ export default async function Start({ searchParams }: { searchParams: Promise<{ 
             operatingSystem: "iOS, Android, Web",
             identifier: APP_ID,
             url: absoluteUrl("/"),
+            installUrl: APP_STORE_URL,
+            dateModified: LANDING_UPDATED_ON,
             description: "가족·연인·친구의 취향, 못 먹는 음식, 사이즈, 생일을 기록하고 물어보고, 챙길 날이 다가오면 가격대별 선물을 골라 주는 앱",
             offers: { "@type": "Offer", price: "0", priceCurrency: "KRW" },
             publisher: { "@type": "Organization", name: OPERATOR.ko },
@@ -89,6 +102,29 @@ export default async function Start({ searchParams }: { searchParams: Promise<{ 
         <AuthButtons locale={locale} next={next} google={PROVIDERS.google} apple={PROVIDERS.apple} demo={demoEnabled()} />
         <LegalLinks locale={locale} t={t} />
       </div>
+
+      {web ? (
+        <>
+          <FaqList id="start-faq" title={locale === "ko" ? "자주 묻는 질문" : "FAQ"} items={faq} lang={locale} />
+          {/* 선물 가이드는 한국어 글이라 한국어 화면에서만 */}
+          {locale === "ko" ? (
+            <nav aria-label="선물 가이드" className="flex flex-col gap-3 px-4 pt-[38px]">
+              <h2 className="ml-1 text-[25px] font-normal">선물 가이드</h2>
+              <div className="flex flex-wrap gap-2">
+                {GUIDES.map((g) => (
+                  <Link key={g.slug} href={`/gifts/${g.slug}`} className="chip">
+                    {g.who} 선물
+                  </Link>
+                ))}
+                <Link href="/gifts" className="chip">
+                  모아 보기
+                </Link>
+              </div>
+            </nav>
+          ) : null}
+          <div className="page-end" />
+        </>
+      ) : null}
     </main>
   );
 }

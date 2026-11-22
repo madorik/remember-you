@@ -3,6 +3,20 @@
 
 import { GIFT_CATALOG, PRICE_BANDS, type CatalogGift, type PriceBand } from "./gift-catalog";
 
+/**
+ * 가이드를 처음 낸 날 / 마지막으로 내용(글·선물 목록 gift-catalog)을 고친 날(YYYY-MM-DD).
+ * 화면의 '업데이트' 날짜, 구조화 데이터(datePublished·dateModified), 사이트맵 수정일이 모두 이 값을 쓴다.
+ * 가이드 글이나 gift-catalog를 고치면 UPDATED를 그날로 바꾼다(바꾸지 않으면 검색에 오래된 글로 보인다)
+ */
+export const GUIDES_PUBLISHED = "2026-11-16";
+export const GUIDES_UPDATED = "2026-11-21";
+
+/** 2026-11-21 → 2026년 11월 21일 */
+export function koDate(ymd: string): string {
+  const [y, m, d] = ymd.split("-").map(Number);
+  return `${y}년 ${m}월 ${d}일`;
+}
+
 export const BAND_NAME: Record<PriceBand, string> = { "1": "1만원대", "3": "3만원대", "5": "5만원대", "10": "10만원 이상" };
 
 export interface Guide {

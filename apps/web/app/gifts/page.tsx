@@ -4,7 +4,7 @@ import { Wordmark } from "@/components/chrome";
 import { HandRule, Heart, Squiggle, Star, SKY_STAR, Tape, type TapeColor } from "@/components/diary";
 import { JsonLd } from "@/components/JsonLd";
 import { Icon } from "@/components/marks";
-import { GUIDES, guidePicks } from "@/lib/guides";
+import { GUIDES, GUIDES_PUBLISHED, GUIDES_UPDATED, guidePicks } from "@/lib/guides";
 import { ogMetadata } from "@/lib/og";
 import { absoluteUrl } from "@/lib/site";
 
@@ -38,6 +38,9 @@ export default function Gifts() {
           name: TITLE,
           description: DESCRIPTION,
           url: absoluteUrl("/gifts"),
+          inLanguage: "ko",
+          datePublished: GUIDES_PUBLISHED,
+          dateModified: GUIDES_UPDATED,
           hasPart: GUIDES.map((g) => ({ "@type": "WebPage", name: g.title, url: absoluteUrl(`/gifts/${g.slug}`) })),
         }}
       />

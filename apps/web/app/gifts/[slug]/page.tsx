@@ -2,17 +2,19 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Wordmark } from "@/components/chrome";
-import { HandRule, Heart, Squiggle, Star, SKY_STAR, Tape, MarginLine } from "@/components/diary";
+import { HandRule, Heart, Squiggle, Star, SKY_STAR, Tape } from "@/components/diary";
+import { FaqList } from "@/components/Faq";
 import { PicksDisclosure } from "@/components/GiftPicks";
 import { GuideList } from "@/components/GuideList";
 import { JsonLd } from "@/components/JsonLd";
 import { Icon } from "@/components/marks";
-import { BAND_NAME, GUIDE_BY_SLUG, GUIDES, bandFaq, guidePicks } from "@/lib/guides";
+import { BAND_NAME, GUIDE_BY_SLUG, GUIDES, GUIDES_PUBLISHED, GUIDES_UPDATED, bandFaq, guidePicks, koDate } from "@/lib/guides";
+import { OPERATOR } from "@/lib/legal";
 import { ogMetadata } from "@/lib/og";
 import { absoluteUrl } from "@/lib/site";
 
 // 공개 선물 가이드(검색·AI 답변용): 먼저 답하는 몇 문장 → 가격대별 선물 다섯 → 묻고 답하기 → 기억해유로 이어 가기.
-// 구조화 데이터: 상품 목록(ItemList)·묻고 답하기(FAQPage)·위치(BreadcrumbList)
+// 구조화 데이터: 글(Article, 작성·수정일)·상품 목록(ItemList)·묻고 답하기(FAQPage)·위치(BreadcrumbList)
 
 // 빌드 때 한 번 그려 CDN에 둔다(generateStaticParams). 루트 레이아웃이 쿠키·헤더를 읽어서 그냥 두면 요청마다 새로 그려지므로 force-static으로 빈 값으로 읽게 한다
 export const dynamic = "force-static";
@@ -53,6 +55,18 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           },
           {
             "@context": "https://schema.org",
+            "@type": "Article",
+            headline: g.title,
+            description: g.description,
+            inLanguage: "ko",
+            mainEntityOfPage: url,
+            datePublished: GUIDES_PUBLISHED,
+            dateModified: GUIDES_UPDATED,
+            author: { "@type": "Organization", name: OPERATOR.ko, url: absoluteUrl("/") },
+            publisher: { "@type": "Organization", name: OPERATOR.ko, logo: { "@type": "ImageObject", url: absoluteUrl("/icon.png") } },
+          },
+          {
+            "@context": "https://schema.org",
             "@type": "ItemList",
             name: g.title,
             url,
@@ -87,33 +101,17 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
             )}
           </h1>
           <HandRule className="mt-3" />
-          <p className="mt-3.5 rounded-[3px] bg-[#fff0c9] px-3.5 pb-3.5 pt-3 text-[18px] leading-[1.55] shadow-[0_6px_12px_-9px_rgb(31_35_64/0.45)] [transform:rotate(-0.4deg)]">{g.answer}</p>
+          <p className="mt-2.5 text-[16px] text-muted">
+            <time dateTime={GUIDES_UPDATED}>{koDate(GUIDES_UPDATED)} 업데이트</time>
+          </p>
+          <p className="mt-2.5 rounded-[3px] bg-[#fff0c9] px-3.5 pb-3.5 pt-3 text-[18px] leading-[1.55] shadow-[0_6px_12px_-9px_rgb(31_35_64/0.45)] [transform:rotate(-0.4deg)]">{g.answer}</p>
           <Star size={22} rotate={14} className="right-[22px] top-2" />
           <Heart size={24} rotate={16} className="-bottom-3 right-3.5" />
         </header>
         <div className="px-4 pt-[30px]">
           <GuideList bands={picks.map((b) => ({ band: b.band, title: `${BAND_NAME[b.band]} ${g.who} 선물`, items: b.items.map((x) => ({ id: x.id, title: x.q, name: x.name, url: x.url, image: x.image })) }))} />
         </div>
-        <section aria-labelledby="faq" className="relative flex flex-col gap-2.5 px-4 pt-[38px]">
-          <h2 id="faq" className="ml-1 text-[25px] font-normal">
-            자주 묻는 질문
-          </h2>
-          <div className="ruled relative rounded-[10px] bg-paper py-1.5 pl-10 pr-3.5 shadow-[0_1px_2px_rgb(31_35_64/0.08),0_12px_26px_-16px_rgb(31_35_64/0.42)] [background-position:0_14px]">
-            <MarginLine left={26} />
-            {faq.map((f) => (
-              <details key={f.q} className="group border-t border-dashed border-rule-strong first:border-t-0">
-                <summary className="flex min-h-[52px] cursor-pointer list-none items-center justify-between gap-2.5 py-1.5 text-[19px] leading-[1.35] [&::-webkit-details-marker]:hidden">
-                  <span>{f.q}</span>
-                  <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 transition-transform group-open:rotate-180">
-                    <path d="M6 9l6 6 6-6" />
-                  </svg>
-                </summary>
-                <p className="pb-3.5 text-[17px] leading-[1.55] text-muted">{f.a}</p>
-              </details>
-            ))}
-          </div>
-          <Tape color="mint" w={62} h={20} rotate={-30} alpha={0.6} className="left-1 top-7" />
-        </section>
+        <FaqList id="faq" title="자주 묻는 질문" items={faq} />
         <section className="card relative mx-4 mt-10 flex flex-col gap-4 px-5 pb-[22px] pt-6">
           <Tape color="mango" w={108} h={26} rotate={-3} alpha={0.62} className="-top-[13px] left-1/2 -ml-[54px]" />
           <h2 className="text-[26px] font-normal leading-[1.3]">{g.who}의 취향을 알면 더 꼭 맞아요</h2>
