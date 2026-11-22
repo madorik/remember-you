@@ -142,7 +142,7 @@ export function questionsLeft(usedToday: number): number {
 }
 
 /**
- * 오늘의 질문을 물어볼 만큼 가까운 사람인가: 가족·연인 폴더에 있거나, 즐겨찾기거나, 사람 화면을 여러 날 열어 본 사람.
+ * 오늘의 질문을 물어볼 만큼 가까운 사람인가: 가족 폴더에 있거나, 즐겨찾기거나, 사람 화면을 여러 날 열어 본 사람.
  * '다시 묻지 않기'를 한 사람은 늘 아니다. 아무나(그냥 적어 둔 사람)에게는 묻지 않는다
  */
 export function isCloseEnough(p: { askOff: boolean; favorite: boolean; closeFolder: boolean; viewDays: number }): boolean {

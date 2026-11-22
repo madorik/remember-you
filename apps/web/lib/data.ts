@@ -393,7 +393,8 @@ export function sealNote(me: string, contactId: string, body: string): unknown {
 // ── 폴더 ─────────────────────────────────────────
 
 /** 기본 폴더(사람마다 처음부터 있고, 이름은 화면 언어로). 이 순서로 보인다 */
-export const BUILTIN_GROUPS = ["family", "work", "partner", "friends"] as const;
+// 기본 폴더 셋(가족·친구들·회사, 이 순서로 보인다). 예전에 있던 연인 폴더(builtin = partner)는 0032 이관으로 지웠다
+export const BUILTIN_GROUPS = ["family", "friends", "work"] as const;
 export type BuiltinGroup = (typeof BUILTIN_GROUPS)[number];
 
 export interface Folder {
@@ -415,13 +416,13 @@ const hasAllBuiltins = (rows: { builtin: string | null }[]) => BUILTIN_GROUPS.ev
 const insertBuiltinFolders = (q: Q, me: string) =>
   q(
     `insert into contact_groups (user_id, builtin, icon, color)
-     select $1, b, case b when 'family' then 'home' when 'work' then 'work' when 'partner' then 'heart' else 'star' end,
-            case b when 'family' then 'mango' when 'work' then 'sky' when 'partner' then 'pink' else 'mint' end
+     select $1, b, case b when 'family' then 'home' when 'work' then 'work' else 'star' end,
+            case b when 'family' then 'mango' when 'work' then 'sky' else 'mint' end
      from unnest($2::text[]) b on conflict (user_id, builtin) do nothing`,
     [me, [...BUILTIN_GROUPS]],
   );
 
-/** 기본 폴더 네 개가 없으면 만든다(가족 집·망고, 회사 가방·하늘, 연인 하트·분홍, 친구들 별·민트). 이미 다 있으면 읽기만 한다 */
+/** 기본 폴더 셋이 없으면 만든다(가족 집·망고, 친구들 별·민트, 회사 가방·하늘). 이미 다 있으면 읽기만 한다 */
 export async function ensureBuiltinFolders(q: Q, me: string): Promise<void> {
   const have = await q<{ builtin: string }>("select builtin from contact_groups where user_id = $1 and builtin is not null", [me]);
   if (!hasAllBuiltins(have)) await insertBuiltinFolders(q, me);
@@ -435,7 +436,8 @@ export async function listFolders(q: Q, me: string): Promise<Folder[]> {
     await insertBuiltinFolders(q, me);
     rows = await selectFolders(q, me);
   }
-  return rows.map((r) => ({
+  // 예전 연인 폴더(builtin = partner)는 0032가 지우지만, 그 전에 남은 행은 이름이 비어 있어 보이지 않게 건너뛴다
+  return rows.filter((r) => r.builtin !== "partner").map((r) => ({
     id: String(r.id),
     builtin: (BUILTIN_GROUPS as readonly string[]).includes(r.builtin ?? "") ? (r.builtin as BuiltinGroup) : null,
     name: String(r.name ?? ""),

@@ -696,11 +696,15 @@ test("내 리드미: 고치기를 누르면 화면을 옮기지 않고 그 항�
   await expect(jisu.getByRole("button", { name: /^사이즈/ })).toHaveAttribute("aria-expanded", "true");
 });
 
-test("사람들: 폴더(기본 4개 + 직접 만들기, 한 사람이 여러 폴더), 폴더 없는 사람만 목록에, 끌어서 폴더에 넣기, 찾기, 즐겨찾기", async ({ browser }) => {
+test("사람들: 폴더(기본 3개 + 직접 만들기, 한 사람이 여러 폴더), 폴더 없는 사람만 목록에, 끌어서 폴더에 넣기, 찾기, 즐겨찾기", async ({ browser }) => {
   const jisu = await as(browser, "jisu");
-  // 기본 폴더 네 개가 사람들 위에 보인다
+  // 기본 폴더 셋(가족·친구들·회사, 이 순서)이 사람들 위에 보이고 연인 폴더는 없다. 새 폴더 단추는 글자 없이 아이콘만(폴더 옆)
   await jisu.goto("/people");
-  for (const builtin of ["가족", "회사", "연인", "친구들"]) await expect(jisu.getByRole("link", { name: new RegExp(`^${builtin} `) })).toHaveCount(1);
+  for (const builtin of ["가족", "친구들", "회사"]) await expect(jisu.getByRole("link", { name: new RegExp(`^${builtin} `) })).toHaveCount(1);
+  await expect(jisu.getByRole("link", { name: /^연인 / })).toHaveCount(0);
+  expect(await jisu.getByRole("link", { name: /^(가족|친구들|회사) / }).allTextContents().then((l) => l.map((x) => x.replace(/\d+명$/, "").trim()))).toEqual(["가족", "친구들", "회사"]);
+  await expect(jisu.getByRole("button", { name: "새 폴더", exact: true })).toBeVisible();
+  await expect(jisu.getByRole("button", { name: "새 폴더", exact: true })).toHaveText("");
 
   // 단짝(탈퇴한 도윤, 태그가 이름이 됨): 사람 화면 폴더 시트에서 친구들에 넣고 즐겨찾기
   await jisu.getByRole("link", { name: /단짝/ }).first().click();

@@ -9,7 +9,7 @@ export interface HomeData {
   avatar: AvatarConfig;
   today: YMD;
   people: Person[];
-  /** 오늘의 질문: 가까운 사람(가족·연인 폴더, 즐겨찾기, 자주 연 사람) 중 아직 답이 없는 칸 하나. 하루 두 번까지이고, 없거나 다 썼으면 null */
+  /** 오늘의 질문: 가까운 사람(가족 폴더, 즐겨찾기, 자주 연 사람) 중 아직 답이 없는 칸 하나. 하루 두 번까지이고, 없거나 다 썼으면 null */
   question: { contactId: string; q: DailyQuestion } | null;
   /** 아직 안 본 답장 */
   answers: UnreadAnswer[];

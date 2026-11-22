@@ -43,7 +43,7 @@ export interface FolderView {
   name: string;
   icon: FolderIcon;
   color: FolderColor;
-  /** 기본 폴더(가족·회사·연인·친구들)는 이름을 못 바꾸고 못 지운다 */
+  /** 기본 폴더(가족·친구들·회사)는 이름을 못 바꾸고 못 지운다 */
   builtin: boolean;
   /** 들어 있는 사람(contactId, 사람들 목록 순서) */
   memberIds: string[];

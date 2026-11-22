@@ -534,7 +534,8 @@ export function PeopleBoard({
             <span className="text-[22px] font-normal">{labels.folders}</span>
             <span className="text-[17px] text-muted">{folders.length}</span>
           </h2>
-          <div className="grid grid-cols-3 gap-x-2.5 gap-y-3 px-4">
+          <div className="flex items-start gap-2 px-4">
+          <div className="grid min-w-0 flex-1 grid-cols-3 gap-x-2.5 gap-y-3">
             {folders.map((f, i) => {
               // 끄는 중 손가락 아래 폴더는 망고 테두리로
               const target = !!drag.dragging && drag.over === f.id;
@@ -553,14 +554,17 @@ export function PeopleBoard({
                 </Link>
               );
             })}
-            <button
-              type="button"
-              onClick={() => setMaking(true)}
-              className="flex min-h-[132px] flex-col items-center justify-center gap-1.5 rounded-[10px] border-[1.8px] border-dashed border-ink text-accent transition-transform active:scale-[0.97]"
-            >
-              <Icon name="plus" size={26} strokeWidth={2.2} className="text-ink" />
-              <span className="text-[18px]">{labels.newFolder}</span>
-            </button>
+          </div>
+          {/* 새 폴더: 글자 없이 아이콘만, 폴더들 바로 옆(첫 줄 폴더의 가운데 높이) */}
+          <button
+            type="button"
+            aria-label={labels.newFolder}
+            aria-haspopup="dialog"
+            onClick={() => setMaking(true)}
+            className="mt-[46px] flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-[1.8px] border-dashed border-ink text-ink transition-transform active:scale-95"
+          >
+            <Icon name="plus" size={22} strokeWidth={2.2} />
+          </button>
           </div>
           <Heart size={24} rotate={-12} className="left-28 top-[62px]" />
           <Star size={22} rotate={12} color={SKY_STAR} className="right-2 top-7" />

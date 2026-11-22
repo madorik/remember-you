@@ -78,7 +78,7 @@ function samples(locale: Locale, today: YMD): { me: { name: string; card: Partia
       },
       {
         nickname: ko ? "아내" : "Wife",
-        folders: ["family", "partner"],
+        folders: ["family"],
         avatar: { hair: "wave", face: "vline", body: "turtle", item: "necklace", bg: "sky", cloth: "#FF9DB0", hairColor: "#1F2340" },
         card: {
           dates: sanitizeSection("dates", {
