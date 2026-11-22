@@ -24,6 +24,8 @@ export function CircleOption({
   color = "ink",
   large = false,
   textClass = "",
+  className = "",
+  noCheck = false,
 }: {
   label: string;
   on: boolean;
@@ -31,15 +33,19 @@ export function CircleOption({
   color?: "red" | "ink" | "warn";
   large?: boolean;
   textClass?: string;
+  /** 칩 자리를 더 줄이거나 바꿀 때(설정의 알림 시점 한 줄) */
+  className?: string;
+  /** 골랐다는 표시를 체크 대신 칩 바탕·테두리로만(자리가 좁을 때) */
+  noCheck?: boolean;
 }) {
   return (
     <button
       type="button"
       aria-pressed={on}
       onClick={onToggle}
-      className={`chip ${color === "warn" ? "chip-warn" : ""} ${large ? "!min-h-12 !px-[18px] text-[19px]" : ""} ${textClass}`}
+      className={`chip ${color === "warn" ? "chip-warn" : ""} ${large ? "!min-h-12 !px-[18px] text-[19px]" : ""} ${textClass} ${className}`}
     >
-      {on ? <CheckGlyph /> : null}
+      {on && !noCheck ? <CheckGlyph /> : null}
       {label}
     </button>
   );

@@ -11,7 +11,7 @@ export function DeleteAccount({ locale }: { locale: Locale }) {
   const [ask, setAsk] = useState(false);
   if (!ask) {
     return (
-      <button type="button" onClick={() => setAsk(true)} className="flex min-h-[60px] items-center pl-1 text-[21px] text-red">
+      <button type="button" onClick={() => setAsk(true)} className="flex min-h-12 items-center pl-1 text-[19px] text-red">
         {t("privacy.delete")}
       </button>
     );

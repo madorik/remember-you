@@ -21,8 +21,8 @@ export function ShareAppRow({ locale, url, qr }: { locale: Locale; url: string; 
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="flex min-h-16 w-full items-center gap-3 border-t-[1.5px] border-dashed border-rule text-left">
-        <span className="flex-1 pl-1 text-[21px]">{t("privacy.shareApp")}</span>
+      <button type="button" onClick={() => setOpen(true)} className="flex min-h-12 w-full items-center gap-3 border-t-[1.5px] border-dashed border-rule text-left">
+        <span className="flex-1 pl-1 text-[19px]">{t("privacy.shareApp")}</span>
         <Icon name="share" size={20} className="mr-1 shrink-0 text-muted" />
       </button>
       {open ? (

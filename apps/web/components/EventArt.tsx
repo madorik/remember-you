@@ -1,7 +1,7 @@
 import type { AvatarConfig } from "@readme/core";
 import Link from "@/components/AppLink";
 import { Avatar } from "@/components/Avatar";
-import { Heart, Polaroid } from "@/components/diary";
+import { Polaroid } from "@/components/diary";
 
 // 홈 '다가오는 날' 왼쪽 그림: 그 사람 얼굴을 끼운 폴라로이드(이름 + 하트). 같은 날 여럿이면 폴라로이드를 겹치고,
 // 다가오는 날이 없으면 점선 사진 칸에 사람 + 더하기(새 친구)를 둔다. 명절 그림은 HolidayArt.
@@ -24,17 +24,9 @@ function QuietFriend({ size = 48 }: { size?: number }) {
 /** 다가오는 날의 주인공: 얼굴을 누르면 그 사람 화면으로. 아래 '내 사람들'에 같은 링크가 있어 보조기기에는 숨긴다 */
 export function EventPortrait({ href, avatar, name }: { href: string; avatar: AvatarConfig | null; name: string; kind: "birthday" | "anniversary" }) {
   return (
-    <Link href={href} aria-hidden="true" tabIndex={-1} className="block shrink-0 py-2 pl-1 pr-2">
-      <Polaroid
-        rotate={-4}
-        caption={
-          <>
-            <span className="max-w-[72px] truncate">{name}</span>
-            <Heart size={13} inline />
-          </>
-        }
-      >
-        <Avatar config={avatar} size={74} label={name} />
+    <Link href={href} aria-hidden="true" tabIndex={-1} className="block shrink-0 py-1 pl-1 pr-1">
+      <Polaroid rotate={-4} photo={52}>
+        <Avatar config={avatar} size={48} label={name} />
       </Polaroid>
     </Link>
   );
@@ -46,12 +38,12 @@ export function EventPortraits({ faces }: { faces: { avatar: AvatarConfig | null
   if (!a || !b) return null;
   const rest = faces.length - 2;
   return (
-    <span aria-hidden="true" className="relative block h-[122px] w-[112px] shrink-0">
-      <Polaroid rotate={-6} photo={64} className="absolute left-1 top-0">
-        <Avatar config={a.avatar} size={58} label={a.name} />
+    <span aria-hidden="true" className="relative block h-[96px] w-[92px] shrink-0">
+      <Polaroid rotate={-6} photo={48} className="absolute left-0 top-0">
+        <Avatar config={a.avatar} size={44} label={a.name} />
       </Polaroid>
-      <Polaroid rotate={6} photo={64} className="absolute right-0 top-[34px]">
-        <Avatar config={b.avatar} size={58} label={b.name} />
+      <Polaroid rotate={6} photo={48} className="absolute right-0 top-[26px]">
+        <Avatar config={b.avatar} size={44} label={b.name} />
       </Polaroid>
       {rest > 0 ? <span className="grad num absolute bottom-0 left-0 rounded-full px-2 py-[2px] text-[14px] shadow-[0_0_0_1.5px_var(--color-ink)]">+{rest}</span> : null}
     </span>
@@ -61,9 +53,9 @@ export function EventPortraits({ faces }: { faces: { avatar: AvatarConfig | null
 /** 챙길 날이 없을 때: 점선 사진 칸과 사람 + 더하기 */
 export function EmptyPortrait() {
   return (
-    <span aria-hidden="true" className="block shrink-0 py-2 pl-1 pr-2">
-      <Polaroid rotate={-4} dashed>
-        <QuietFriend />
+    <span aria-hidden="true" className="block shrink-0 py-1 pl-1 pr-1">
+      <Polaroid rotate={-4} photo={52} dashed>
+        <QuietFriend size={38} />
       </Polaroid>
     </span>
   );

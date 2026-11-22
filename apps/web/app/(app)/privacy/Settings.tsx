@@ -36,13 +36,13 @@ function SwitchRow({ locale, prefKey, enabled, label, note, disabled = false }: 
           setFailed(true);
         }
       }}
-      className="flex min-h-16 flex-col justify-center border-t-[1.5px] border-dashed border-rule"
+      className="flex min-h-12 flex-col justify-center border-t-[1.5px] border-dashed border-rule"
     >
       <input type="hidden" name="key" value={prefKey} />
       <input type="hidden" name="value" value={enabled ? "0" : "1"} />
       <div className="flex items-center gap-3">
         <div className="flex flex-1 flex-col gap-0.5 pl-1">
-          <span className="text-[21px]">{label}</span>
+          <span className="text-[19px]">{label}</span>
           {note}
         </div>
         <SwitchButton label={label} on={on} disabled={disabled} />
@@ -110,7 +110,7 @@ export function ReminderSetting({ locale, offsets }: { locale: Locale; offsets: 
       className="flex flex-col gap-2"
     >
       <input type="hidden" name="offsets" value={JSON.stringify(value)} />
-      <ReminderPicker value={value} onChange={setValue} locale={locale} />
+      <ReminderPicker value={value} onChange={setValue} locale={locale} compact />
       {failed ? (
         <p role="alert" className="text-[16px] text-red">
           {t("common.error")}
@@ -195,10 +195,10 @@ export function WebPushSetting({ locale, publicKey }: { locale: Locale; publicKe
 
   const label = t("privacy.webPush");
   return (
-    <div className="flex min-h-16 flex-col justify-center border-t-[1.5px] border-dashed border-rule">
+    <div className="flex min-h-12 flex-col justify-center border-t-[1.5px] border-dashed border-rule">
       <div className="flex items-center gap-3">
         <div className="flex flex-1 flex-col gap-0.5 pl-1">
-          <span className="text-[21px]">{label}</span>
+          <span className="text-[19px]">{label}</span>
           {state === "blocked" ? <span className="text-[15px] text-muted">{t("privacy.webPushBlocked")}</span> : null}
           {state === "install" ? <span className="text-[15px] text-muted">{t("privacy.webPushInstall")}</span> : null}
         </div>
