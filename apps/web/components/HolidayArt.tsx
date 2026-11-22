@@ -229,9 +229,9 @@ export function HolidayArt({ id, size = 70 }: { id: HolidayId; size?: number }) 
 /** 다가오는 날 카드의 주인공(명절): 폴라로이드에 그날의 그림. 사람 얼굴 대신이라 누르는 곳은 아니다 */
 export function HolidayPortrait({ id }: { id: HolidayId }) {
   return (
-    <span aria-hidden="true" className="block shrink-0 py-1 pl-1 pr-1">
-      <Polaroid rotate={-4} photo={52}>
-        <HolidayArt id={id} size={48} />
+    <span aria-hidden="true" className="block shrink-0 py-2 pl-1 pr-2">
+      <Polaroid rotate={-4}>
+        <HolidayArt id={id} />
       </Polaroid>
     </span>
   );
