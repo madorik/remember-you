@@ -15,8 +15,8 @@ import {
   type Locale,
 } from "@readme/core";
 import { useState } from "react";
-import { AvatarArt, avatarBackground } from "../Avatar";
-import { Heart, Tape, type TapeColor } from "../diary";
+import { Avatar, AvatarArt, avatarBackground } from "../Avatar";
+import { TornTape } from "../TornTape";
 import { useT } from "./shared";
 
 type Tab = "hair" | "face" | "body" | "item" | "glasses" | "color";
@@ -35,7 +35,7 @@ const SKIN_LABELS = { ko: ["하양", "아주 밝게", "밝게", "중간", "진�
 
 const any = <T,>(list: readonly T[]): T => list[Math.floor(Math.random() * list.length)]!;
 
-/** 색 동그라미: 누르는 칸은 40×44, 동그라미는 28. 골랐을 땐 바탕색(ringBg) 틈을 두고 남색 테두리 */
+/** 색 동그라미: 누르는 칸은 40×44, 동그라미는 28. 골랐을 땐 흰 틈을 두고 남색 테두리 */
 function Swatch({ fill, on, label, ringBg, onPick }: { fill: string; on: boolean; label: string; ringBg: string; onPick: () => void }) {
   return (
     <button type="button" aria-pressed={on} aria-label={label} onClick={onPick} className="flex h-[42px] w-10 items-center justify-center">
@@ -47,12 +47,11 @@ function Swatch({ fill, on, label, ringBg, onPick }: { fill: string; on: boolean
   );
 }
 
-/** 이름 칸(폼 필드 name="name"): 미리보기 오른쪽 위. hideLabel이면 글자는 스크린리더용이고 칸 안 안내글(placeholder)로 보인다 */
+/** 이름 칸(폼 필드 name="name"): 미리보기 오른쪽 위. 위에 작은 라벨, 칸은 점선 밑줄 + 손글씨(사람이 적은 글) */
 export function NameField({
   label,
   value,
   required = true,
-  hideLabel = false,
   placeholder,
   autoFocus = false,
   invalid = false,
@@ -60,52 +59,51 @@ export function NameField({
   label: string;
   value: string;
   required?: boolean;
-  hideLabel?: boolean;
   placeholder?: string;
   autoFocus?: boolean;
   invalid?: boolean;
 }) {
   return (
-    <label className="flex flex-col gap-1.5">
-      <span className={hideLabel ? "sr-only" : "text-[17px] text-muted"}>{label}</span>
+    <label className="flex flex-col gap-0.5">
+      <span className="text-[12px] text-muted">{label}</span>
       <input
         name="name"
         defaultValue={value}
         required={required}
         maxLength={40}
         autoFocus={autoFocus}
-        placeholder={placeholder}
+        placeholder={placeholder ?? label}
         aria-invalid={invalid || undefined}
-        className="h-[52px] w-full min-w-0 rounded-2xl bg-white px-3.5 text-[24px] shadow-[inset_0_0_0_1.5px_var(--color-ink),0_3px_0_var(--color-sky)] outline-none placeholder:text-[19px]"
+        className="hand-written h-10 w-full min-w-0 border-0 border-b-[1.5px] border-dashed border-ink/40 bg-transparent p-0 text-[25px] outline-none placeholder:font-sans placeholder:text-[15px] placeholder:tracking-[-0.035em] placeholder:text-muted aria-invalid:border-red"
       />
     </label>
   );
 }
 
 /**
- * 캐릭터 만들기(한 화면에 다 보이게): 작은 폴라로이드 미리보기 + 오른쪽에 이름 칸·아무거나 → 머리·얼굴·옷·소품·안경·색깔 탭 → 4열 고르기 칸.
- * paper: 종이 시트(온보딩) 위인지 — 색 동그라미 고른 테두리의 틈 색을 바탕에 맞춘다
+ * 캐릭터 만들기(플래너 시안, 흰 카드 하나): 작은 폴라로이드 미리보기(오른쪽 아래에 망고 주사위 단추 '아무거나') + 오른쪽에 이름 칸 → 머리·얼굴·옷·소품·안경·색깔 탭 → 4열 고르기 칸.
+ * paper: 온보딩에서 쓰는지 — 카드 윗변에 망고 테이프를 붙인다
  */
 export function AvatarBuilder({
   value,
   onChange,
   locale,
   side,
-  tape = "pink",
   paper = false,
 }: {
   value: AvatarConfig;
   onChange: (v: AvatarConfig) => void;
   locale: Locale;
-  /** 미리보기 오른쪽 위에 놓는 칸들(NameField, 사람 추가는 폴더 칸까지). 아래에 '아무거나'가 붙는다 */
+  /** 미리보기 오른쪽에 놓는 칸들(NameField, 사람 추가는 폴더 칸까지) */
   side: React.ReactNode;
-  tape?: TapeColor;
+  /** 예전 호출 호환용(테이프 색은 시안대로 정해져 있다) */
+  tape?: unknown;
   paper?: boolean;
 }) {
   const t = useT(locale);
   const [tab, setTab] = useState<Tab>("hair");
   const set = (patch: Partial<AvatarConfig>) => onChange({ ...value, ...patch });
-  const ringBg = paper ? "var(--color-paper)" : "var(--color-bg)";
+  const ringBg = "#ffffff";
   const shuffle = () =>
     onChange({
       hair: any(AVATAR_HAIRS),
@@ -140,38 +138,39 @@ export function AvatarBuilder({
   ];
 
   return (
-    <div className="flex flex-col">
-      <div className="flex items-stretch gap-4">
-        <div className="relative h-[160px] w-[150px] shrink-0 -rotate-[1.5deg] bg-white px-2 pb-[18px] pt-2 shadow-[0_1px_2px_rgb(31_35_64/0.12),0_10px_20px_-12px_rgb(31_35_64/0.5)]">
-          <div className="relative flex h-[134px] w-[134px] items-end justify-center overflow-hidden" style={{ background: avatarBackground(value) }}>
-            <span aria-hidden="true" className="absolute left-3 top-3 h-[34px] w-[34px] rounded-full bg-white/50" />
-            <span aria-hidden="true" className="absolute right-[22px] top-7 h-3 w-3 rounded-full bg-white/50" />
-            <AvatarArt config={value} size={128} />
-          </div>
-          <Tape color={tape} w={84} h={20} rotate={-3} alpha={tape === "pink" ? 0.6 : 0.62} className="-top-[9px] left-1/2 -ml-[42px]" />
-          <Heart size={22} rotate={16} className="-right-2.5 top-[62px]" />
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col justify-between">
-          <div className="flex flex-col gap-1.5">{side}</div>
+    <div className="card relative flex flex-col p-3.5">
+      {paper ? <TornTape color="mango" w={72} h={22} rotate={-4} className="-top-3 left-[40%]" /> : null}
+      <div className="flex items-center gap-4 px-1 pt-1.5">
+        <div className="relative shrink-0">
+          <span className="relative block -rotate-3 border-[1.5px] border-ink bg-white px-1.5 pb-[18px] pt-1.5">
+            <span className="flex h-[104px] w-[104px] items-center justify-center overflow-hidden bg-[#FFF0C9]">
+              <span className="block overflow-hidden rounded-full shadow-[0_0_0_3px_#1F2340]" style={{ width: 92, height: 92, background: avatarBackground(value) }}>
+                <AvatarArt config={value} size={92} />
+              </span>
+            </span>
+            <TornTape color="pink" w={60} h={18} rotate={-8} className="-top-3 left-6" />
+          </span>
+          {/* 아무거나: 망고 동그라미 주사위. 누르면 머리·옷·색을 아무렇게나 바꾼다 */}
           <button
             type="button"
+            aria-label={t("avatar.shuffle")}
             onClick={shuffle}
-            className="flex h-11 w-full items-center justify-center gap-1.5 rounded-full bg-white text-[18px] shadow-[inset_0_0_0_1.5px_var(--color-ink)] active:scale-95"
+            className="absolute -bottom-2 -right-2.5 flex h-10 w-10 items-center justify-center rounded-full border-[1.5px] border-ink bg-sky shadow-[2px_2px_0_#1F2340] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1F2340]"
           >
-            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="4" y="4" width="16" height="16" rx="4" />
-              <circle cx="9" cy="9" r="1.3" fill="currentColor" />
-              <circle cx="15" cy="15" r="1.3" fill="currentColor" />
-              <circle cx="15" cy="9" r="1.3" fill="currentColor" />
-              <circle cx="9" cy="15" r="1.3" fill="currentColor" />
+            <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1F2340" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="4" y="4" width="16" height="16" rx="3.5" />
+              <circle cx="9" cy="9" r="1.2" fill="#1F2340" />
+              <circle cx="15" cy="15" r="1.2" fill="#1F2340" />
+              <circle cx="15" cy="9" r="1.2" fill="#1F2340" />
+              <circle cx="9" cy="15" r="1.2" fill="#1F2340" />
             </svg>
-            {t("avatar.shuffle")}
           </button>
         </div>
+        <div className="flex min-w-0 flex-1 flex-col gap-2.5">{side}</div>
       </div>
 
-      {/* 여섯 칸: 영어(Glasses·Extras)가 칸을 넘지 않게 영어는 15px */}
-      <div role="tablist" aria-label={t("avatar.parts")} className="mt-3.5 grid grid-cols-[repeat(6,minmax(0,1fr))] border-b-[1.5px] border-dashed border-rule-strong">
+      {/* 여섯 칸: 고른 탭은 손글씨 + 밑줄 낙서, 나머지는 흐린 글 */}
+      <div role="tablist" aria-label={t("avatar.parts")} className="mt-3.5 grid grid-cols-[repeat(6,minmax(0,1fr))] border-b-[1.5px] border-dashed border-ink/20">
         {TABS.map((k) => {
           const on = tab === k;
           return (
@@ -181,17 +180,16 @@ export function AvatarBuilder({
               role="tab"
               aria-selected={on}
               onClick={() => setTab(k)}
-              className={`relative h-11 whitespace-nowrap ${locale === "en" ? "text-[15px]" : "text-[18px]"} ${on ? "text-ink" : "text-muted"}`}
+              className={`flex h-[38px] items-center justify-center whitespace-nowrap ${on ? "hand text-[22px] text-ink" : "text-[14px] text-muted"}`}
             >
-              {t(TAB_KEY[k])}
-              <span aria-hidden="true" className={`absolute inset-x-[22%] -bottom-px h-1 rounded-full ${on ? "bg-sky" : "bg-transparent"}`} />
+              {on ? <span className="scribble leading-none">{t(TAB_KEY[k])}</span> : t(TAB_KEY[k])}
             </button>
           );
         })}
       </div>
 
       {/* 칸 높이를 고정해 탭을 옮겨도 아래 단추·메뉴가 흔들리지 않게(가장 많은 머리·소품 13개 = 4줄, 색깔은 7줄) */}
-      <div role="tabpanel" className="mt-2.5 min-h-[312px]">
+      <div role="tabpanel" className="mt-3 min-h-[328px]">
         {options ? (
           <div className="grid grid-cols-4 content-start gap-2">
             {options.list.map((id) => {
@@ -204,10 +202,10 @@ export function AvatarBuilder({
                   aria-pressed={on}
                   aria-label={label}
                   onClick={() => set({ [options.key]: id } as Partial<AvatarConfig>)}
-                  className={`flex h-[72px] flex-col items-center justify-end overflow-hidden rounded-[14px] pb-[3px] transition-colors ${on ? "bg-sky-soft shadow-[inset_0_0_0_2px_var(--color-ink)]" : "bg-white shadow-[inset_0_0_0_1.5px_var(--color-rule-strong)]"}`}
+                  className={`flex h-[76px] flex-col items-center gap-[3px] overflow-hidden rounded-xl border-[1.5px] border-ink pt-1.5 text-[11px] transition-colors ${on ? "bg-sky-soft shadow-[inset_0_0_0_1px_#1F2340]" : "bg-white"}`}
                 >
-                  <AvatarArt config={{ ...value, [options.key]: id } as AvatarConfig} size={50} bold />
-                  <span className={`max-w-full truncate px-1 text-[14px] leading-[1.2] ${on ? "text-ink" : "text-muted"}`}>{label}</span>
+                  <Avatar config={{ ...value, [options.key]: id } as AvatarConfig} size={40} label={label} decorative />
+                  <span className="max-w-full truncate px-1 leading-[1.2]">{label}</span>
                 </button>
               );
             })}
@@ -217,7 +215,7 @@ export function AvatarBuilder({
           <div className="flex flex-col gap-1">
             {groups.map((g) => (
               <div key={g.title} className="flex items-start gap-1">
-                <span className={`shrink-0 pt-2.5 text-[17px] ${locale === "en" ? "w-[96px]" : "w-[62px]"}`}>{g.title}</span>
+                <span className={`shrink-0 pt-3 text-[14px] ${locale === "en" ? "w-[84px]" : "w-[52px]"}`}>{g.title}</span>
                 <div className="flex min-w-0 flex-1 flex-wrap">
                   {g.swatches.map((s) => (
                     <Swatch key={s.id} fill={s.fill} on={s.on} label={s.label} ringBg={ringBg} onPick={s.pick} />

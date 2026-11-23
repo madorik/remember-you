@@ -4,7 +4,7 @@ import { type GiftsData, type Locale } from "@readme/core";
 import { useState } from "react";
 import { Icon } from "../marks";
 import { useLatest, useUndoToast } from "../UndoToast";
-import { CircleOption, SectionHeading, TextField, joinList, splitList, useT } from "./shared";
+import { ADD_PILL, CircleOption, SectionHeading, TextField, UNDERLINE_INPUT, joinList, splitList, useT } from "./shared";
 
 /**
  * 선물: 상품권 · 해주고 싶은 선물(다른 사람 기록, '나중에 사 줘야지') 또는 받고 싶은 것(내 리드미) · 사양하는 것 · 브랜드.
@@ -43,19 +43,19 @@ export function GiftsEditor({ value, onChange, locale, forOther = false }: { val
       <div className="flex flex-col gap-2">
         <SectionHeading>{forOther ? t("gift.ideas") : t("gift.wishlist")}</SectionHeading>
         {value.wishlist.map((w, i) => (
-          <div key={i} className="flex flex-col gap-2 border-t border-rule pt-3">
+          <div key={i} className="flex flex-col gap-1 border-t-[1.5px] border-dashed border-ink/20 pt-2">
             <div className="flex items-center gap-2">
-              <input value={w.title} onChange={(e) => setWish(i, { title: e.target.value })} placeholder={forOther ? t("gift.ideaTitle") : t("gift.wishTitle")} aria-label={forOther ? t("gift.ideaTitle") : t("gift.wishTitle")} className="field" />
-              <button type="button" aria-label={t("common.delete")} onClick={() => removeWish(i)} className="flex h-11 w-11 shrink-0 items-center justify-center text-muted">
-                <Icon name="close" size={20} />
+              <input value={w.title} onChange={(e) => setWish(i, { title: e.target.value })} placeholder={forOther ? t("gift.ideaTitle") : t("gift.wishTitle")} aria-label={forOther ? t("gift.ideaTitle") : t("gift.wishTitle")} className={`${UNDERLINE_INPUT} h-10 flex-1`} />
+              <button type="button" aria-label={t("common.delete")} onClick={() => removeWish(i)} className="flex h-10 w-8 shrink-0 items-center justify-center text-muted">
+                <Icon name="close" size={18} strokeWidth={1.8} />
               </button>
             </div>
-            <input value={w.url} onChange={(e) => setWish(i, { url: e.target.value })} placeholder="https://" aria-label={t("gift.wishUrl")} inputMode="url" className="field text-[17px]" />
+            <input value={w.url} onChange={(e) => setWish(i, { url: e.target.value })} placeholder="https://" aria-label={t("gift.wishUrl")} inputMode="url" className={`${UNDERLINE_INPUT} h-10 text-[16px]`} />
           </div>
         ))}
         {value.wishlist.length < 10 ? (
-          <button type="button" onClick={() => onChange({ ...value, wishlist: [...value.wishlist, { title: "", url: "" }] })} className="pill self-start">
-            <Icon name="plus" size={17} />
+          <button type="button" onClick={() => onChange({ ...value, wishlist: [...value.wishlist, { title: "", url: "" }] })} className={ADD_PILL}>
+            <Icon name="plus" size={15} strokeWidth={1.8} />
             {forOther ? t("gift.addIdea") : t("gift.addWish")}
           </button>
         ) : null}

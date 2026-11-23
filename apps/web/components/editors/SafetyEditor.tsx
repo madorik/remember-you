@@ -2,7 +2,7 @@
 
 import { ALLERGENS, ALLERGEN_ORDER, DIETS, DISLIKES, DISLIKE_ORDER, NONE, NONE_LABEL, customTags, ordered, type Locale, type SafetyData } from "@readme/core";
 import { useState } from "react";
-import { CircleOption, SectionHeading, TextField, toggleWithNone, useT } from "./shared";
+import { CircleOption, SectionHeading, TextField, UNDERLINE_INPUT, toggleWithNone, useT } from "./shared";
 
 /** 목록에 없는 음식 직접 더하기: 누르면 그 자리에 칸이 열린다. 엔터로 더하면 칸이 열린 채로 남아 이어서 더한다 */
 function AddTag({ label, placeholder, onAdd, large }: { label: string; placeholder: string; onAdd: (name: string) => void; large: boolean }) {
@@ -18,9 +18,9 @@ function AddTag({ label, placeholder, onAdd, large }: { label: string; placehold
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`chip gap-1 !bg-transparent text-muted !shadow-[inset_0_0_0_1.5px_var(--color-edge)] ${large ? "!min-h-12 text-[19px]" : ""}`}
+        className={`relative inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-xl border-[1.5px] border-dashed border-ink/55 px-3 text-[14px] text-muted before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] ${large ? "h-11" : "h-9"}`}
       >
-        <span aria-hidden="true" className="text-[17px] leading-none">
+        <span aria-hidden="true" className="leading-none">
           +
         </span>
         {label}
@@ -45,7 +45,7 @@ function AddTag({ label, placeholder, onAdd, large }: { label: string; placehold
         onBlur={() => {
           if (!text.trim()) setOpen(false);
         }}
-        className="field !min-h-11 flex-1"
+        className={`${UNDERLINE_INPUT} h-10 flex-1`}
       />
       <button
         type="button"
@@ -54,7 +54,7 @@ function AddTag({ label, placeholder, onAdd, large }: { label: string; placehold
           take();
           setOpen(false);
         }}
-        className="flex min-h-11 shrink-0 items-center px-3 text-[17px]"
+        className="flex min-h-11 shrink-0 items-center px-3 text-[14px]"
       >
         {label}
       </button>
@@ -101,27 +101,30 @@ export function SafetyEditor({
   );
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col">
+      <div className="flex flex-col gap-2 border-t-[1.5px] border-dashed border-ink/20 pb-3 pt-2.5">
         <SectionHeading tone="red">
           {t("safety.allergens")}
         </SectionHeading>
-        <div className="flex flex-wrap gap-2 pt-1">
+        <div className="flex flex-wrap gap-1.5">
           {none("allergens")}
           {[...allergens.first, ...(more ? allergens.rest : [])].map((i) => (
             <CircleOption key={i.code} label={i.label[locale]} color="warn" on={value.allergens.includes(i.code)} onToggle={() => toggle("allergens", i.code)} large={large} />
           ))}
           {custom("allergens")}
-          <button type="button" onClick={() => setMore(!more)} aria-expanded={more} className={`chip !bg-transparent text-muted !shadow-[inset_0_0_0_1.5px_var(--color-edge)] ${large ? "!min-h-12 text-[19px]" : ""}`}>
-            {more ? t("safety.less") : t("safety.more")}
-          </button>
           {addTag("allergens")}
+          <button type="button" onClick={() => setMore(!more)} aria-expanded={more} className={`relative inline-flex items-center gap-0.5 whitespace-nowrap px-2.5 text-[13px] text-muted before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] ${large ? "h-11" : "h-9"}`}>
+            {more ? t("safety.less") : t("safety.more")}
+            <span aria-hidden="true" className={more ? "rotate-180" : ""}>
+              ⌄
+            </span>
+          </button>
         </div>
       </div>
 
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-2 border-t-[1.5px] border-dashed border-ink/20 pb-3 pt-2.5">
         <SectionHeading>{t("safety.dislikes")}</SectionHeading>
-        <div className="flex flex-wrap gap-2 pt-1">
+        <div className="flex flex-wrap gap-1.5">
           {none("dislikes")}
           {[...dislikes.first, ...(more ? dislikes.rest : [])].map((i) => (
             <CircleOption key={i.code} label={i.label[locale]} color="ink" on={value.dislikes.includes(i.code)} onToggle={() => toggle("dislikes", i.code)} large={large} />
@@ -132,9 +135,9 @@ export function SafetyEditor({
       </div>
 
       {more ? (
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2 border-t-[1.5px] border-dashed border-ink/20 pb-3 pt-2.5">
           <SectionHeading>{t("safety.diets")}</SectionHeading>
-          <div className="flex flex-wrap gap-2 pt-1">
+          <div className="flex flex-wrap gap-1.5">
             {none("diets")}
             {DIETS.map((i) => (
               <CircleOption key={i.code} label={i.label[locale]} color="ink" on={value.diets.includes(i.code)} onToggle={() => toggle("diets", i.code)} large={large} />
@@ -144,7 +147,9 @@ export function SafetyEditor({
       ) : null}
 
       {showNote ? (
+        <div className="border-t-[1.5px] border-dashed border-ink/20 pt-2">
         <TextField label={t("safety.note")} value={value.allergyNote} onChange={(v) => onChange({ ...value, allergyNote: v })} placeholder={t("safety.notePlaceholder")} multiline />
+        </div>
       ) : null}
     </div>
   );

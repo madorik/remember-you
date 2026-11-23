@@ -31,7 +31,7 @@ export function PersonProfileForm({
       <input type="hidden" name="avatar" value={JSON.stringify(value)} />
       <ProfileHeader title={title} back={back} backLabel={labels.back} save={labels.save} />
       <div className="px-4 pt-3">
-        <AvatarBuilder value={value} onChange={setValue} locale={locale} side={<NameField label={labels.name} value={name} required={false} />} tape="mango" />
+        <AvatarBuilder value={value} onChange={setValue} locale={locale} side={<NameField label={labels.name} value={name} required={false} />} />
       </div>
     </form>
   );

@@ -27,14 +27,14 @@ export const ICON_PATH: Record<FolderIcon, string> = {
   cup: "M30.5 33.5h9v5a3.5 3.5 0 0 1-3.5 3.5h-2a3.5 3.5 0 0 1-3.5-3.5z M39.5 35h1.2a1.8 1.8 0 0 1 0 3.6h-1.2",
 };
 
-/** 뒤판(연한 색)·앞주머니(진한 색) */
+/** 뒤판(연한 색)·앞주머니(진한 색): 플래너 시안의 파스텔 */
 export const COLOR_FILL: Record<FolderColor, { back: string; front: string }> = {
-  mango: { back: "#FFE9A8", front: "#FFD15C" },
-  pink: { back: "#FFDCE4", front: "#FFAFC0" },
-  peach: { back: "#FFE1CC", front: "#FFB27F" },
-  mint: { back: "#D8F1E0", front: "#93D6A8" },
-  lavender: { back: "#E6E0FB", front: "#BBA9F2" },
-  sky: { back: "#DAECFA", front: "#93C4EE" },
+  mango: { back: "#FFE9A8", front: "#FFD978" },
+  pink: { back: "#FFE3EA", front: "#FBC4D1" },
+  peach: { back: "#FFE8D6", front: "#FFCBA4" },
+  mint: { back: "#DDF3E4", front: "#BFE6CF" },
+  lavender: { back: "#ECE6FB", front: "#D2C6F3" },
+  sky: { back: "#E4ECFA", front: "#C9D8F2" },
 };
 
 /** 화면에 넘기는 폴더 하나 */

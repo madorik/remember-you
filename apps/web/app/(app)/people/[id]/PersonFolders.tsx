@@ -4,7 +4,7 @@ import Link from "@/components/AppLink";
 import { useRouter } from "next/navigation";
 import { useOptimistic, useRef, useState, useTransition } from "react";
 import { addToFolder, createFolder, removeFromFolder, setPersonFolders } from "@/app/actions/people";
-import { FolderArt, FolderMini } from "@/components/FolderArt";
+import { FolderArt } from "@/components/FolderArt";
 import { DrawnCheck, Icon } from "@/components/marks";
 import { Sheet } from "@/components/Sheet";
 import { useUndoToast } from "@/components/UndoToast";
@@ -104,18 +104,20 @@ export function PersonFolders({ contactId, name, folders, mine, labels }: { cont
       <div className="flex flex-wrap gap-1.5">
         {inFolders.map((f) => (
           // 보이는 칩은 34px, 누르는 자리는 위아래 5px씩 넓혀 44px(before). 오른쪽 ×는 가로도 5px씩 넓혀 44×44
-          <span key={f.id} className="flex h-[34px] min-w-0 max-w-full items-center rounded-full bg-paper shadow-[inset_0_0_0_1.5px_var(--color-edge)]">
-            <Link href={`/people/folder/${f.id}`} className="relative flex h-full min-w-0 items-center gap-1.5 pl-[9px] pr-1 text-[17px] before:absolute before:-inset-y-[5px] before:inset-x-0">
-              <FolderMini color={f.color} />
+          <span key={f.id} className="flex h-[34px] min-w-0 max-w-full items-center rounded-[10px] border-[1.5px] border-ink bg-white">
+            <Link href={`/people/folder/${f.id}`} className="hand relative flex h-full min-w-0 items-center gap-[5px] pl-2 pr-1.5 text-[22px] leading-none before:absolute before:-inset-y-[5px] before:inset-x-0">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#1F2340" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                <path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z" fill="#FFF4D6" />
+              </svg>
               <span className="truncate">{f.name}</span>
             </Link>
             <button
               type="button"
               aria-label={labels.removeFrom.replace("{name}", f.name)}
               onClick={() => takeOut(f.id)}
-              className="relative flex h-full w-[34px] shrink-0 items-center justify-center rounded-full text-muted before:absolute before:-inset-[5px] active:text-ink"
+              className="relative flex h-full w-7 shrink-0 items-center justify-center text-muted before:absolute before:-inset-[5px] active:text-ink"
             >
-              <Icon name="close" size={13} strokeWidth={2.2} />
+              <Icon name="close" size={12} strokeWidth={2.2} />
             </button>
           </span>
         ))}
@@ -123,10 +125,10 @@ export function PersonFolders({ contactId, name, folders, mine, labels }: { cont
           type="button"
           aria-label={labels.put}
           onClick={openSheet}
-          // 보이는 동그라미는 34px, 누르는 자리는 44px(before)
-          className="relative flex h-[34px] w-[34px] items-center justify-center rounded-full border-[1.8px] border-dashed border-ink text-ink before:absolute before:-inset-[5px]"
+          // 보이는 네모는 34px, 누르는 자리는 44px(before)
+          className="relative flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border-[1.5px] border-dashed border-ink text-ink before:absolute before:-inset-[5px]"
         >
-          <Icon name="plus" size={16} strokeWidth={2.4} />
+          <Icon name="plus" size={16} strokeWidth={2.2} />
         </button>
       </div>
       {moveFailed ? (
@@ -161,9 +163,9 @@ export function PersonFolders({ contactId, name, folders, mine, labels }: { cont
               return (
                 <li key={f.id} className="border-t border-rule first:border-t-0">
                   <button type="button" aria-pressed={on} onClick={() => toggle(f.id)} className="flex min-h-[62px] w-full items-center gap-3.5 text-left">
-                    <FolderArt icon={f.icon} color={f.color} size={40} />
-                    <span className="min-w-0 flex-1 truncate text-[20px]">{f.name}</span>
-                    <span className="text-[15px] text-muted">{labels.count.replace("{n}", String(f.memberIds.length))}</span>
+                    <FolderArt icon={f.icon} color={f.color} size={44} />
+                    <span className="hand min-w-0 flex-1 truncate text-[22px]">{f.name}</span>
+                    <span className="text-[13px] text-muted">{labels.count.replace("{n}", String(f.memberIds.length))}</span>
                     <DrawnCheck on={on} />
                   </button>
                 </li>

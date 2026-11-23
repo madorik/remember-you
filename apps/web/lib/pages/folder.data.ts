@@ -11,7 +11,7 @@ export interface FolderData {
   rows: PersonRow[];
   /** 주소 ?sort=name: 이름순(아니면 생일 가까운 순) */
   byName: boolean;
-  /** 든 사람(사람들 목록 순서). 선물·메뉴 고르기로 넘긴다 */
+  /** 든 사람(사람들 목록 순서). 몇 명인지와 정렬 칩을 보일지에 쓴다 */
   memberIds: string[];
   /** 사람 넣기 시트에 보일 내 사람들 */
   people: { contactId: string; name: string; tag: string; avatar: AvatarConfig | null }[];

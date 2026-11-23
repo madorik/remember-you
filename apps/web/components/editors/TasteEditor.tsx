@@ -29,12 +29,12 @@ export function SpicyScale({ value, onChange, locale, large = false }: { value: 
           ))}
           {/* 가운데(보통)가 어느 정도인지 기준 하나: 신라면. 고르면 옆 이름에 같은 말이 나오니 그때는 뺀다 */}
           {value !== 2 ? (
-            <span aria-hidden="true" className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 whitespace-nowrap text-[15px] leading-none text-muted">
+            <span aria-hidden="true" className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 whitespace-nowrap text-[13px] leading-none text-muted">
               {t("taste.spicyAnchor")}
             </span>
           ) : null}
         </div>
-        {value != null ? <span className="min-w-0 text-[19px] text-accent">{SPICY_LEVELS[value]?.[locale]}</span> : null}
+        {value != null ? <span className="min-w-0 text-[15px] text-accent">{SPICY_LEVELS[value]?.[locale]}</span> : null}
       </div>
     </div>
   );
@@ -54,13 +54,13 @@ export function AlcoholPicker({ value, onChange, locale }: { value: AlcoholData;
             on={value.level === l.code}
             color="ink"
             onToggle={() => onChange(value.level === l.code ? { level: null, kinds: value.kinds } : { level: l.code, kinds: l.code === "none" ? [] : value.kinds })}
-            textClass="!text-[17px] whitespace-nowrap"
+            textClass="whitespace-nowrap"
           />
         ))}
       </div>
       {value.level && value.level !== "none" ? (
         <>
-          <span className="pt-2 text-[16px] text-muted">{t("taste.alcoholKinds")}</span>
+          <span className="pt-2 text-[13px] text-muted">{t("taste.alcoholKinds")}</span>
           <div className="flex flex-wrap gap-2">
             {ALCOHOL_KINDS.map((k) => (
               <CircleOption
@@ -69,7 +69,7 @@ export function AlcoholPicker({ value, onChange, locale }: { value: AlcoholData;
                 on={value.kinds.includes(k.code)}
                 color="ink"
                 onToggle={() => onChange({ ...value, kinds: value.kinds.includes(k.code) ? value.kinds.filter((x) => x !== k.code) : [...value.kinds, k.code] })}
-                textClass="!text-[18px]"
+               
               />
             ))}
           </div>

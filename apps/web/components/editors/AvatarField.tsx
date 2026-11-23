@@ -10,7 +10,7 @@ export function AvatarField({ locale, side }: { locale: Locale; side: React.Reac
   return (
     <>
       <input type="hidden" name="avatar" value={JSON.stringify(value)} />
-      <AvatarBuilder value={value} onChange={setValue} locale={locale} side={side} tape="mango" />
+      <AvatarBuilder value={value} onChange={setValue} locale={locale} side={side} />
     </>
   );
 }

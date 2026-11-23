@@ -71,7 +71,7 @@ export function FolderSheet({ folder, labels, onClose }: { folder?: FolderView |
       }
     >
       <div className="flex justify-center pb-3.5 pt-1.5">
-        <FolderArt icon={icon} color={color} size={128} />
+        <FolderArt icon={icon} color={color} size={120} showIcon />
       </div>
       <form
         className="flex flex-col gap-2 px-6"
