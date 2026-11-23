@@ -194,6 +194,6 @@ test("리뷰 플러그인이 없는 예전 앱이면 조용히 넘어가고 물�
   // 못 띄웠으니 GTM에도 안 보낸다
   expect(await gtmReviewAsks(page)).toEqual([]);
   // 화면이 멀쩡하다
-  await expect(page.getByRole("heading", { name: "내 사람들" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "달력 보기" })).toBeVisible();
   expect(errors.filter((m) => /InAppReview|review/i.test(m))).toEqual([]);
 });

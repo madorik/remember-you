@@ -66,18 +66,15 @@ export function NotificationBell({ items, labels }: { items: BellItem[]; labels:
           <path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.6 2.1H4.4z" />
           <path d="M10 21a2.2 2.2 0 0 0 4 0" />
         </svg>
-        {count ? (
-          <span aria-hidden="true" className="num absolute right-[3px] top-[5px] flex h-[19px] min-w-[19px] items-center justify-center rounded-full bg-sky px-1 text-[13px] leading-none text-ink shadow-[0_0_0_1.5px_var(--color-ink)]">
-            {count > 9 ? "9+" : count}
-          </span>
-        ) : null}
+        {/* 새 알림이 있으면 망고 점(개수는 읽어 주는 이름에 있다) */}
+        {count ? <span aria-hidden="true" className="absolute right-2.5 top-[9px] h-[9px] w-[9px] rounded-full bg-sky shadow-[0_0_0_1.5px_var(--color-ink)]" /> : null}
       </button>
       {open ? (
         <div
           id={listId}
           role="region"
           aria-label={labels.title}
-          className="absolute right-3 top-full z-40 mt-1 max-h-[min(60dvh,26rem)] w-[min(22rem,calc(100vw-1.5rem))] overflow-y-auto overscroll-contain rounded-[10px] bg-paper py-1 shadow-[0_0_0_1.5px_var(--color-ink),0_12px_26px_-12px_rgb(31_35_64/0.5)]"
+          className="absolute right-3 top-full z-40 mt-1 max-h-[min(60dvh,26rem)] w-[min(22rem,calc(100vw-1.5rem))] overflow-y-auto overscroll-contain rounded-[14px] bg-paper py-1 shadow-[0_0_0_1.5px_var(--color-ink),0_12px_26px_-12px_rgb(31_35_64/0.5)]"
         >
           {count ? (
             <ul className="flex flex-col">

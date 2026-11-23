@@ -213,8 +213,8 @@ test("물어보기(새 사람) → 앱 없이 웹에서 답하기 → 답이 내
   await page.goto("/home");
   // 다 읽었으니 종에는 숫자가 없고, 열어도 새 알림이 없다
   await expect(page.getByRole("button", { name: "알림", exact: true })).toBeVisible();
-  // 사람들 줄에 아빠(오늘의 질문 카드의 이름 칩과 겹치지 않게 영역을 좁힌다)
-  await expect(page.getByRole("region", { name: "내 사람들" }).getByRole("link", { name: /아빠/ })).toBeVisible();
+  // 홈은 챙길 날 위주(사람 줄은 없다): 이번 주 띠의 달력 링크가 보인다
+  await expect(page.getByRole("link", { name: "달력 보기" })).toBeVisible();
   await shot(page, "08-home");
 });
 
@@ -1099,6 +1099,8 @@ test("오늘의 질문: '이 사람에 대해 다시 묻지 않기'를 하면 �
   await expect(page).toHaveURL(/\/home/);
   const card = page.getByRole("region", { name: "오늘의 질문" });
   const href = (await card.getByRole("link").first().getAttribute("href")) ?? "";
+  // ··· 메뉴를 열어 '이 사람에 대해 다시 묻지 않기'
+  await card.getByRole("button", { name: "더 보기" }).click();
   await card.getByRole("button", { name: "이 사람에 대해 다시 묻지 않기" }).click();
   await expect(page).toHaveURL(/\/home\?muted=1$/);
   await expect(page.getByRole("status").filter({ hasText: "더 묻지 않을게요" })).toBeVisible();

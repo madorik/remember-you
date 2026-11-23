@@ -65,10 +65,10 @@ export function ProfileMenu({ avatar, admin = false, labels }: { avatar: AvatarC
         onClick={() => setOpen(!open)}
         className="flex h-11 w-11 items-center justify-center"
       >
-        <Avatar config={avatar} size={36} label={labels.menu} />
+        <Avatar config={avatar} size={34} label={labels.menu} />
       </button>
       {open ? (
-        <div id={menuId} role="menu" aria-label={labels.menu} onKeyDown={onMenuKey} className="absolute right-1 top-full z-40 mt-1 w-44 overflow-hidden rounded-[10px] bg-paper py-1 shadow-[0_0_0_1.5px_var(--color-ink),0_12px_26px_-12px_rgb(31_35_64/0.5)]">
+        <div id={menuId} role="menu" aria-label={labels.menu} onKeyDown={onMenuKey} className="absolute right-1 top-full z-40 mt-1 w-44 overflow-hidden rounded-[14px] bg-paper py-1 shadow-[0_0_0_1.5px_var(--color-ink),0_12px_26px_-12px_rgb(31_35_64/0.5)]">
           <Link role="menuitem" href="/me/avatar" onClick={() => setOpen(false)} className="flex min-h-12 items-center px-4 text-[17px]">
             {labels.profile}
           </Link>

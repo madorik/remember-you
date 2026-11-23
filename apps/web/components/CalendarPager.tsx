@@ -6,8 +6,7 @@ import {
   daysInMonth,
   daysOn,
   diffDays,
-  formatDayFull,
-  formatMonthDay,
+  formatDotted,
   formatSpec,
   holidayRuns,
   monthName,
@@ -17,6 +16,7 @@ import {
   weekday,
   weekdayNames,
   ymdKey,
+  type HolidayId,
   type Locale,
   type UpcomingEvent,
   type YMD,
@@ -25,9 +25,10 @@ import Link from "@/components/AppLink";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Avatar } from "@/components/Avatar";
-import { HandCircle, Heart, Sparkle, SKY_STAR, Squiggle, Star, Tape } from "@/components/diary";
-import { FaceStack } from "@/components/FaceStack";
+import { HolidayArt } from "@/components/HolidayArt";
 import { Icon } from "@/components/marks";
+import { Mascot } from "@/components/Mascot";
+import { Chev } from "@/components/planner";
 import { eventName } from "@/lib/events";
 import type { CalendarData, CalPerson, Month } from "@/lib/pages/calendar.data";
 import { makeT, type T } from "@/lib/t";
@@ -44,7 +45,7 @@ const inRange = (v: Month) => v.y >= MIN_YEAR && v.y <= MAX_YEAR;
 /** 그 날의 선물 힌트 화면(홈 '선물 힌트 보기'와 같은 곳) */
 const hintHref = (e: UpcomingEvent) => `/people/${e.contactId}/reminder?kind=${e.kind}${e.label ? `&label=${encodeURIComponent(e.label)}` : ""}`;
 
-/** 선물을 챙기는 날(명절·크리스마스·어버이날 같은 홈의 '챙기는 날'): 누르면 사람을 골라 선물 고르기로 */
+/** 선물을 챙기는 날(명절·크리스마스·어버이날 같은 홈의 '챙기는 날', 손그림이 있는 날): 누르면 사람을 골라 선물 고르기로 */
 const GIFT_DAYS = new Set(["seollal", "chuseok", "christmas", "childrensDay", "parentsDay", "teachersDay", "valentine", "whiteDay", "pepero"]);
 const GIFT_HREF = "/people?pick=1&to=gift";
 
@@ -77,7 +78,6 @@ export function CalendarPager({ locale, today, cur: initial, people }: CalendarD
   useLayoutEffect(() => {
     curRef.current = cur;
   });
-  const isThisMonth = cur.y === today.y && cur.m === today.m;
 
   // 보이는 달을 주소에 적어 둔다(새로 고침·공유해도 그 달)
   useEffect(() => {
@@ -209,46 +209,46 @@ export function CalendarPager({ locale, today, cur: initial, people }: CalendarD
     return () => window.removeEventListener("keydown", onKey);
   }, [go]);
 
-  const first: YMD = { y: cur.y, m: cur.m, d: 1 };
-  const last: YMD = { y: cur.y, m: cur.m, d: daysInMonth(cur.y, cur.m) };
   const title = locale === "ko" ? `${cur.y}년 ${cur.m}월` : `${monthName(cur.m, locale, true)} ${cur.y}`;
-  const lf = solarToLunar(first);
-  const ll = solarToLunar(last);
-  const lunarRange = lf && ll ? (lf.m === ll.m ? `${lf.m}` : `${lf.m}–${ll.m}`) : "";
   const pane = (m: Month) => <MonthPane y={m.y} m={m.m} locale={locale} today={today} people={people} t={t} />;
 
   return (
     <>
-      <div className="flex min-h-11 items-center justify-between px-3">
+      {/* 머리 한 줄: 뒤로 · ‹ 2026년 11월 › · 오늘 */}
+      <header className="grid h-[52px] shrink-0 grid-cols-[64px_1fr_64px] items-center pl-1.5 pr-3">
         <Link href="/home" aria-label={t("common.back")} className="flex h-11 w-11 items-center justify-center">
-          <Icon name="back" size={24} />
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
+            <path d="M15 5l-7 7 7 7" />
+          </svg>
         </Link>
-        {isThisMonth ? (
-          <span className="w-11" />
-        ) : (
-          <button type="button" onClick={() => jumpTo({ y: today.y, m: today.m })} className="pill relative !h-9 !px-3.5 text-[15px] before:absolute before:-inset-y-1 before:inset-x-0">
-            {t("cal.thisMonth")}
+        <div className="flex items-center justify-center gap-0.5">
+          <button type="button" onClick={() => go(-1)} disabled={!inRange(shift(cur, -1))} aria-label={t("cal.prev")} className="flex h-11 w-9 items-center justify-center disabled:opacity-40">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5B5F78" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M15 5l-7 7 7 7" />
+            </svg>
           </button>
-        )}
-      </div>
-
-      <div className="relative flex items-center justify-between px-3 pt-1">
-        <button type="button" onClick={() => go(-1)} disabled={!inRange(shift(cur, -1))} aria-label={t("cal.prev")} className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-[inset_0_0_0_1.5px_var(--color-edge)] disabled:opacity-40">
-          <Icon name="back" size={20} strokeWidth={2} />
-        </button>
-        <div className="flex flex-col items-center gap-0.5" aria-live="polite">
-          <h1 className="hl px-1 text-[31px] leading-[1.15]">{title}</h1>
-          {lunarRange ? <span className="text-[15px] text-muted">{t("cal.lunar", { m: lunarRange })}</span> : null}
+          <h1 aria-live="polite" aria-label={title} className="hand scribble mx-1 whitespace-nowrap text-[34px] leading-none">
+            <span aria-hidden="true" className="mr-[5px] text-[13px] tracking-normal text-muted" style={{ fontFamily: "var(--font-sans)", fontWeight: 400 }}>
+              {locale === "ko" ? `${cur.y}년` : cur.y}
+            </span>
+            <span aria-hidden="true">{locale === "ko" ? `${cur.m}월` : monthName(cur.m, locale, true)}</span>
+          </h1>
+          <button type="button" onClick={() => go(1)} disabled={!inRange(shift(cur, 1))} aria-label={t("cal.next")} className="flex h-11 w-9 items-center justify-center disabled:opacity-40">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5B5F78" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M9 6l6 6-6 6" />
+            </svg>
+          </button>
         </div>
-        <button type="button" onClick={() => go(1)} disabled={!inRange(shift(cur, 1))} aria-label={t("cal.next")} className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-[inset_0_0_0_1.5px_var(--color-edge)] disabled:opacity-40">
-          <Icon name="chevron" size={20} strokeWidth={2} />
-        </button>
-        <Star size={20} rotate={-14} className="left-[76px] top-0.5" />
-      </div>
+        <div className="flex justify-end">
+          <button type="button" onClick={() => jumpTo({ y: today.y, m: today.m })} aria-label={t("cal.thisMonth")} className="relative h-[30px] rounded-full border-[1.5px] border-ink bg-white px-[11px] text-[13px] before:absolute before:-inset-y-2 before:inset-x-0">
+            {t("start.today")}
+          </button>
+        </div>
+      </header>
 
       {/* 달 칸: 미는 동안만 이웃 달(앞·뒤)을 양옆에 같이 그린다. 높이는 지금 달 기준 */}
-      <div ref={box} className="relative mt-5 overflow-clip">
-        <div ref={track} className="relative">
+      <div ref={box} className="relative flex flex-1 flex-col overflow-clip">
+        <div ref={track} className="relative flex flex-1 flex-col">
           {neighbors && inRange(shift(cur, -1)) ? (
             <div className="absolute left-0 top-0 w-full -translate-x-full" aria-hidden="true" inert>
               {pane(shift(cur, -1))}
@@ -262,20 +262,34 @@ export function CalendarPager({ locale, today, cur: initial, people }: CalendarD
           ) : null}
         </div>
       </div>
-
-      <div className="h-6" />
     </>
   );
 }
 
-/** 한 달: 달력 + 이 달의 공휴일·챙기는 날 + 이 달의 챙길 날(사람들) */
+const DASH = { borderColor: "rgba(31,35,64,.10)" } as const;
+const DASH_ROW = { borderColor: "rgba(31,35,64,.16)" } as const;
+
+/** 한 줄: 다가오는 날(사람 기념일 또는 공휴일·챙기는 날) */
+interface UpRow {
+  key: string;
+  date: YMD;
+  name: string;
+  sub: string;
+  /** 사람이면 얼굴, 공휴일이면 그림 */
+  face: { avatar: CalPerson["avatar"]; label: string } | { art: string | null };
+  href: string | null;
+  /** 쉬는 날(요일을 빨갛게) */
+  off: boolean;
+}
+
+/** 한 달: 달력(위가 고리로 묶인 탁상 플래너) + 이 달과 다음 달의 다가오는 날(사람들의 챙길 날 + 공휴일·챙기는 날) */
 const MonthPane = memo(function MonthPane({ y, m, locale, today, people, t }: { y: number; m: number; locale: Locale; today: YMD; people: CalPerson[]; t: T }) {
   const first: YMD = { y, m, d: 1 };
   const dim = daysInMonth(y, m);
-  const last: YMD = { y, m, d: dim };
   const who = (e: UpcomingEvent): CalPerson | null => people.find((p) => p.contactId === e.contactId) ?? null;
+  const dates = people.map((p) => ({ contactId: p.contactId, name: p.name, birthday: p.birthday, anniversaries: p.anniversaries }));
   // 그 달 1일부터 말일까지 돌아오는 생일·기념일(사람마다 그 달의 것)
-  const events = upcomingEvents(people.map((p) => ({ contactId: p.contactId, name: p.name, birthday: p.birthday, anniversaries: p.anniversaries })), first, dim - 1);
+  const events = upcomingEvents(dates, first, dim - 1);
 
   const start = addDays(first, -weekday(first));
   const weeks = Math.ceil((weekday(first) + dim) / 7);
@@ -283,17 +297,57 @@ const MonthPane = memo(function MonthPane({ y, m, locale, today, people, t }: { 
   const names = weekdayNames(locale);
   const title = locale === "ko" ? `${y}년 ${m}월` : `${monthName(m, locale, true)} ${y}`;
 
-  // 연휴(사흘 이상 쉬는 덩이): 달력 칸에 옅은 바탕을 깔고, 아래 목록에 한 줄로
-  const runs = holidayRuns(cells[0]!, cells[cells.length - 1]!);
-  const runDays = new Set(runs.flatMap((r) => Array.from({ length: r.days }, (_, k) => ymdKey(addDays(r.start, k)))));
-  const monthRuns = runs.filter((r) => diffDays(r.end, first) <= 0 && diffDays(r.start, last) >= 0);
-  // 이 달의 공휴일·챙기는 날(연휴 앞뒤 날은 연휴 줄로 갈음하고 낱낱이 적지 않는다)
-  const specials = calendarDays(y).filter((d) => d.date.m === m && !d.id.endsWith("Around"));
+  // 다가오는 날: 이 달(이번 달이면 오늘부터)과 다음 달. 지난 달을 보면 그 달과 다음 달 전부(지난 것은 흐리게)
+  const nextMonthEnd: YMD = { y: m === 12 ? y + 1 : y, m: m === 12 ? 1 : m + 1, d: daysInMonth(m === 12 ? y + 1 : y, m === 12 ? 1 : m + 1) };
+  const from = diffDays(today, first) > 0 ? first : today.y === y && today.m === m ? today : first;
+  const span = Math.max(0, diffDays(from, nextMonthEnd));
+  const upEvents = upcomingEvents(dates, from, span).filter((e) => diffDays(e.date, nextMonthEnd) >= 0);
+  const runs = holidayRuns(from, nextMonthEnd);
+  const inRun = (d: YMD) => runs.find((r) => diffDays(r.start, d) >= 0 && diffDays(d, r.end) >= 0) ?? null;
+  const specials = [...calendarDays(from.y), ...(nextMonthEnd.y !== from.y ? calendarDays(nextMonthEnd.y) : [])].filter(
+    (d) => diffDays(from, d.date) >= 0 && diffDays(d.date, nextMonthEnd) >= 0 && !d.id.endsWith("Around") && (d.off || GIFT_DAYS.has(d.id)),
+  );
+  const rows: UpRow[] = [
+    ...upEvents.map((e): UpRow => {
+      const p = who(e);
+      const name = eventName(e, t, locale);
+      return {
+        key: `e-${e.contactId}-${e.kind}-${e.label ?? ""}`,
+        date: e.date,
+        name,
+        sub: e.spec.calendar === "lunar" ? formatSpec(e.spec, locale) : "",
+        face: { avatar: p?.avatar ?? null, label: name },
+        href: hintHref(e),
+        off: false,
+      };
+    }),
+    ...specials.map((d): UpRow => {
+      const run = inRun(d.date);
+      return {
+        key: `d-${d.id}-${ymdKey(d.date)}`,
+        date: d.date,
+        name: d.name[locale].replace(/\s*\(.*\)$/, ""),
+        sub: d.off ? (run ? `${t("cal.dayOff")} · ${t("cal.runDays", { n: run.days })}` : t("cal.dayOff")) : "",
+        face: { art: GIFT_DAYS.has(d.id) ? d.id : null },
+        href: GIFT_DAYS.has(d.id) && diffDays(today, d.date) >= 0 ? GIFT_HREF : null,
+        off: d.off,
+      };
+    }),
+  ].sort((a, b) => diffDays(b.date, a.date));
+  const firstUp = rows.findIndex((r) => diffDays(today, r.date) >= 0);
 
   return (
-    <div>
-      <section aria-label={title} className="card relative mx-4 px-2 pb-2 pt-4">
-        <div className="grid grid-cols-[repeat(7,minmax(0,1fr))] pb-1.5 text-center text-[16px]">
+    <>
+      <div className="min-h-4 flex-[0.6_1_0]" />
+      <section aria-label={title} className="card relative mx-4 shrink-0 px-1.5 pb-1 pt-[22px]">
+        {/* 위에서 묶은 고리 일곱 개(구멍 + 남색 고리) */}
+        {[10, 23.3, 36.6, 50, 63.3, 76.6, 90].map((left) => (
+          <span key={left} aria-hidden="true">
+            <span className="absolute -top-2.5 -ml-[3.5px] h-5 w-[7px] rounded-[4px] bg-ink" style={{ left: `${left}%` }} />
+            <span className="absolute top-[5px] -ml-[4.5px] box-border h-[9px] w-[9px] rounded-full border-[1.5px] border-ink bg-paper" style={{ left: `${left}%` }} />
+          </span>
+        ))}
+        <div className="grid h-[22px] grid-cols-[repeat(7,minmax(0,1fr))] items-center text-center text-[11px] font-bold">
           {names.map((n, i) => (
             <span key={n} className={i === 0 ? "text-red" : i === 6 ? "text-sat" : "text-muted"}>
               {n}
@@ -301,151 +355,112 @@ const MonthPane = memo(function MonthPane({ y, m, locale, today, people, t }: { 
           ))}
         </div>
         <ol className="grid grid-cols-[repeat(7,minmax(0,1fr))]">
-          {cells.map((day, i) => {
+          {cells.map((day) => {
             const inMonth = day.m === m;
             const wd = weekday(day);
             const isToday = sameYmd(day, today);
             const dayEvents = inMonth ? events.filter((e) => sameYmd(e.date, day)) : [];
-            const past = diffDays(today, day) < 0;
             const lunar = solarToLunar(day);
             // 공휴일·챙기는 날(쉬는 날이 먼저)
             const marks = daysOn(day);
             const mark = marks[0] ?? null;
             const off = marks.some((x) => x.off);
-            const rest = runDays.has(ymdKey(day));
+            const ev = dayEvents[0];
+            const evName = ev ? eventName(ev, t, locale) : "";
+            // 스티커 글: '엄마 칠순' → '칠순'(이름 뒤의 말만)
+            const short = ev ? (ev.name && evName.startsWith(ev.name) ? evName.slice(ev.name.length).trim() || evName : evName) : "";
             return (
-              <li key={`${day.m}-${day.d}`} className={`flex h-[76px] flex-col items-center gap-px border-dashed border-rule pt-[5px] ${i >= 7 ? "border-t" : ""} ${wd ? "border-l" : ""} ${inMonth ? "" : "opacity-40"} ${rest ? "bg-red-soft/60" : ""}`}>
+              <li key={`${day.m}-${day.d}`} aria-current={isToday ? "date" : undefined} className={`box-border flex h-[52px] flex-col items-center gap-px border-t-[1.5px] border-dashed pt-[3px] ${wd ? "border-l-[1.5px]" : ""} ${inMonth ? "" : "opacity-40"}`} style={DASH}>
                 <span
-                  className={`num relative flex h-[30px] w-[34px] items-center justify-center rounded-full text-[20px] ${
-                    isToday ? "" : dayEvents.length ? (past ? "bg-postit/60" : "bg-postit") : ""
-                  } ${(wd === 0 || off) && !isToday ? "text-red" : wd === 6 && !isToday ? "text-sat" : ""}`}
+                  className={`hand flex h-[26px] w-[26px] items-center justify-center leading-none ${isToday ? "box-border rounded-full border-[1.5px] border-ink bg-sky text-[20px]" : "text-[22px]"} ${isToday ? "" : wd === 0 || off ? "text-red" : wd === 6 ? "text-sat" : ""}`}
                 >
-                  {isToday ? <HandCircle w={40} h={36} className="-left-[3px] -top-[3px]" /> : null}
                   {day.d}
                 </span>
-                {mark ? (
-                  <span className={`max-w-full truncate whitespace-nowrap px-px text-[11px] leading-[14px] tracking-[-0.04em] ${mark.off ? "text-red" : "text-ink-2"}`}>{mark.short[locale]}</span>
-                ) : (
-                  <span className={`num whitespace-nowrap text-[12px] leading-[14px] text-muted ${lunar?.leap ? "tracking-[-0.05em]" : ""}`}>{lunar ? `${lunar.leap ? "윤" : ""}${lunar.m}.${lunar.d}` : ""}</span>
-                )}
-                <span className={`relative flex h-[26px] items-center justify-center ${past ? "opacity-50" : ""}`}>
-                  <FaceStack faces={dayEvents.map((e) => ({ key: `${e.contactId}-${e.kind}-${e.label ?? ""}`, avatar: who(e)?.avatar ?? null, label: eventName(e, t, locale) }))} size={25} />
-                  {dayEvents.length ? <Heart size={13} rotate={14} className="-top-[5px] right-0.5" /> : null}
-                </span>
+                {ev ? (
+                  <span className="flex max-w-full items-center gap-0.5 rounded-[3px] bg-[#F9CBD5] py-px pl-px pr-[3px]" style={{ transform: "rotate(-3deg)" }}>
+                    <span aria-hidden="true" className="shrink-0">
+                      <Avatar config={who(ev)?.avatar ?? null} size={14} label={evName} decorative />
+                    </span>
+                    <span className="sr-only">{evName}</span>
+                    <span aria-hidden="true" className="truncate text-[10px] font-bold leading-[1.2]">
+                      {short}
+                      {dayEvents.length > 1 ? ` +${dayEvents.length - 1}` : ""}
+                    </span>
+                  </span>
+                ) : mark ? (
+                  <span className={`max-w-full truncate whitespace-nowrap px-px text-[9.5px] leading-[1.2] ${mark.off ? "text-red" : "text-muted"}`}>{mark.short[locale]}</span>
+                ) : isToday && lunar ? (
+                  <span className="whitespace-nowrap text-[9.5px] leading-[1.2] text-muted">{locale === "ko" ? `음 ${lunar.leap ? "윤" : ""}${lunar.m}.${lunar.d}` : `L ${lunar.m}.${lunar.d}`}</span>
+                ) : null}
               </li>
             );
           })}
         </ol>
-        <Tape color="pink" className="-left-2.5 -top-1.5" />
-        <Tape color="mint" className="-bottom-1 -right-2.5" />
-        <Heart size={24} rotate={16} className="-right-2 top-10" />
-        <Squiggle w={54} width={2.4} className="-bottom-2 left-[70px]" />
-        <Sparkle size={18} className="-left-1.5 bottom-[120px]" />
       </section>
 
-      {monthRuns.length || specials.length ? (
-        <section aria-label={t("cal.holidays")} className="relative mx-4 mt-[26px]">
-          <div className="flex items-center gap-2.5 pb-2.5 pl-1.5">
-            <h2 className="text-[22px]">{t("cal.holidays")}</h2>
-          </div>
-          <div className="card relative px-3.5 py-1">
-            <ul className="flex flex-col">
-              {monthRuns.map((r) => (
-                <li key={`run-${ymdKey(r.start)}`} className="flex min-h-[56px] items-center gap-3 border-t border-dashed border-rule first-of-type:border-t-0">
-                  <span className="flex min-w-0 flex-1 flex-col gap-px">
-                    <span className="truncate text-[19px] leading-[1.25]">{r.title[locale]}</span>
-                    <span className="truncate text-[15px] text-muted">
-                      {formatMonthDay(r.start, locale)} – {formatMonthDay(r.end, locale)}
-                    </span>
-                  </span>
-                  <span className="num shrink-0 rounded-full bg-red-soft px-3 pb-1 pt-[3px] text-[15px] text-red shadow-[inset_0_0_0_1.5px_var(--color-red)]">{t("cal.runDays", { n: r.days })}</span>
-                </li>
-              ))}
-              {specials.map((d) => {
-                const left = diffDays(today, d.date);
-                const badge = left === 0 ? t("start.today") : left > 0 ? `D-${left}` : t("cal.passed");
-                const gift = GIFT_DAYS.has(d.id);
-                const body = (
-                  <>
-                    <span className="flex min-w-0 flex-1 flex-col gap-px">
-                      <span className={`truncate text-[19px] leading-[1.25] ${left < 0 ? "text-muted" : ""}`}>{d.name[locale]}</span>
-                      <span className="truncate text-[15px] text-muted">{formatDayFull(d.date, locale)}</span>
-                    </span>
-                    {d.off ? <span className="shrink-0 rounded-full bg-red-soft px-2.5 pb-px text-[14px] text-red">{t("cal.dayOff")}</span> : null}
-                    <span className={`num shrink-0 rounded-full px-3 pb-1 pt-[3px] text-[15px] shadow-[inset_0_0_0_1.5px_var(--color-ink)] ${left < 0 ? "bg-[#ece7d8]" : "bg-[#ffe4a3]"}`}>{badge}</span>
-                  </>
-                );
-                const row = "flex min-h-[56px] items-center gap-3";
-                return (
-                  <li key={`${d.id}-${ymdKey(d.date)}`} className="border-t border-dashed border-rule first-of-type:border-t-0">
-                    {gift && left >= 0 ? (
-                      <Link href={GIFT_HREF} className={row}>
-                        {body}
-                      </Link>
-                    ) : (
-                      <div className={row}>{body}</div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </section>
-      ) : null}
-
-      <section aria-label={t("cal.events")} className="relative mx-4 mt-[26px]">
-        <div className="flex items-center gap-2.5 pb-2.5 pl-1.5">
-          <h2 className="text-[22px]">{t("cal.events")}</h2>
-          <span className="num -rotate-3 rounded-full bg-[#fff0c9] px-[11px] pb-[3px] pt-0.5 text-[16px] shadow-[inset_0_0_0_1.5px_var(--color-ink)]">{events.length}</span>
+      <div className="min-h-[38px] flex-[1.2_1_0]" />
+      <section aria-labelledby={`up-${y}-${m}`} className="card relative mx-4 flex shrink-0 flex-col px-3.5 pb-0.5 pt-2">
+        <span className="pointer-events-none absolute right-[18px] -top-[33px]">
+          <Mascot pose={12} size={40.7} />
+        </span>
+        <div className="flex h-[34px] items-center">
+          <h2 id={`up-${y}-${m}`} className="hand scribble whitespace-nowrap text-[24px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
+            {t("home.upcoming")}
+          </h2>
         </div>
-        {events.length ? (
-          <div className="card relative px-3.5 py-1">
-            <Tape color="mango" w={84} h={22} rotate={4} alpha={0.62} className="-top-[11px] right-[34px]" />
-            <ul className="flex flex-col">
-              {(() => {
-                const firstUp = events.findIndex((e) => diffDays(today, e.date) >= 0);
-                return events.map((e, i) => {
-                  const p = who(e);
-                  const name = eventName(e, t, locale);
-                  const left = diffDays(today, e.date);
-                  const badge = left === 0 ? t("start.today") : left > 0 ? `D-${left}` : t("cal.passed");
-                  return (
-                    <li key={`${e.contactId}-${e.kind}-${e.label ?? ""}`} className="border-t border-dashed border-rule first-of-type:border-t-0">
-                      <Link href={hintHref(e)} className="flex min-h-[70px] items-center gap-3">
-                        <span className={`flex shrink-0 ${left < 0 ? "opacity-55" : ""}`}>
-                          <Avatar config={p?.avatar ?? null} size={46} label={name} />
-                        </span>
-                        <span className="flex min-w-0 flex-1 flex-col gap-px">
-                          <span className="truncate text-[20px] leading-[1.25]">{name}</span>
-                          <span className="truncate text-[15px] text-muted">
-                            {e.spec.calendar === "lunar" ? `${formatSpec(e.spec, locale)}${t("common.and")}` : ""}
-                            {formatDayFull(e.date, locale)}
-                          </span>
-                        </span>
-                        <span
-                          className={`num shrink-0 rounded-full px-3 pb-1 pt-[3px] text-[16px] shadow-[inset_0_0_0_1.5px_var(--color-ink)] ${left < 0 ? "bg-[#ece7d8]" : i === firstUp ? "bg-sky" : "bg-[#ffe4a3]"}`}
-                          style={left >= 0 ? { transform: `rotate(${i === firstUp ? -4 : 3}deg)` } : undefined}
-                        >
-                          {badge}
-                        </span>
-                      </Link>
-                    </li>
-                  );
-                });
-              })()}
-            </ul>
-          </div>
+        {rows.length ? (
+          <ul className="mt-1">
+            {rows.map((r, i) => {
+              const left = diffDays(today, r.date);
+              const badge = left === 0 ? t("start.today") : left > 0 ? `D-${left}` : t("cal.passed");
+              const lead = i === firstUp;
+              const body = (
+                <>
+                  <span className={`flex w-[38px] shrink-0 flex-col items-center leading-none ${left < 0 ? "opacity-55" : ""}`}>
+                    <span className="hand text-[22px]">{formatDotted(r.date)}</span>
+                    <span className={`mt-0.5 text-[10px] ${weekday(r.date) === 0 || r.off ? "text-red" : "text-muted"}`}>{names[weekday(r.date)]}</span>
+                  </span>
+                  {"avatar" in r.face ? (
+                    <span className={`flex shrink-0 ${left < 0 ? "opacity-55" : ""}`}>
+                      <Avatar config={r.face.avatar} size={30} label={r.face.label} decorative />
+                    </span>
+                  ) : (
+                    <span aria-hidden="true" className={`flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full border-[1.5px] border-ink bg-[#E3F4EC] ${left < 0 ? "opacity-55" : ""}`}>
+                      {r.face.art ? <HolidayArt id={r.face.art as HolidayId} size={22} /> : <Icon name="calendar" size={16} strokeWidth={1.8} />}
+                    </span>
+                  )}
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className={`hand-written truncate text-[24px] leading-none ${left < 0 ? "text-muted" : ""}`}>{r.name}</span>
+                    {r.sub ? <span className="truncate text-[11px] text-muted">{r.sub}</span> : null}
+                  </span>
+                  <span className={`hand inline-flex h-[26px] shrink-0 items-center rounded-full border-[1.5px] border-ink px-[9px] leading-none ${left < 0 ? "bg-[#ece7d8] text-[16px] text-muted" : lead ? "bg-sky text-[20px]" : "bg-white text-[18px]"}`}>{badge}</span>
+                </>
+              );
+              const row = "flex h-[46px] items-center gap-2.5";
+              return (
+                <li key={r.key} className={i ? "border-t-[1.5px] border-dashed" : ""} style={i ? DASH_ROW : undefined}>
+                  {r.href ? (
+                    <Link href={r.href} className={row}>
+                      {body}
+                    </Link>
+                  ) : (
+                    <div className={row}>{body}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         ) : (
-          <div className="card flex flex-col gap-1 px-5 py-5">
-            <span className="text-[18px]">{t("cal.empty")}</span>
-            <Link href="/request" className="flex min-h-11 items-center gap-0.5 self-start text-[17px] text-accent">
+          <div className="flex flex-col gap-0.5 pb-2 pt-1">
+            <span className="text-[15px]">{t("cal.upcomingEmpty")}</span>
+            <Link href="/request" className="flex min-h-11 items-center gap-0.5 self-start text-[15px] text-accent">
               {t("home.askDates")}
-              <Icon name="chevron" size={16} strokeWidth={2.2} />
+              <Chev size={14} color="currentColor" />
             </Link>
           </div>
         )}
-        {events.length ? <Star size={22} rotate={12} color={SKY_STAR} className="-right-[5px] top-[30px]" /> : null}
       </section>
-    </div>
+      <div className="min-h-2 flex-1" />
+    </>
   );
 });

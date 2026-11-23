@@ -1,8 +1,9 @@
 import "server-only";
 import { isAdminAccount } from "@/lib/admin";
 import { aiConfigured } from "@/lib/ai";
-import { isCloseEnough, questionForPeople, questionsLeft, questionsUsedToday } from "@readme/core";
+import { isCloseEnough, questionForPeople, questionsLeft, questionsUsedToday, ymdKey } from "@readme/core";
 import { listPeople, requireSession, todayFor, unreadAnswers } from "@/lib/data";
+import { readQuestionLog } from "@/lib/question-log";
 import type { HomeData } from "./home.data";
 import type { PageInput } from "./routes";
 
@@ -30,6 +31,8 @@ export async function loadHome({ searchParams }: PageInput): Promise<HomeData> {
     today,
     people,
     question: asked ? { contactId: asked.contactId, q: asked.question } : null,
+    questionsUsed: used,
+    questionLog: used > 0 ? await readQuestionLog(ymdKey(today)) : [],
     answers,
     answered: !!searchParams.answered,
     muted: !!searchParams.muted,

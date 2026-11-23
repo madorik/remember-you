@@ -7,6 +7,7 @@ import { readPerson, requireSession, sealNote, todayFor, writeContactSection, ty
 import type { Q } from "@/lib/db";
 import { LIMITS } from "@/lib/data-core";
 import { isFolderColor, isFolderIcon } from "@/lib/folders";
+import { addQuestionLog } from "@/lib/question-log";
 import { track } from "@/lib/track";
 import { isUuid } from "@/lib/uuid";
 import type { SaveState } from "./card";
@@ -154,15 +155,21 @@ export async function answerAbout(form: FormData): Promise<void> {
     await spendQuestion(q, s);
   });
   track("daily_answer", { userId: s.user.id, source: id.toLowerCase().replace(/[^a-z_]/g, "_").slice(0, 20) });
+  // 오늘 한 질문 목록(홈의 '다 했어요' 체크 목록)에 적는다: 보기에서 골랐으면 그 보기의 이름으로
+  const picked = QUESTIONS.find((x) => x.id === id)?.options.find((o) => o.value === value);
+  await addQuestionLog(ymdKey(todayFor(s.profile)), { c: contactId, q: id, o: "a", v: picked ? picked.label[s.profile.locale] : value });
   revalidatePeople(contactId);
   redirect("/home?answered=1");
 }
 
 /** 오늘의 질문 건너뛰기: 모르는 건 넘어간다(오늘 한 번 쓴 것으로 센다) */
-export async function skipAbout(): Promise<void> {
+export async function skipAbout(form?: FormData): Promise<void> {
   const s = await requireSession();
   await s.tx((q) => spendQuestion(q, s));
   track("daily_skip", { userId: s.user.id });
+  const contactId = String(form?.get("contactId") ?? "");
+  const id = String(form?.get("id") ?? "");
+  if (isUuid(contactId) && QUESTIONS.some((x) => x.id === id)) await addQuestionLog(ymdKey(todayFor(s.profile)), { c: contactId, q: id, o: "k" });
   revalidatePath("/home");
   redirect("/home");
 }
@@ -175,6 +182,7 @@ export async function askAbout(form: FormData): Promise<void> {
   const section = QUESTIONS.some((x) => x.id === id) ? QUESTION_SECTION[id] : null;
   await s.tx((q) => spendQuestion(q, s));
   track("daily_ask", { userId: s.user.id, source: id.toLowerCase().replace(/[^a-z_]/g, "_").slice(0, 20) });
+  if (QUESTIONS.some((x) => x.id === id)) await addQuestionLog(ymdKey(todayFor(s.profile)), { c: contactId, q: id, o: "w" });
   revalidatePath("/home");
   redirect(`/request?to=${contactId}${section ? `&topic=${section}` : ""}`);
 }
@@ -188,6 +196,8 @@ export async function muteAbout(form: FormData): Promise<void> {
     await spendQuestion(q, s);
   });
   track("daily_mute", { userId: s.user.id });
+  const id = String(form.get("id") ?? "");
+  if (QUESTIONS.some((x) => x.id === id)) await addQuestionLog(ymdKey(todayFor(s.profile)), { c: contactId, q: id, o: "m" });
   revalidatePeople(contactId);
   redirect("/home?muted=1");
 }
