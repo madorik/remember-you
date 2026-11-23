@@ -170,7 +170,7 @@ export function RequestForm({
             <LinkField url={state.url} label={t("common.copyLink")} />
           </div>
         </section>
-        {webPushKey ? <ReplyAlert locale={locale} publicKey={webPushKey} /> : null}
+        <ReplyAlert locale={locale} publicKey={webPushKey} />
         <div className="bottom-bar mt-auto flex flex-col gap-2 bg-bg px-4 pt-4">
           <ShareButtons locale={locale} url={state.url} text={shareText} sendLabel={t("request.send")} />
           {/* 체험의 끝: 링크를 만들었으면 시작하기로 마치고 홈으로 */}

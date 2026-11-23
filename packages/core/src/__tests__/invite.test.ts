@@ -23,8 +23,8 @@ test("받는 사람 부담: 기본 3개는 1분, 많이 고를수록 늘어난�
   assert.ok(askMinutes([...SECTIONS]) >= 3 && askMinutes([...SECTIONS]) <= 5);
 });
 
-test("링크 기간: 30일, 제약이 아직 8일이면 7일로 물러난다. 내 기록 공유는 7일 그대로", () => {
-  assert.equal(INVITE_TTL_DAYS, 30);
+test("링크 기간: 지금은 처리방침대로 7일(제약은 31일까지 풀려 있음), 제약이 아직 8일이면 7일로 물러난다. 내 기록 공유는 7일 그대로", () => {
+  assert.equal(INVITE_TTL_DAYS, 7);
   assert.equal(INVITE_TTL_FALLBACK_DAYS, 7);
   assert.equal(SHARE_TTL_DAYS, 7);
 });

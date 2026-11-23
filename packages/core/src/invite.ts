@@ -4,8 +4,8 @@
 import { SECTIONS_BY_IMPORTANCE, type Section } from "./card";
 import { QUESTIONS, QUESTION_SECTION, type DailyQuestion } from "./questions";
 
-/** 물어보기 링크가 열려 있는 날수 */
-export const INVITE_TTL_DAYS = 30;
+/** 물어보기 링크가 열려 있는 날수. 개인정보 처리방침에 '7일'로 적혀 있어 방침을 고치기 전까지 7일(DB 제약은 0033에서 31일까지 풀어 둠, 30으로 올리면 됨) */
+export const INVITE_TTL_DAYS = 7;
 /** DB 제약이 아직 8일이던 때(0033 마이그레이션 전)의 링크 기간. 새 제약이 적용되기 전에는 이 기간으로 물러난다 */
 export const INVITE_TTL_FALLBACK_DAYS = 7;
 /** 내 기록 공유 링크(/s/…)가 열려 있는 날수: 건강·사이즈 같은 값이 담겨 물어보기 링크보다 짧게 둔다 */

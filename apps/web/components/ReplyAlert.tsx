@@ -4,14 +4,14 @@ import type { Locale } from "@readme/core";
 import { useEffect, useState } from "react";
 import { useT } from "@/components/editors/shared";
 import { Icon } from "@/components/marks";
-import { useIsNative } from "@/components/native";
+import { askReplyAlerts, replyAlertsState, useIsNative } from "@/components/native";
 import { enableWebPush, readWebPushState, type WebPushState } from "@/lib/web-push-client";
 
 /**
  * 물어보기 링크를 만든 직후 '답장 오면 알려 드릴까요?' 한 줄: 누르면 이 브라우저의 알림 받기(웹 푸시)를 켠다(설정의 스위치와 같은 길).
- * 앱 안이거나, 브라우저가 못 받거나 막혀 있거나, 이미 켜져 있으면 보이지 않는다(켠 직후에는 켰다는 표시만 남는다)
+ * 앱 안에서는 OS 알림 허락(푸시 등록)을 묻는다(아직 안 물어본 기기만). 브라우저가 못 받거나 막혀 있거나 이미 켜져 있으면 보이지 않는다(켠 직후에는 켰다는 표시만 남는다)
  */
-export function ReplyAlert({ locale, publicKey }: { locale: Locale; publicKey: string }) {
+export function ReplyAlert({ locale, publicKey }: { locale: Locale; publicKey: string | null }) {
   const t = useT(locale);
   const native = useIsNative();
   const [state, setState] = useState<WebPushState | "unknown">("unknown");
@@ -19,17 +19,23 @@ export function ReplyAlert({ locale, publicKey }: { locale: Locale; publicKey: s
   const [justOn, setJustOn] = useState(false);
 
   useEffect(() => {
-    if (native) return;
     let gone = false;
-    void readWebPushState().then((next) => {
-      if (!gone) setState(next);
-    });
+    if (native) {
+      // 앱: 아직 OS 허락을 안 물어본 기기만 '답장 오면 알려 드릴까요?'를 보인다
+      void replyAlertsState().then((s) => {
+        if (!gone) setState(s === "prompt" ? "off" : "unsupported");
+      });
+    } else if (publicKey) {
+      void readWebPushState().then((next) => {
+        if (!gone) setState(next);
+      });
+    }
     return () => {
       gone = true;
     };
-  }, [native]);
+  }, [native, publicKey]);
 
-  if (native || (state !== "off" && !justOn)) return null;
+  if (state !== "off" && !justOn) return null;
 
   if (justOn) {
     return (
@@ -47,9 +53,15 @@ export function ReplyAlert({ locale, publicKey }: { locale: Locale; publicKey: s
       onClick={async () => {
         setBusy(true);
         try {
-          const next = await enableWebPush(publicKey);
-          if (next === "on") setJustOn(true);
-          setState(next);
+          if (native) {
+            const r = await askReplyAlerts();
+            if (r === "granted") setJustOn(true);
+            setState("unsupported");
+          } else if (publicKey) {
+            const next = await enableWebPush(publicKey);
+            if (next === "on") setJustOn(true);
+            setState(next);
+          }
         } catch {
           /* 켜지 못하면 그대로 둔다(설정에서 다시 켤 수 있다) */
         } finally {
