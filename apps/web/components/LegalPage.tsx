@@ -25,7 +25,7 @@ export function LegalPage({ locale, path, title, children }: { locale: Locale; p
         </Link>
       </div>
       <div className="relative pt-5">
-        <h1 className="text-[32px] font-normal leading-[1.25]">
+        <h1 className="text-[32px] leading-[1.25]">
           <span className="hl px-1">{title}</span>
         </h1>
         <HandRule className="mt-3" />

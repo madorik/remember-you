@@ -334,7 +334,7 @@ export function PeopleBoard({
           >
             <Icon name="close" size={22} strokeWidth={2} />
           </button>
-          <h1 aria-live="polite" className="min-w-0 flex-1 truncate text-[30px] font-normal leading-[1.1]">
+          <h1 aria-live="polite" className="min-w-0 flex-1 truncate text-[30px] leading-[1.1]">
             <span className="hl">{pickedHead}</span>
             {pickedRest ? ` ${pickedRest}` : ""}
           </h1>
@@ -346,7 +346,7 @@ export function PeopleBoard({
         <div className="relative flex items-end justify-between gap-2 pl-5 pr-4 pt-4">
           <Star size={20} rotate={14} className="left-[150px] top-[18px]" />
           <div className="flex min-w-0 flex-col gap-0.5">
-            <h1 className="text-[32px] font-normal leading-[1.1]">{labels.title}</h1>
+            <h1 className="text-[32px] leading-[1.1]">{labels.title}</h1>
             {rows.length ? <span className="text-[16px] text-muted">{labels.summary.replace("{n}", String(rows.length)).replace("{f}", String(favCount))}</span> : null}
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -398,7 +398,7 @@ export function PeopleBoard({
           className="card relative mx-4 mt-3.5 flex min-h-[68px] items-center gap-3 py-2 pl-2 pr-2.5 transition-transform active:scale-[0.99]"
         >
           <span className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-lg bg-[#d3e9ff]">
-            <Mascot size={44} bubble="question" />
+            <Mascot pose={6} size={44} />
           </span>
           <span className="min-w-0 flex-1 text-[19px] leading-[1.3]">{labels.bannerTitle}</span>
           <span className="flex h-[38px] shrink-0 items-center gap-0.5 rounded-full bg-sky pl-3.5 pr-2 text-[17px] shadow-[inset_0_0_0_1.5px_var(--color-ink)]">

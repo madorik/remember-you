@@ -28,12 +28,12 @@ export function RequestView({ locale, people, fixed, initialName, defaults, xmas
       {tour ? (
         <TourNote label={fixed ? t("request.titleTo", { name: fixed.label }) : t("tour.ask.title")} className="mt-3.5">
           <span className="num text-[17px] text-[#1f4fa3]">{t("tour.page", { n: tour.n, total: tour.total })}</span>
-          <h1 className="text-[27px] font-normal leading-[1.3]">{fixed ? t("request.titleTo", { name: fixed.label }) : t("tour.ask.title")}</h1>
+          <h1 className="text-[27px] leading-[1.3]">{fixed ? t("request.titleTo", { name: fixed.label }) : t("tour.ask.title")}</h1>
           <p className="text-[18px] leading-[1.5]">{t("tour.ask.body")}</p>
         </TourNote>
       ) : (
         <div className="relative px-6 pt-1.5">
-          <h1 className="hl inline-block px-1 text-[34px] font-normal leading-[1.2]">{fixed ? t("request.titleTo", { name: fixed.label }) : t("request.title")}</h1>
+          <h1 className="hl inline-block px-1 text-[34px] leading-[1.2]">{fixed ? t("request.titleTo", { name: fixed.label }) : t("request.title")}</h1>
           <Star size={22} rotate={14} className="left-[150px] top-0.5" />
         </div>
       )}

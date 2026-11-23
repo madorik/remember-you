@@ -258,10 +258,10 @@ export function AnswerForm({
       {step === 0 ? (
         <section className="relative flex items-start gap-3.5 px-5 pt-3.5">
           <Polaroid photo={66} rotate={-4} className="mt-1 !px-1.5 !pb-[5px] !pt-1.5">
-            <Mascot size={58} />
+            <Mascot pose={6} size={56} />
           </Polaroid>
           <div className="flex min-w-0 flex-1 flex-col gap-2">
-            <h1 className="text-[27px] font-normal leading-[1.25]">{highlightCount(t("answer.title", { from, n: sections.length }))}</h1>
+            <h1 className="text-[27px] leading-[1.25]">{highlightCount(t("answer.title", { from, n: sections.length }))}</h1>
             {message ? <p className="-rotate-[0.8deg] whitespace-pre-line rounded-[3px] bg-postit px-3.5 pb-[11px] pt-2.5 text-[18px] leading-[1.45] shadow-[0_6px_12px_-9px_rgb(31_35_64/0.45)]">{message}</p> : null}
             {signedIn ? null : (
               // 앱을 쓰는 사람이 로그인 안 된 브라우저에서 열었으면: 로그인하고 답하면 내 리드미 값이 미리 채워지고, 물어본 사람 목록에 내 얼굴로 보인다
@@ -295,7 +295,7 @@ export function AnswerForm({
           )}
           <div className="flex items-center gap-3">
             <SectionIcon section={s} size={52} outline />
-            <h2 className="flex-1 text-[26px] font-normal leading-[1.2]">{t(`request.topic.${s}` as "request.topic.dates")}</h2>
+            <h2 className="flex-1 text-[26px] leading-[1.2]">{t(`request.topic.${s}` as "request.topic.dates")}</h2>
           </div>
           {prefill[s] ? (
             <>
@@ -366,8 +366,8 @@ export function AnswerForm({
           <Heart size={24} rotate={16} className="-right-2 top-10" />
           <Star size={20} rotate={-12} className="-left-[7px] bottom-[26px]" />
           <div className="flex items-center gap-3">
-            <Mascot size={52} />
-            <h2 className="hl text-[28px] font-normal leading-[1.25]">{t("answer.almost")}</h2>
+            <Mascot pose={6} size={52} />
+            <h2 className="hl text-[28px] leading-[1.25]">{t("answer.almost")}</h2>
           </div>
           {finish}
         </section>

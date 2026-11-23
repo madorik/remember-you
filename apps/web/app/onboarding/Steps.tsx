@@ -49,7 +49,7 @@ export function ProfileHeader({ title, back, backLabel, save }: { title: string;
       <Link href={back} prefetch={false} aria-label={backLabel} className="flex h-11 w-11 shrink-0 items-center justify-center">
         <Icon name="back" size={24} />
       </Link>
-      <h1 className="min-w-0 flex-1 truncate text-[32px] font-normal leading-[1.25]">
+      <h1 className="min-w-0 flex-1 truncate text-[32px] leading-[1.25]">
         <span className="hl px-1">{title}</span>
       </h1>
       <Submit className="!h-11 shrink-0 !rounded-full !px-[22px] !text-[19px] !shadow-[0_3px_0_var(--color-mango-deep)]">{save}</Submit>

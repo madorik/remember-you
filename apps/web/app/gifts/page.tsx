@@ -50,7 +50,7 @@ export default function Gifts() {
         </Link>
       </div>
       <header className="relative px-5 pt-[18px]">
-        <h1 className="text-[33px] font-normal leading-[1.2]">
+        <h1 className="text-[33px] leading-[1.2]">
           <span className="hl px-1">누구에게, 얼마로</span> 줄까요?
         </h1>
         <HandRule className="mt-3" />
@@ -80,7 +80,7 @@ export default function Gifts() {
       </ul>
       <section className="card relative mx-4 mt-10 flex flex-col gap-4 px-5 pb-[22px] pt-6">
         <Tape color="mango" w={108} h={26} rotate={-3} alpha={0.62} className="-top-[13px] left-1/2 -ml-[54px]" />
-        <h2 className="text-[26px] font-normal leading-[1.3]">그 사람에게 꼭 맞는 선물은</h2>
+        <h2 className="text-[26px] leading-[1.3]">그 사람에게 꼭 맞는 선물은</h2>
         <p className="text-[18px] leading-[1.5] text-ink-2">기억해유에 가까운 사람의 취향·사이즈·챙길 날을 적어 두면, 그 사람에게 맞춘 선물을 가격대별로 골라 드려요.</p>
         <Link href="/" className="btn-primary w-full !min-h-14 !text-[21px]">
           기억해유 시작하기

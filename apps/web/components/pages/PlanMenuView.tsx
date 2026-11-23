@@ -88,13 +88,13 @@ export function PlanMenuView({ locale, diners, back }: PlanMenuData) {
     <div className="flex flex-1 flex-col">
       <TopBar back={back} label={t("common.back")} />
       <div className="relative px-6 pt-1.5">
-        <h1 className="hl inline-block px-1 text-[34px] font-normal leading-[1.2]">{t("plan.menuTitle")}</h1>
+        <h1 className="hl inline-block px-1 text-[34px] leading-[1.2]">{t("plan.menuTitle")}</h1>
         <p className="mx-1 mt-2 text-[19px] text-muted">{diners.map((d) => d.name).join(", ")}</p>
         <Star size={22} rotate={14} className="right-11 top-1" />
       </div>
 
       <section aria-labelledby="avoid" className="relative flex flex-col">
-        <h2 id="avoid" className="px-6 pb-3 pt-[26px] text-[24px] font-normal">
+        <h2 id="avoid" className="px-6 pb-3 pt-[26px] text-[24px]">
           {t("plan.mustAvoid")}
         </h2>
         {brief.allergens.length || brief.dislikes.length || brief.diets.length || brief.spicy || check.length ? (
@@ -156,7 +156,7 @@ export function PlanMenuView({ locale, diners, back }: PlanMenuData) {
       ) : null}
 
       <section aria-labelledby="ok" className="relative flex flex-col">
-        <h2 id="ok" className="flex items-baseline gap-2 px-6 pb-3 pt-[30px] text-[24px] font-normal">
+        <h2 id="ok" className="flex items-baseline gap-2 px-6 pb-3 pt-[30px] text-[24px]">
           {t("plan.okMenus")} <span className="text-[18px] text-muted">{ok.length}</span>
         </h2>
         <ul className="card mx-4 flex flex-col pl-4 pr-2">{ok.slice(0, 8).map(menuRow)}</ul>

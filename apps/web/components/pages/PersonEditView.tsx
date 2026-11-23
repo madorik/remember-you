@@ -27,7 +27,7 @@ export function PersonEditView({ locale, contactId, name, avatar, card, ai, open
       <div className="relative px-6 pt-1.5">
         <NameChip avatar={avatar} name={name} />
         <div>
-          <h1 className="hl mt-2.5 inline-block px-1 text-[36px] font-normal leading-[1.2]">{t("person.mineList")}</h1>
+          <h1 className="hl mt-2.5 inline-block px-1 text-[36px] leading-[1.2]">{t("person.mineList")}</h1>
         </div>
         <Star size={22} rotate={14} className="right-11 top-[52px]" />
       </div>

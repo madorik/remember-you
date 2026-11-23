@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BRAND, type Locale } from "@readme/core";
 import type { T } from "@/lib/i18n";
-import { DropOrb } from "./DropOrb";
+import { CharOrbLink } from "./CharOrb";
 import { Icon } from "./marks";
 
 /** 위쪽 줄: 뒤로(또는 닫기) · 가운데 글 · 오른쪽 자리 */
@@ -42,7 +42,7 @@ export function Wordmark({ size = 26, locale = "ko" }: { size?: number; locale?:
   );
 }
 
-/** 탭 아이콘(다이어리 v2 모양): 챙길 날(달력 + 하트) · 사람들 · 나(한 사람) · 설정은 marks의 톱니 */
+/** 탭 아이콘(시안 모양): 챙길 날(달력 + 하트) · 사람들 · 나(웃는 얼굴) · 설정은 marks의 톱니 */
 const TAB_ICONS = {
   home: (
     <>
@@ -59,11 +59,13 @@ const TAB_ICONS = {
       <path d="M16.5 13.2c2.6.1 4.4 1.6 5 4.3" />
     </>
   ),
-  // 나: 한 사람(머리 + 어깨). 사람들 아이콘과 같은 짜임이라 한 사람과 여러 사람으로 짝이 맞는다
+  // 나: 웃는 얼굴 동그라미(시안)
   me: (
     <>
-      <circle cx="12" cy="8.5" r="3.7" />
-      <path d="M4.5 20.5c.9-3.9 3.7-5.9 7.5-5.9s6.6 2 7.5 5.9" />
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="9.3" cy="11" r=".6" fill="currentColor" />
+      <circle cx="14.7" cy="11" r=".6" fill="currentColor" />
+      <path d="M9.5 14.5q2.5 2 5 0" />
     </>
   ),
 } as const;
@@ -87,9 +89,9 @@ export function TabBar({ active, t, fab, voice = false }: { active: "home" | "pe
         // 지금 보고 있는 탭은 받지 않는다: 이미 떠 있는 화면을 서버가 한 번 더 그리는 낭비다(미리 받기 하나가 함수 한 번, 2026-11-21 CPU 한도)
         prefetch={!on}
         aria-current={on ? "page" : undefined}
-        className={`flex flex-col items-center justify-center gap-0.5 whitespace-nowrap text-[15px] leading-[1.2] ${on ? "text-ink" : "text-muted"}`}
+        className={`flex flex-col items-center justify-center gap-[3px] whitespace-nowrap text-[12px] leading-[1.2] ${on ? "text-ink" : "text-muted"}`}
       >
-        <span className={`flex h-8 w-[52px] items-center justify-center rounded-full ${on ? "bg-sky" : ""}`}>
+        <span className={`flex h-8 w-[52px] items-center justify-center rounded-full ${on ? "bg-sky shadow-[inset_0_0_0_1.5px_var(--color-edge)]" : ""}`}>
           {item.key === "privacy" ? (
             <Icon name="settings" size={24} strokeWidth={1.8} />
           ) : (
@@ -114,10 +116,8 @@ export function TabBar({ active, t, fab, voice = false }: { active: "home" | "pe
         {tabs.slice(0, 2).map(tab)}
         {voice ? (
           <div className="flex items-center justify-center">
-            {/* 가운데 물방울(막대 한가운데): 누르면 말로 또는 글로 기억해 두기 */}
-            <Link href="/voice" prefetch={false} aria-label={t("voice.title")} className="flex h-[56px] w-[56px] items-center justify-center rounded-full transition-transform active:scale-95">
-              <DropOrb size={52} />
-            </Link>
+            {/* 가운데 구슬 속 캐릭터(막대 한가운데): 누르면 말로 또는 글로 기억해 두기. 누르면 통 튀고, 말로 적는 동안엔 활발해진다(components/CharOrb.tsx) */}
+            <CharOrbLink href="/voice" label={t("voice.title")} size={62} />
           </div>
         ) : null}
         {tabs.slice(2).map(tab)}

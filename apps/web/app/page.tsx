@@ -109,7 +109,7 @@ export default async function Start({ searchParams }: { searchParams: Promise<{ 
           {/* 선물 가이드는 한국어 글이라 한국어 화면에서만 */}
           {locale === "ko" ? (
             <nav aria-label="선물 가이드" className="flex flex-col gap-3 px-4 pt-[38px]">
-              <h2 className="ml-1 text-[25px] font-normal">선물 가이드</h2>
+              <h2 className="ml-1 text-[25px]">선물 가이드</h2>
               <div className="flex flex-wrap gap-2">
                 {GUIDES.map((g) => (
                   <Link key={g.slug} href={`/gifts/${g.slug}`} className="chip">

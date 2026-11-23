@@ -33,9 +33,9 @@ export function AnswerDone({
       <section className="card relative mx-4 mt-[18px] flex flex-col items-center px-5 pb-6 pt-[30px] text-center [transform:rotate(-0.5deg)]">
         <Tape color="mango" w={108} h={26} rotate={-3} alpha={0.62} className="-top-[13px] left-1/2 -ml-[54px]" />
         <Polaroid photo={96} rotate={3} className="!px-2 !pb-[7px] !pt-2">
-          <Mascot size={86} />
+          <Mascot pose={4} size={80} />
         </Polaroid>
-        <h1 className="hl mt-[18px] text-[32px] font-normal leading-[1.2]">{title}</h1>
+        <h1 className="hl mt-[18px] text-[32px] leading-[1.2]">{title}</h1>
         <p className="mt-2.5 text-[20px] leading-[1.45] text-muted">{body}</p>
         <Heart size={30} rotate={-14} className="-left-[9px] top-[70px]" />
         <Star size={24} rotate={14} className="right-[22px] top-[30px]" />
@@ -44,7 +44,7 @@ export function AnswerDone({
 
       {shown.length ? (
         <section className="card relative mx-4 mt-5 px-3.5 pb-4 pt-[18px]">
-          <h2 className="px-1 text-[21px] font-normal">{labels.sentTitle}</h2>
+          <h2 className="px-1 text-[21px]">{labels.sentTitle}</h2>
           <ul className="mt-3 grid grid-cols-2 gap-2">
             {shown.map((s) => (
               <li key={s} className="relative flex min-h-[58px] items-center gap-2 rounded-xl py-1.5 pl-2 pr-6 text-[17px] leading-[1.2]" style={{ background: SECTION_TILE[s] }}>
@@ -64,7 +64,7 @@ export function AnswerDone({
         <section className="card ruled relative mx-4 mt-5 pb-2 pl-10 pr-3.5 pt-[18px] [background-position:0_16px]">
           <MarginLine left={26} />
           <Tape color="pink" w={58} h={20} rotate={-34} alpha={0.6} className="-left-2.5 -top-1.5" />
-          <h2 className="px-1 text-[21px] font-normal">{labels.perksTitle}</h2>
+          <h2 className="px-1 text-[21px]">{labels.perksTitle}</h2>
           <ul className="mt-1.5 flex flex-col">
             {perks.map((p) => (
               <li key={p.text} className="flex min-h-14 items-center gap-3 text-[19px] leading-[1.3]">

@@ -55,7 +55,7 @@ export function PlanGiftView({ locale, today, people, back, picksOn, picks }: Pl
     <div className="page-end flex flex-1 flex-col">
       <TopBar back={back} label={t("common.back")} />
       <div className="relative px-6 pt-1.5">
-        <h1 className="hl inline-block px-1 text-[34px] font-normal leading-[1.2]">{t("plan.giftTitle")}</h1>
+        <h1 className="hl inline-block px-1 text-[34px] leading-[1.2]">{t("plan.giftTitle")}</h1>
         <Star size={22} rotate={14} className="left-[154px] top-0.5" />
       </div>
       <div className="flex flex-col gap-7 px-4 pt-[26px]">

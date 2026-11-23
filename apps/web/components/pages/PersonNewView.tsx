@@ -17,7 +17,7 @@ export function PersonNewView({ locale, folders, error, name, ai, xmas }: Person
         <Link href="/people" prefetch={false} aria-label={t("common.close")} className="flex h-11 w-11 shrink-0 items-center justify-center">
           <Icon name="close" size={22} />
         </Link>
-        <h1 className="min-w-0 flex-1 truncate text-[28px] font-normal leading-[1.25]">
+        <h1 className="min-w-0 flex-1 truncate text-[28px] leading-[1.25]">
           <span className="hl px-1">{t("people.newTitle")}</span>
         </h1>
         {ai ? (

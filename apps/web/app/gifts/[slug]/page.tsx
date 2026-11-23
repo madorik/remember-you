@@ -90,7 +90,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
       </nav>
       <article className="flex flex-col">
         <header className="relative px-5 pt-3.5">
-          <h1 className="text-[31px] font-normal leading-[1.25]">
+          <h1 className="text-[31px] leading-[1.25]">
             {title.rest ? (
               <>
                 <span className="hl">{title.head}</span> <br />
@@ -114,7 +114,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
         <FaqList id="faq" title="자주 묻는 질문" items={faq} />
         <section className="card relative mx-4 mt-10 flex flex-col gap-4 px-5 pb-[22px] pt-6">
           <Tape color="mango" w={108} h={26} rotate={-3} alpha={0.62} className="-top-[13px] left-1/2 -ml-[54px]" />
-          <h2 className="text-[26px] font-normal leading-[1.3]">{g.who}의 취향을 알면 더 꼭 맞아요</h2>
+          <h2 className="text-[26px] leading-[1.3]">{g.who}의 취향을 알면 더 꼭 맞아요</h2>
           <p className="text-[18px] leading-[1.5] text-ink-2">기억해유에 {g.who}의 취향·사이즈·챙길 날을 적어 두면, 그 사람에게 맞춘 선물을 가격대별로 골라 드려요. 가족과 카드로 같이 고를 수도 있어요.</p>
           <Link href="/" className="btn-primary w-full !min-h-14 !text-[21px]">
             기억해유 시작하기
@@ -124,7 +124,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           <Squiggle w={56} className="-bottom-2 left-6" />
         </section>
         <nav aria-label="다른 선물 가이드" className="flex flex-col gap-3 px-4 pt-[38px]">
-          <h2 className="ml-1 text-[25px] font-normal">다른 선물 가이드</h2>
+          <h2 className="ml-1 text-[25px]">다른 선물 가이드</h2>
           <div className="flex flex-wrap gap-2">
             {others.map((x) => (
               <Link key={x.slug} href={`/gifts/${x.slug}`} className="chip">

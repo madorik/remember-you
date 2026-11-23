@@ -19,7 +19,7 @@ export function PrivacyView({ locale, isAnonymous, invites, localeChoice, appLoc
   return (
     <>
       <header className="relative px-6 pt-1.5">
-        <h1 className="hl inline-block px-[5px] text-[32px] font-normal leading-[1.2]">{t("privacy.title")}</h1>
+        <h1 className="hl inline-block px-[5px] text-[32px] leading-[1.2]">{t("privacy.title")}</h1>
         <svg aria-hidden="true" viewBox="0 0 350 10" preserveAspectRatio="none" width="100%" height="10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" className="mt-1.5 block">
           <path vectorEffect="non-scaling-stroke" d="M2 6 C 60 2, 120 9, 180 5 S 300 3, 348 6" />
         </svg>
@@ -38,7 +38,7 @@ export function PrivacyView({ locale, isAnonymous, invites, localeChoice, appLoc
       {invites.length ? (
         <section aria-label={t("privacy.links")} className="card relative mx-4 mt-4 px-4 pb-1.5 pt-3.5">
           <Tape color="pink" w={108} h={26} rotate={-3} alpha={0.62} className="-top-[13px] left-1/2 -ml-[54px]" />
-          <h2 className="pl-1 text-[20px] font-normal">{t("privacy.links")}</h2>
+          <h2 className="pl-1 text-[20px]">{t("privacy.links")}</h2>
           <ul className="mt-1 flex flex-col">
             {invites.map((i) => (
               <li key={i.id} className="flex min-h-12 items-center gap-3 border-t-[1.5px] border-dashed border-rule">
@@ -55,7 +55,7 @@ export function PrivacyView({ locale, isAnonymous, invites, localeChoice, appLoc
       ) : null}
 
       <section aria-label={t("privacy.appSettings")} className="card relative mx-4 mt-3 px-4 pb-1 pt-2.5">
-      <h2 className="pl-1 text-[20px] font-normal">{t("privacy.appSettings")}</h2>
+      <h2 className="pl-1 text-[20px]">{t("privacy.appSettings")}</h2>
       <div className="mt-1 flex flex-col">
         <LanguageSetting choice={localeChoice} back="/privacy" t={t} className="border-t-[1.5px] border-dashed border-rule" />
         <AppLockSetting locale={locale} enabled={appLock} />
@@ -79,7 +79,7 @@ export function PrivacyView({ locale, isAnonymous, invites, localeChoice, appLoc
 
       {/* 계정 삭제는 설정 맨 아래(로그아웃은 홈 오른쪽 위 내 얼굴 메뉴) */}
       <section aria-label={t("profile.account")} className="card relative mx-4 mt-3 px-4 pb-1 pt-2.5">
-      <h2 className="pl-1 text-[20px] font-normal">{t("profile.account")}</h2>
+      <h2 className="pl-1 text-[20px]">{t("profile.account")}</h2>
       <div className="mt-1">
         <a href="/api/export" download="remember-you.json" className="flex min-h-12 items-center gap-3 border-t-[1.5px] border-dashed border-rule">
           <span className="flex-1 pl-1 text-[19px]">{t("privacy.exportData")}</span>

@@ -39,11 +39,11 @@ export function PersonReminderView({ locale, contactId, avatar, name, spec, next
 
       {/* 홈·달력·알림에서 챙길 날(생일·기념일·크리스마스)을 짚어 열었을 때만 그 날을 제목으로. 사람 화면의 '선물 고르기'처럼 날을 정하지 않고 열면 생일이라고 단정하지 않는다 */}
       {eventKnown ? (
-        <h1 className="relative mx-6 mt-[22px] text-[31px] font-normal leading-[1.35]">{next ? (next.daysUntil === 0 ? t("reminder.today", { event }) : t("reminder.left", { event, n: next.daysUntil })) : event}</h1>
+        <h1 className="relative mx-6 mt-[22px] text-[31px] leading-[1.35]">{next ? (next.daysUntil === 0 ? t("reminder.today", { event }) : t("reminder.left", { event, n: next.daysUntil })) : event}</h1>
       ) : (
         <div className="relative mx-6 mt-3 flex items-center gap-3.5">
           <Avatar config={avatar} size={56} label={t("avatar.of", { name })} />
-          <h1 className="min-w-0 text-[31px] font-normal leading-[1.35]">{t("reminder.giftFor", { name })}</h1>
+          <h1 className="min-w-0 text-[31px] leading-[1.35]">{t("reminder.giftFor", { name })}</h1>
         </div>
       )}
 
@@ -58,7 +58,7 @@ export function PersonReminderView({ locale, contactId, avatar, name, spec, next
           {/* 다 고르면 제목 줄 오른쪽 끝은 다시 고르기 단추(.picks-again-slot이 그 자리를 비워 둔다) */}
           <div className="flow-root min-h-10 px-[18px]">
             <span aria-hidden="true" className="picks-again-slot float-right h-10 w-28" />
-            <h2 id="picks-title" className="text-[24px] font-normal leading-[1.35]">
+            <h2 id="picks-title" className="text-[24px] leading-[1.35]">
               <span className="picks-t-done">{t("picks.titleFor", { name })}</span>
               <span className="picks-t-busy">{t("picks.titleBusy", { name })}</span>
             </h2>

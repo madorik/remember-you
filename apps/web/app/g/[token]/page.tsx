@@ -53,7 +53,7 @@ export default async function GiftCardPage({ params, searchParams }: { params: P
         </Link>
       </div>
       <section className="relative px-5 pt-[18px]">
-        <h1 className="text-[31px] font-normal leading-[1.25]">
+        <h1 className="text-[31px] leading-[1.25]">
           {title.map((line, i) => (
             <span key={i}>
               {i ? <br /> : null}

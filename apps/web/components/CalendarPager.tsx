@@ -237,7 +237,7 @@ export function CalendarPager({ locale, today, cur: initial, people }: CalendarD
           <Icon name="back" size={20} strokeWidth={2} />
         </button>
         <div className="flex flex-col items-center gap-0.5" aria-live="polite">
-          <h1 className="hl px-1 text-[31px] font-normal leading-[1.15]">{title}</h1>
+          <h1 className="hl px-1 text-[31px] leading-[1.15]">{title}</h1>
           {lunarRange ? <span className="text-[15px] text-muted">{t("cal.lunar", { m: lunarRange })}</span> : null}
         </div>
         <button type="button" onClick={() => go(1)} disabled={!inRange(shift(cur, 1))} aria-label={t("cal.next")} className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-[inset_0_0_0_1.5px_var(--color-edge)] disabled:opacity-40">
@@ -346,7 +346,7 @@ const MonthPane = memo(function MonthPane({ y, m, locale, today, people, t }: { 
       {monthRuns.length || specials.length ? (
         <section aria-label={t("cal.holidays")} className="relative mx-4 mt-[26px]">
           <div className="flex items-center gap-2.5 pb-2.5 pl-1.5">
-            <h2 className="text-[22px] font-normal">{t("cal.holidays")}</h2>
+            <h2 className="text-[22px]">{t("cal.holidays")}</h2>
           </div>
           <div className="card relative px-3.5 py-1">
             <ul className="flex flex-col">
@@ -395,7 +395,7 @@ const MonthPane = memo(function MonthPane({ y, m, locale, today, people, t }: { 
 
       <section aria-label={t("cal.events")} className="relative mx-4 mt-[26px]">
         <div className="flex items-center gap-2.5 pb-2.5 pl-1.5">
-          <h2 className="text-[22px] font-normal">{t("cal.events")}</h2>
+          <h2 className="text-[22px]">{t("cal.events")}</h2>
           <span className="num -rotate-3 rounded-full bg-[#fff0c9] px-[11px] pb-[3px] pt-0.5 text-[16px] shadow-[inset_0_0_0_1.5px_var(--color-ink)]">{events.length}</span>
         </div>
         {events.length ? (

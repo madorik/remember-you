@@ -8,7 +8,7 @@ import type { Faq } from "@/lib/faq";
 export function FaqList({ id, title, items, lang }: { id: string; title: string; items: Faq[]; lang?: string }) {
   return (
     <section aria-labelledby={id} lang={lang} className="relative flex flex-col gap-2.5 px-4 pt-[38px]">
-      <h2 id={id} className="ml-1 text-[25px] font-normal">
+      <h2 id={id} className="ml-1 text-[25px]">
         {title}
       </h2>
       <div className="ruled relative rounded-[10px] bg-paper py-1.5 pl-10 pr-3.5 shadow-[0_1px_2px_rgb(31_35_64/0.08),0_12px_26px_-16px_rgb(31_35_64/0.42)] [background-position:0_14px]">

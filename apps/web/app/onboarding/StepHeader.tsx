@@ -36,7 +36,7 @@ export function StepHeader({ step, back, skip, t, title, locale = "ko", compact 
     return (
       <div className="relative" style={{ paddingTop: "max(var(--sat), 14px)" }}>
         {progress("")}
-        <h1 className="whitespace-nowrap px-6 pt-2 text-[28px] font-normal leading-[1.3]">
+        <h1 className="whitespace-nowrap px-6 pt-2 text-[28px] leading-[1.3]">
           {words.slice(0, lead).join(" ")} <span className="hl px-1">{words.slice(lead).join(" ")}</span>
         </h1>
         <Star size={22} rotate={14} className="right-11 top-[80px]" />
@@ -62,11 +62,11 @@ export function StepHeader({ step, back, skip, t, title, locale = "ko", compact 
       </div>
       {progress("pt-1")}
       <div className="relative flex items-end gap-2 pl-6 pr-[18px] pt-4">
-        <h1 className="min-w-0 flex-1 pb-2 text-[34px] font-normal leading-[1.3]">
+        <h1 className="min-w-0 flex-1 pb-2 text-[34px] leading-[1.3]">
           {words.slice(0, lead).join(" ")} <br />
           <span className="hl -ml-1 px-1">{words.slice(lead).join(" ")}</span>
         </h1>
-        <Mascot size={88} bubble="question" />
+        <Mascot pose={step === 2 ? 3 : step === 3 ? 9 : 4} size={86} />
         <Star size={22} rotate={14} className="left-[178px] top-3" />
       </div>
     </div>

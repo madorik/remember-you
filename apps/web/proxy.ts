@@ -60,5 +60,5 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   // _vercel: Vercel 웹 분석 스크립트·보내기(로그인 없이 연 화면에서도 모여야 한다)
-  matcher: ["/((?!_next/static|_next/image|_vercel|fonts/|favicon|icon|apple-icon|manifest|robots|sw\\.js|og(?:-v\\d+)?\\.png).*)"],
+  matcher: ["/((?!_next/static|_next/image|_vercel|fonts/|favicon|icon|apple-icon|manifest|robots|sw\\.js|og(?:-v\\d+)?\\.png|char-sprite-v\\d+\\.webp).*)"],
 };

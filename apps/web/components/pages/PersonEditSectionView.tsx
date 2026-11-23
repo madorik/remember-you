@@ -12,7 +12,7 @@ export function PersonEditSectionView({ locale, contactId, name, avatar, section
       <TopBar back={`/people/${contactId}`} label={t("common.back")} />
       <div className="relative px-6 pt-1.5">
         <NameChip avatar={avatar} name={name} />
-        <h1 className="mt-2.5 text-[32px] font-normal leading-[1.3]">
+        <h1 className="mt-2.5 text-[32px] leading-[1.3]">
           <span className="hl px-1">{t(`section.${section}` as "section.safety")}</span>
         </h1>
         <Star size={22} rotate={14} className="right-9 top-1.5" />

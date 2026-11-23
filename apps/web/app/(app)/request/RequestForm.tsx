@@ -99,10 +99,10 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
               {who?.kind === "person" ? (
                 <Avatar config={who.person.avatar} size={74} label={who.person.label} decorative />
               ) : (
-                <Mascot size={70} />
+                <Mascot pose={6} size={68} />
               )}
             </Polaroid>
-            <h2 className="min-w-0 text-[26px] font-normal leading-[1.3]">{t("request.ready", { name: name.trim() })}</h2>
+            <h2 className="min-w-0 text-[26px] leading-[1.3]">{t("request.ready", { name: name.trim() })}</h2>
           </div>
           <ul className="mt-5 flex flex-wrap gap-2">
             {SECTIONS_BY_IMPORTANCE.filter((x) => topics.includes(x)).map((x) => (
@@ -221,7 +221,7 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
 
       <section className={`card relative mx-4 px-4 py-[18px] ${fixed ? "mt-5" : "mt-4"}`}>
         <div className="flex items-baseline justify-between px-1">
-          <h2 className="text-[21px] font-normal">{t("request.topics")}</h2>
+          <h2 className="text-[21px]">{t("request.topics")}</h2>
           <span className="num text-[18px] text-muted">{topics.length}</span>
         </div>
         <div className="mt-3.5 grid grid-cols-2 gap-x-2 gap-y-2.5 pb-[3px]">

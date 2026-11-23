@@ -12,7 +12,7 @@ export function ImportView({ locale, scope, people, back }: ImportData) {
     <div className="flex flex-1 flex-col">
       <TopBar close={back} label={t("common.close")} />
       <div className="relative px-6 pt-1.5 [html[data-kb]_&]:hidden">
-        <h1 className="hl inline-block px-1 text-[34px] font-normal leading-[1.2]">{t("import.title")}</h1>
+        <h1 className="hl inline-block px-1 text-[34px] leading-[1.2]">{t("import.title")}</h1>
         <Star size={22} rotate={14} className="right-[42px] top-0" />
         <Heart size={20} rotate={-14} className="right-[96px] top-9" />
       </div>

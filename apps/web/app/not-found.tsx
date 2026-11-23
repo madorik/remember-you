@@ -10,7 +10,7 @@ export default async function NotFound() {
   return (
     <main className="screen">
       <div className="page-end flex flex-1 flex-col items-center justify-center gap-5 px-6 text-center">
-        <Mascot size={112} />
+        <Mascot pose={10} size={108} />
         <h1 className="headline text-[24px]">{t("notFound.title")}</h1>
         <Link href="/" className="btn-primary w-full max-w-[320px]">
           {t("error.home")}

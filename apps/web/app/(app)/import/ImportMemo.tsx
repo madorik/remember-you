@@ -390,7 +390,7 @@ export function ImportMemo({
       <div className="flex flex-1 flex-col">
         <section className="card relative mx-4 mt-6 -rotate-[0.4deg] px-5 pb-5 pt-[22px]" aria-live="polite">
           <Tape color="mint" w={104} h={26} rotate={-3} alpha={0.62} className="-top-3 left-1/2 -ml-[52px]" />
-          <h2 className="flex items-center gap-2 pb-3 text-[24px] font-normal">
+          <h2 className="flex items-center gap-2 pb-3 text-[24px]">
             <Icon name="check" size={22} strokeWidth={2.4} className="text-accent" />
             {undone ? labels.undone : labels.savedN.replace("{n}", String(saved.lines.length))}
           </h2>
@@ -441,7 +441,7 @@ export function ImportMemo({
     const locked = step === "saving";
     return (
       <div className="flex flex-1 flex-col">
-        <h2 className="px-6 pb-1 pt-3 text-[24px] font-normal [html[data-kb]_&]:hidden">{labels.review}</h2>
+        <h2 className="px-6 pb-1 pt-3 text-[24px] [html[data-kb]_&]:hidden">{labels.review}</h2>
         {skipped > 0 ? <p className="px-6 text-[16px] text-muted">{labels.skipped.replace("{n}", String(skipped))}</p> : null}
         {scope.kind === "new" ? (
           <label className="mx-4 mt-2 flex flex-col gap-2 px-2">
@@ -461,7 +461,7 @@ export function ImportMemo({
               <section key={key} className="card relative px-4 pb-1 pt-3">
                 <div className="flex min-h-11 items-center gap-2.5">
                   {person ? <Avatar config={person.avatar} size={36} label={labels.avatarOf.replace("{name}", person.name)} decorative /> : null}
-                  <h3 className="min-w-0 flex-1 truncate text-[21px] font-normal">{t.kind === "me" ? labels.me : header}</h3>
+                  <h3 className="min-w-0 flex-1 truncate text-[21px]">{t.kind === "me" ? labels.me : header}</h3>
                   {first.line.isNew || t.kind === "new" ? <span className="chip-on shrink-0 rounded-full px-2.5 pb-px text-[14px]">{labels.newPerson}</span> : null}
                   {editable.length > 1 ? (
                     <button type="button" disabled={locked} aria-pressed={allOn} onClick={() => toggleGroup(key, !allOn)} className="flex h-11 w-11 shrink-0 items-center justify-center">

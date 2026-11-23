@@ -1,6 +1,8 @@
 import { translate } from "@readme/core";
 import { headers } from "next/headers";
+import { preload } from "react-dom";
 import { AppTabBar } from "@/components/AppTabBar";
+import { SPRITE_URL } from "@/components/Mascot";
 import { NativeBridge } from "@/components/native";
 import { ResumeRefresh } from "@/components/ResumeRefresh";
 import { ReviewDays } from "@/components/ReviewAsk";
@@ -13,6 +15,8 @@ import { holidayLocalReminders, localReminders } from "@/lib/reminders";
 
 // 로그인 + 온보딩까지 마친 사람만. 앱이면 생일 알림 예약·앱 잠금을 붙인다
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  // 아래 메뉴 가운데 구슬 속 캐릭터가 모든 화면에 있으니 스프라이트를 미리 받아 둔다
+  preload(SPRITE_URL, { as: "image", type: "image/webp" });
   const s = await requireSession();
   const { locale } = s.profile;
   // 앱 웹뷰(UA에 ReadmeApp)일 때만 알림 예약용 사람 목록을 읽는다: 웹 브라우저는 쓰지 않는 값이라 읽지 않는다

@@ -13,7 +13,7 @@ readme/
 ├─ apps/mobile/     Capacitor 8 iOS·Android 껍데기(배포된 웹을 띄운다)
 ├─ packages/core/   음력 변환·다음 생일·알림 시점, 항목 사전, 사이즈 환산, 한/영 문구, 초대 토큰(순수 TS)
 ├─ db/              PostgreSQL 마이그레이션(db/migrations)과 RLS 통합 테스트(db/tests)
-└─ scripts/         migrate.mjs(마이그레이션), write-local-env.mjs, fetch-fonts.mjs(앱 글꼴 Poor Story 직접 호스팅), fetch-wordmark-font.mjs(로고 글자만 담은 작은 글꼴)
+└─ scripts/         migrate.mjs(마이그레이션), write-local-env.mjs, fetch-fonts.mjs(앱 글꼴 개구·고운돋움 직접 호스팅), fetch-wordmark-font.mjs(로고 글자만 담은 작은 글꼴)
 ```
 
 ## 처음 실행

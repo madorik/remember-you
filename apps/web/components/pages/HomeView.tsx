@@ -118,7 +118,7 @@ export function HomeView({ locale, avatar, today, people, question: asked, answe
               {locale === "ko" ? `${today.y}년` : today.y}
               {lunarToday ? (locale === "ko" ? ` · 음력 ${lunarToday.m}월 ${lunarToday.d}일` : ` · Lunar ${lunarToday.m}/${lunarToday.d}`) : ""}
             </span>
-            <h1 className="text-[30px] font-normal leading-[1.1]">{formatMonthDay(today, locale)}</h1>
+            <h1 className="text-[30px] leading-[1.1]">{formatMonthDay(today, locale)}</h1>
           </div>
           <div className={`flex pb-[3px] ${locale === "ko" ? "gap-px text-[16px]" : "gap-1 text-[14px]"}`} aria-hidden="true">
             {weekRow.map((wd) => (
@@ -293,7 +293,7 @@ export function HomeView({ locale, avatar, today, people, question: asked, answe
         <Link href="/calendar" aria-label={t("home.openCalendar")} className="absolute inset-0 z-10 rounded-[10px]" />
         <div className="flex items-center justify-between pl-2 pr-1">
           <div className="flex items-center gap-2.5">
-            <h2 className="text-[21px] font-normal">{t("home.thisWeek")}</h2>
+            <h2 className="text-[21px]">{t("home.thisWeek")}</h2>
             {weekEvents ? (
               <span className="-rotate-3 rounded-full bg-[#fff0c9] px-2.5 pb-1 pt-[3px] text-[15px] shadow-[inset_0_0_0_1.5px_var(--color-ink)]">{t("home.weekCount", { n: countWord(weekEvents, locale) })}</span>
             ) : null}
@@ -342,7 +342,7 @@ export function HomeView({ locale, avatar, today, people, question: asked, answe
               <span className="truncate">{askedName}</span>
             </Link>
           </div>
-          <h2 className="text-[24px] font-normal leading-[1.3]">{aboutPrompt(question.id, askedName, locale)}</h2>
+          <h2 className="text-[24px] leading-[1.3]">{aboutPrompt(question.id, askedName, locale)}</h2>
           {/* 고를 수 있는 보기(칩). '없음'이 있는 질문은 맨 끝에 아이콘 칩 */}
           {(() => {
             const hasNone = question.options.some((o) => o.value === NONE);
@@ -419,7 +419,7 @@ export function HomeView({ locale, avatar, today, people, question: asked, answe
 
       <section aria-label={t("home.people")} className="card relative mx-4 mt-[22px] px-3 pb-3.5 pt-4">
         <div className="flex items-center justify-between pl-2">
-          <h2 className="flex items-baseline gap-2 text-[21px] font-normal">
+          <h2 className="flex items-baseline gap-2 text-[21px]">
             {t("home.people")}
             <span className="num text-[16px] text-muted">{people.length}</span>
           </h2>

@@ -36,7 +36,7 @@ export function VoiceView({ locale, people, tour }: VoiceData) {
       {/* 키보드가 뜨면(적는 동안) 제목은 숨겨 적는 칸과 사람 줄이 한 화면에. 체험이면 제목 대신 아래 안내(이렇게 말해보세요) */}
       {tour ? null : (
         <div className="relative px-6 pt-2 text-center [html[data-kb]_&]:hidden">
-          <h1 className="text-[30px] font-normal leading-[1.35]">
+          <h1 className="text-[34px] leading-[1.25]">
             {t("voice.headline")
               .split("\n")
               .map((line, i, all) => (

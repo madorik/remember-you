@@ -37,7 +37,7 @@ export function FolderView({ locale, folder, rows, byName, memberIds, people, op
           <Tape color="pink" w={54} h={18} rotate={-38} className="-left-3.5 top-3.5" />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <h1 className="hl line-clamp-2 self-start break-words px-1 text-[40px] font-normal leading-[1.15]">{folder.name}</h1>
+          <h1 className="hl line-clamp-2 self-start break-words px-1 text-[40px] leading-[1.15]">{folder.name}</h1>
           <span className="pl-1 text-[19px] text-muted">{t("folder.count", { n: memberIds.length })}</span>
         </div>
         <Star size={22} rotate={14} className="right-[38px] top-0.5" />

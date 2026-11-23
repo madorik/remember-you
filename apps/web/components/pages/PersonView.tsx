@@ -77,7 +77,7 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-center">
             {/* 긴 이름은 두 줄까지 */}
-            <h1 className="hl line-clamp-2 min-w-0 break-words px-1 text-[40px] font-normal leading-[1.15]">{p.name || name}</h1>
+            <h1 className="hl line-clamp-2 min-w-0 break-words px-1 text-[40px] leading-[1.15]">{p.name || name}</h1>
             <Link href={`/people/${p.contactId}/profile`} aria-label={t("me.face")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted active:bg-fill">
               <Icon name="pencil" size={19} strokeWidth={1.9} />
             </Link>
@@ -181,7 +181,7 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
       {/* 기억해 둔 것: 적어 둔 항목만 미리 보기. 연필(수정)을 누르면 모든 항목을 고치는 화면, 항목을 누르면 그 항목이 펼쳐진 채로 */}
       <section aria-labelledby="mine-title" className="relative mx-4 mt-3.5 flex flex-col">
         <div className="flex min-h-11 items-center justify-between pl-2">
-          <h2 id="mine-title" className="text-[22px] font-normal">
+          <h2 id="mine-title" className="text-[22px]">
             {t("person.mineList")}
           </h2>
           <Link href={`/people/${p.contactId}/edit`} aria-label={t("me.edit")} className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 active:bg-fill">

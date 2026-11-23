@@ -95,7 +95,7 @@ export function ClaimShare({
     <>
       <div className="flex items-center gap-4 px-6 pb-1 pt-5">
         <Avatar config={avatar} size={64} label={labels.avatarOf.replace("{name}", from)} />
-        <h1 className="hl min-w-0 text-[30px] font-normal leading-[1.25]">{labels.title}</h1>
+        <h1 className="hl min-w-0 text-[30px] leading-[1.25]">{labels.title}</h1>
       </div>
 
       {/* 받은 내용(로그인한 사람에게만 보인다) */}
@@ -120,7 +120,7 @@ export function ClaimShare({
 
       {/* 어디에 저장할까요 */}
       <section className="relative mx-4 mb-4 mt-6">
-        <h2 id="claim-where" className="pl-2 text-[22px] font-normal">
+        <h2 id="claim-where" className="pl-2 text-[22px]">
           {labels.where}
         </h2>
         <div role="radiogroup" aria-labelledby="claim-where" className="card relative mt-2 px-4">
@@ -144,7 +144,7 @@ export function ClaimShare({
       {/* 이미 적어 둔 값이 있으면 */}
       {asks ? (
         <section className="relative mx-4 mb-4 mt-6">
-          <h2 id="claim-conflict" className="pl-2 text-[22px] font-normal">
+          <h2 id="claim-conflict" className="pl-2 text-[22px]">
             {labels.conflict}
           </h2>
           <div role="radiogroup" aria-labelledby="claim-conflict" className="card relative mt-2 px-4">

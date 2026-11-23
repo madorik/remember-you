@@ -31,7 +31,7 @@ export function MeView({ locale, name, avatar, card, today }: MeData) {
           <Tape color="pink" w={48} h={18} rotate={-6} className="-top-[9px] left-[22px]" />
         </Link>
         <div className="flex min-w-0 items-center">
-          <h1 className="hl truncate px-1 text-[40px] font-normal leading-[1.15]">{name}</h1>
+          <h1 className="hl truncate px-1 text-[40px] leading-[1.15]">{name}</h1>
           <Link href="/me/avatar" aria-label={t("me.face")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted active:bg-fill">
             <Icon name="pencil" size={19} strokeWidth={1.9} />
           </Link>
@@ -48,7 +48,7 @@ export function MeView({ locale, name, avatar, card, today }: MeData) {
 
       <section aria-labelledby="me-title" className="relative mx-4 mt-[18px] flex flex-col">
         <div className="flex min-h-11 items-center justify-between pl-2">
-          <h2 id="me-title" className="text-[22px] font-normal">
+          <h2 id="me-title" className="text-[22px]">
             {t("me.title")}
           </h2>
           <div className="flex items-center gap-1">
