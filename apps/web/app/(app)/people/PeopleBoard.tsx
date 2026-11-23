@@ -25,6 +25,8 @@ interface Labels {
   pick: string;
   /** 직접 적기(사람 더하기) 아이콘 버튼 */
   add: string;
+  /** 사람이 몇 명 안 될 때 목록 끝의 '사람 추가하기' 줄 */
+  addRow: string;
   cancel: string;
   withMe: string;
   meName: string;
@@ -118,6 +120,8 @@ function NewNamed({ href, label }: { href: string; label: string }) {
 
 /** 목록이 길어도 화면 밖 줄은 그리지 않게(사람이 많고 얼굴 그림이 많을 때만) */
 const LONG_LIST = 40;
+/** 이 수 이하면 사람을 폴더 칸 위에 모두 보인다 */
+const FEW_PEOPLE = 3;
 /** 폴더 칸을 살짝씩 다르게 기울인 종이 */
 const FOLDER_TILT = ["-rotate-[1.5deg]", "rotate-1", "-rotate-[0.5deg]", "rotate-[0.8deg]"];
 const LAZY_ROW = "[content-visibility:auto] [contain-intrinsic-size:auto_57px]";
@@ -237,6 +241,8 @@ export function PeopleBoard({
   const unfiled = ordered.filter((r) => !r.folderIds.length && !added[r.contactId]?.length);
   const favRows = ordered.filter((r) => r.favorite);
   const lazyRow = rows.length > LONG_LIST ? LAZY_ROW : "";
+  // 사람이 몇 명 안 될 때는 빈 기본 폴더 칸이 화면을 차지하지 않게, 사람(과 더하기)을 폴더 칸보다 먼저 보인다
+  const few = rows.length > 0 && rows.length <= FEW_PEOPLE;
 
   const byId = new Map(rows.map((r) => [r.contactId, r]));
   const facesOf = (f: FolderView) =>
@@ -505,8 +511,38 @@ export function PeopleBoard({
               </div>
             </section>
           )}
+          {/* 몇 명 안 되면: 사람 전부(즐겨찾기 먼저)를 폴더 칸 위에, 끝에 직접 적기. 끌어서 아래 폴더 칸에 넣을 수도 있다 */}
+          {few ? (
+            <section aria-label={labels.title} className="relative">
+              <div className="card relative mx-4 mt-5 px-3.5">
+                <TornTape color="pink" w={50} h={15} rotate={-30} className="-left-1.5 -top-[8.1px]" />
+                <ul className="flex flex-col">
+                  {ordered.map((r) => (
+                    <li
+                      key={r.contactId}
+                      onPointerDown={(e) => drag.onPointerDown(e, r.contactId, r.name, "list")}
+                      onContextMenu={(e) => e.preventDefault()}
+                      className={`select-none border-t border-dashed border-ink/30 first:border-t-0 [-webkit-touch-callout:none] ${drag.dragging?.id === r.contactId ? "opacity-40" : ""}`}
+                    >
+                      <Link href={`/people/${r.contactId}`} draggable={false} className="flex min-h-[50.4px] items-center gap-2.5">
+                        <RowBody row={r} avatarLabel={labels.avatarOf.replace("{name}", r.name)} />
+                      </Link>
+                    </li>
+                  ))}
+                  <li className="border-t border-dashed border-ink/30">
+                    <Link href="/people/new" className="flex min-h-[50.4px] items-center gap-2.5 text-[15.3px] text-accent">
+                      <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-dashed border-edge text-ink">
+                        <Icon name="personAdd" size={20} strokeWidth={1.8} />
+                      </span>
+                      {labels.addRow}
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+            </section>
+          ) : null}
           {/* 즐겨찾기: 어느 폴더에 있든 한곳에 모아 바로 본다. 제목을 누르면 접힌다 */}
-          {favRows.length ? (
+          {favRows.length && !few ? (
             <section aria-label={labels.favorites} className="relative">
               <h2 className="px-6 pt-5">
                 <button type="button" aria-expanded={favOpen} aria-controls="people-fav" onClick={() => setFavOpen(!favOpen)} className="flex min-h-11 w-full items-baseline gap-1.5 text-left">
@@ -570,7 +606,7 @@ export function PeopleBoard({
           </section>
 
           {/* 아직 폴더에 없는 사람만. 다 넣었으면 이 칸은 없다 */}
-          {unfiled.length ? (
+          {unfiled.length && !few ? (
             <>
               <section aria-label={labels.unfiled} className="relative">
               <h2 className="flex items-baseline gap-1.5 px-6 pb-2 pt-5">

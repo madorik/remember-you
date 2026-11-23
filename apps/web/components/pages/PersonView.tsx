@@ -45,6 +45,8 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
       {/* 물어본 답장을 확인하는 순간이 가장 좋을 때: 답을 읽을 틈을 두고 스토어 리뷰 부탁(앱에서만, 며칠 써 본 사람에게만).
           열자마자 읽음 처리로 화면이 다시 그려져 answered가 false가 되니, 조건부로 붙이지 않고 늘 붙여 둔다 */}
       <ReviewMoment source="answer" delay={4000} armed={answered} />
+      {/* 말로·글로 적기를 저장하고 이 화면으로 왔을 때도 리뷰를 부탁할 좋은 순간(앱에서만, 기록을 막 저장한 직후에만) */}
+      <ReviewMoment source="saved" when="saved" delay={4000} />
       {/* 위 줄: 뒤로 … 즐겨찾기 별 · ··· 메뉴(물어보기 · 선물 고르기 · 폴더 · 지우기). 사람 기록 공유하기는 개인정보 우려로 껐다(2026-11-21) */}
       <div className="flex h-11 items-center justify-between pl-1.5 pr-2">
         <Link href={back} prefetch={false} aria-label={t("common.back")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] items-center justify-center">
@@ -185,6 +187,7 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
             failed: t("voice.failed"),
             limit: t("voice.limit"),
             nothing: t("person.quickNothing"),
+            created: t("voice.createdPerson", { name: displayName }),
             aiOff: t("voice.aiOff"),
             holdTitle: t("quick.holdTitle"),
             holdApply: t("quick.holdApply"),
@@ -212,6 +215,13 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
                   <Link href={`/people/${p.contactId}/edit?open=${section}`} className="flex min-h-[48.6px] items-center gap-[10.8px] pt-[5.4px]">
                     <SectionIcon section={section} size={38} cake={section === "dates"} />
                     <span className={`min-w-0 flex-1 text-[16.2px] ${section === "safety" ? "text-red" : ""}`}>{t(`section.${section}` as "section.safety")}</span>
+                    {/* 그 사람이 물어보기에 직접 답한 항목(내가 고치면 이 표시는 빠진다) */}
+                    {p.answered[section] ? (
+                      <span className="inline-flex h-[21.6px] max-w-[48%] shrink-0 items-center gap-1 rounded-full bg-sky-soft pl-1.5 pr-2 text-[10.8px] leading-none shadow-[inset_0_0_0_1px_var(--color-mango-edge)]">
+                        <Icon name="check" size={12} strokeWidth={2.6} className="shrink-0 text-accent" />
+                        <span className="truncate">{t("person.toldBy", { name: displayName })}</span>
+                      </span>
+                    ) : null}
                     <Icon name="chevron" size={16} strokeWidth={2} className="shrink-0 text-muted" />
                   </Link>
                   <div className="pb-[12.6px] pt-[3.6px]">{body}</div>
@@ -220,10 +230,20 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
             </ul>
           </div>
         ) : (
-          <Link href={editDates} className="card mt-0 flex min-h-14 items-center justify-center gap-1.5 text-[14.4px] text-accent">
-            <Icon name="plus" size={16} strokeWidth={2.4} />
-            {t("person.write")}
-          </Link>
+          // 아직 아무것도 없을 때: 직접 적거나, 그 사람에게 물어보거나(물어보기 화면이 이 사람으로 열린다)
+          <div className="grid grid-cols-2 gap-2.5">
+            <Link href={editDates} className="btn-outline">
+              <Icon name="plus" size={17} strokeWidth={2.2} />
+              {t("person.write")}
+            </Link>
+            <Link href={`/request?to=${p.contactId}`} className="btn-primary">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                <rect x="3" y="6" width="18" height="13" rx="2" fill="#F9CBD5" />
+                <path d="M3.8 7l8.2 6.2L20.2 7" />
+              </svg>
+              {t("person.askMore")}
+            </Link>
+          </div>
         )}
       </section>
 

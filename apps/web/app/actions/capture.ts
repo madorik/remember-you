@@ -5,6 +5,7 @@ import { IMAGE_MAX_BYTES, IMAGE_MAX_COUNT, captureField, checkJpegBytes, cleanMe
 import { revalidatePath } from "next/cache";
 import { aiConfigured, classifyCapture, classifyImport, classifyImportImage, type CaptureItem, type ImageKind, type ImageReading, type ImportScope } from "@/lib/ai";
 import { cleanCaptureItems, tidyImportItems, type CapturePerson } from "@/lib/capture-ai";
+import { findLeftovers } from "@/lib/capture-leftover";
 import { holdsForConfirm, nameKey, resolveCapture, resolveSaved, sameSectionValue, tidyName, whoOf, type CaptureTarget, type ResolvedCapture } from "@/lib/capture-target";
 import { refundAi, reserveAi } from "@/lib/ai-quota";
 import { displayName, listNotes, listPeopleLite, readCard, readContactCard, requireSession, sealNote, writeContactSection, writeSection, type Note, type Person, type Session } from "@/lib/data";
@@ -72,6 +73,8 @@ export interface CapturePreview {
 export interface CaptureDraft {
   lines: CaptureDraftLine[];
   error: CaptureState["error"];
+  /** 어느 줄에도 안 들어간 안전한 말(알레르기·못 먹는 것) — 화면이 '메모로 남기기·다시 하기'를 보인다. 없으면 생략 */
+  leftover?: string[];
 }
 
 const failed = (error: NonNullable<CaptureState["error"]>) => ({ error }) as const;
@@ -115,7 +118,7 @@ async function classify(raw: string, aboutId?: string, picked?: { id: string; la
   if (!items.length) return failed("nothing");
   // 사람이 직접 짚은 사람(@부름·그 사람 화면)은 이름이 겹쳐도 그 사람으로 확정이다
   const certain = new Set([...(about ? [about.contactId] : []), ...mentioned.map((p) => p.contactId)]);
-  return { s, people, items, certain };
+  return { s, people, items, certain, said };
 }
 
 /** 아직 없는 사람(초안의 새 사람·못 정한 줄)이라 contactId 자리에 쓰는 이름표 */
@@ -306,7 +309,8 @@ export async function draftCapture(raw: string, aboutId?: string, picked?: { id:
     return { lines: [], error: "failed" };
   }
   if (!done.lines.length) return { lines: [], error: "nothing" };
-  return { lines: done.lines, error: null };
+  const leftover = findLeftovers(c.said, done.lines);
+  return { lines: done.lines, error: null, ...(leftover.length ? { leftover } : {}) };
 }
 
 /**
@@ -402,6 +406,8 @@ export interface ImportDraft {
   error: ImportError | null;
   name: string;
   skipped: number;
+  /** 어느 줄에도 안 들어간 안전한 말(글 메모만. 사진은 글자가 없어 보지 않는다) */
+  leftover?: string[];
 }
 
 /** 조각 사이를 이어 주는 앞 조각의 끝(누구 목록인지 알려 주는 용도) */
@@ -499,7 +505,8 @@ async function runImport(s: Session, scopeRaw: string, input: ImportInput): Prom
     return none("failed", skipped);
   }
   if (!done.lines.length) return none("nothing", skipped);
-  return { lines: done.lines, error: null, name, skipped };
+  const leftover = input.kind === "text" ? findLeftovers(input.memo, done.lines) : [];
+  return { lines: done.lines, error: null, name, skipped, ...(leftover.length ? { leftover } : {}) };
 }
 
 /**

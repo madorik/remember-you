@@ -141,13 +141,22 @@ export function questionsLeft(usedToday: number): number {
   return Math.max(0, DAILY_QUESTION_LIMIT - Math.max(0, Math.floor(usedToday) || 0));
 }
 
+/** 방금 더한 사람: 말로 적거나 물어보다가 저절로 생긴 사람은 폴더도 즐겨찾기도 없어, 처음 이만큼의 날 동안은 오늘의 질문에 올린다 */
+export const RECENT_PERSON_DAYS = 14;
+
+/** 더한 지 RECENT_PERSON_DAYS일이 안 된 사람인가(createdAt은 ISO 글, 모르면 아니다) */
+export function isRecentlyAdded(createdAt: string | null | undefined, nowMs: number = Date.now()): boolean {
+  const at = createdAt ? Date.parse(createdAt) : NaN;
+  return Number.isFinite(at) && nowMs - at >= 0 && nowMs - at < RECENT_PERSON_DAYS * 86_400_000;
+}
+
 /**
- * 오늘의 질문을 물어볼 만큼 가까운 사람인가: 가족 폴더에 있거나, 즐겨찾기거나, 사람 화면을 여러 날 열어 본 사람.
- * '다시 묻지 않기'를 한 사람은 늘 아니다. 아무나(그냥 적어 둔 사람)에게는 묻지 않는다
+ * 오늘의 질문을 물어볼 만큼 가까운 사람인가: 가족 폴더에 있거나, 즐겨찾기거나, 사람 화면을 여러 날 열어 본 사람, 또는 방금(recent) 더한 사람.
+ * '다시 묻지 않기'를 한 사람은 늘 아니다. 아무나(그냥 적어 둔 지 오래된 사람)에게는 묻지 않는다
  */
-export function isCloseEnough(p: { askOff: boolean; favorite: boolean; closeFolder: boolean; viewDays: number }): boolean {
+export function isCloseEnough(p: { askOff: boolean; favorite: boolean; closeFolder: boolean; viewDays: number; recent?: boolean }): boolean {
   if (p.askOff) return false;
-  return p.closeFolder || p.favorite || p.viewDays >= CLOSE_VIEW_DAYS;
+  return p.closeFolder || p.favorite || p.viewDays >= CLOSE_VIEW_DAYS || p.recent === true;
 }
 
 /** 질문에 답이 들어갈 항목(물어보기로 그 항목만 물어볼 때) */

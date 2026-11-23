@@ -18,3 +18,23 @@ export function fcmTokenGone(status: number, body: unknown): boolean {
   const onToken = details.some((d) => Array.isArray(d?.fieldViolations) && d.fieldViolations.some((f) => typeof f?.field === "string" && /(^|\.)token$/.test(f.field)));
   return onToken || (typeof error?.message === "string" && /registration token/i.test(error.message));
 }
+
+// ── APNs(애플 푸시) 직접 보내기 ─────────────────────────────────
+// iOS 앱이 Firebase Messaging 없이 푸시를 등록하면 받는 토큰은 APNs 기기 토큰(16진수 글)이다. Firebase를 붙인 앱은 FCM 토큰(콜론이 든 글)을 받는다.
+// 서버는 글 모양으로 가려서, APNs 토큰이면 애플에 직접, 아니면 FCM으로 보낸다.
+
+/** APNs 기기 토큰 모양인가(16진수 64자 이상). FCM 등록 토큰은 ':'가 들어 있어 아니다 */
+export function looksLikeApnsToken(token: string): boolean {
+  return /^[0-9a-f]{64,}$/i.test(token.trim());
+}
+
+/** 애플이 이 기기 토큰은 더 못 쓴다고 한 응답인가: 410(Unregistered)이거나 사유가 BadDeviceToken·Unregistered·DeviceTokenNotForTopic일 때만. 그 밖의 오류(인증·한도·서버)는 토큰이 멀쩡하니 지우면 안 된다 */
+export function apnsTokenGone(status: number, reason: unknown): boolean {
+  if (status === 410) return true;
+  return status === 400 && (reason === "BadDeviceToken" || reason === "Unregistered" || reason === "DeviceTokenNotForTopic");
+}
+
+/** 보이는 알림 하나의 APNs 본문(눌렀을 때 열 앱 안 주소는 path) */
+export function apnsPayload(title: string, body: string, path: string): { aps: { alert: { title: string; body: string }; sound: string }; path: string } {
+  return { aps: { alert: { title, body }, sound: "default" }, path };
+}
