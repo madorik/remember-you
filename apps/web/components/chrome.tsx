@@ -42,7 +42,7 @@ export function Wordmark({ size = 26, locale = "ko" }: { size?: number; locale?:
   );
 }
 
-/** 탭 아이콘(시안 모양): 챙길 날(달력 + 하트) · 사람들 · 나(웃는 얼굴) · 설정은 marks의 톱니 */
+/** 탭 아이콘(시안 모양): 챙길 날(달력 + 하트) · 사람들 · 나(메모지) · 설정은 marks의 톱니 */
 const TAB_ICONS = {
   home: (
     <>
@@ -59,13 +59,12 @@ const TAB_ICONS = {
       <path d="M16.5 13.2c2.6.1 4.4 1.6 5 4.3" />
     </>
   ),
-  // 나: 웃는 얼굴 동그라미(시안)
+  // 나: 메모지(오른쪽 아래 귀퉁이가 접힌 쪽지 + 두 줄)
   me: (
     <>
-      <circle cx="12" cy="12" r="8.5" />
-      <circle cx="9.3" cy="11" r=".6" fill="currentColor" />
-      <circle cx="14.7" cy="11" r=".6" fill="currentColor" />
-      <path d="M9.5 14.5q2.5 2 5 0" />
+      <path d="M4.5 4.5h15v10l-5 5h-10z" />
+      <path d="M19.5 14.5h-5v5" />
+      <path d="M8 9h8M8 12.5h5" />
     </>
   ),
 } as const;
