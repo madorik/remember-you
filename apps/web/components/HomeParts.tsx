@@ -91,14 +91,14 @@ export function DStamp({ children, fontSize }: { children: React.ReactNode; font
       aria-hidden="true"
       className="hand flex shrink-0 items-center justify-center rounded-full leading-none"
       style={{
-        width: u(78),
-        height: u(78),
+        width: u(62),
+        height: u(62),
         boxSizing: "border-box",
-        border: `${u(2.5)}px solid ${MANGO_RING}`,
-        boxShadow: `inset 0 0 0 ${u(3)}px #FFFFFF, inset 0 0 0 ${u(4.5)}px ${MANGO_RING}`,
+        border: `${u(2.2)}px solid ${MANGO_RING}`,
+        boxShadow: `inset 0 0 0 ${u(2.4)}px #FFFFFF, inset 0 0 0 ${u(3.6)}px ${MANGO_RING}`,
         color: INK,
         transform: "rotate(-9deg)",
-        fontSize: u(fontSize),
+        fontSize: u(fontSize * 0.8),
       }}
     >
       {children}
@@ -110,16 +110,16 @@ export function DStamp({ children, fontSize }: { children: React.ReactNode; font
 export function HeroPolaroid({ children, caption, heart = true }: { children: React.ReactNode; caption?: React.ReactNode; heart?: boolean }) {
   return (
     <span
-      className="flex shrink-0 flex-col items-center border bg-white px-[7.2px] pt-[7.2px]"
-      style={{ borderColor: EDGE, boxShadow: "0 5.4px 10.8px -7.2px rgba(31,35,64,.5)", transform: "rotate(-4deg)", paddingBottom: caption ? 5.4 : 7.2 }}
+      className="flex shrink-0 flex-col items-center border bg-white px-[5.4px] pt-[5.4px]"
+      style={{ borderColor: EDGE, boxShadow: "0 5.4px 10.8px -7.2px rgba(31,35,64,.5)", transform: "rotate(-4deg)", paddingBottom: caption ? 4.5 : 5.4 }}
     >
-      <span className="flex items-center justify-center" style={{ width: u(92), height: u(92), background: "#FFF4D6" }}>
+      <span className="flex items-center justify-center" style={{ width: u(70), height: u(70), background: "#FFF4D6" }}>
         {children}
       </span>
       {caption ? (
-        <span className="hand mt-[5.4px] flex max-w-[82.8px] items-center gap-[3.6px] text-[16.2px] leading-none">
+        <span className="hand mt-[3.6px] flex max-w-[63px] items-center gap-[3.6px] text-[15.3px] leading-none">
           <span className="min-w-0 truncate">{caption}</span>
-          {heart ? <SmallHeart size={13} /> : null}
+          {heart ? <SmallHeart size={12} /> : null}
         </span>
       ) : null}
     </span>
@@ -129,9 +129,9 @@ export function HeroPolaroid({ children, caption, heart = true }: { children: Re
 /** 카드 안 분홍 상자(기억해 둔 것) */
 export function RememberedBox({ label, text }: { label: string; text: string }) {
   return (
-    <div className="mt-[16.2px] flex flex-col gap-[5.4px] rounded-[9px] px-[14.4px] pb-[12.6px] pt-[10.8px]" style={{ background: "#FBE1E8" }}>
-      <span className="text-[11.7px] text-muted">{label}</span>
-      <span className="hand-written line-clamp-2 text-[20.7px] leading-[1.2]">{text}</span>
+    <div className="mt-[9px] flex items-baseline gap-[7.2px] rounded-[9px] px-[12.6px] py-[7.2px]" style={{ background: "#FBE1E8" }}>
+      <span className="shrink-0 text-[11.7px] text-muted">{label}</span>
+      <span className="hand-written min-w-0 flex-1 truncate text-[18px] leading-[1.2]">{text}</span>
     </div>
   );
 }
@@ -141,11 +141,11 @@ export function HeroButton({ href, label, first = true, small = false }: { href:
   return (
     <Link
       href={href}
-      className={`hand flex h-[50.4px] items-center justify-center gap-[7.2px] rounded-[14.4px] border leading-none transition-transform active:translate-y-px ${first ? "mt-[14.4px]" : "mt-[9px]"} ${small ? "text-[19.8px]" : "text-[22.5px]"}`}
+      className={`hand flex h-[44px] items-center justify-center gap-[7.2px] rounded-[14.4px] border leading-none transition-transform active:translate-y-px ${first ? "mt-[10.8px]" : "mt-[7.2px]"} ${small ? "text-[18.9px]" : "text-[21.6px]"}`}
       style={{ borderColor: EDGE, background: MANGO, boxShadow: "0 2.7px 0 #E09A12", color: INK }}
     >
       <span className="min-w-0 truncate">{label}</span>
-      <svg aria-hidden="true" viewBox="0 0 24 24" width={u(22)} height={u(22)} fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+      <svg aria-hidden="true" viewBox="0 0 24 24" width={u(20)} height={u(20)} fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
         <path d="M5 12h14M13 6l6 6-6 6" />
       </svg>
     </Link>
@@ -158,7 +158,7 @@ export function HeroButton({ href, label, first = true, small = false }: { href:
  */
 export function HeroFrame({ ariaLabel, label, stamp, art, title, sub, inner, children }: { ariaLabel: string; label: string | null; stamp: React.ReactNode; art: React.ReactNode; title: React.ReactNode; sub?: React.ReactNode; inner?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section aria-label={ariaLabel} className="card relative mx-4 flex shrink-0 flex-col px-[16.2px] pb-[18px] pt-[19.8px]">
+    <section aria-label={ariaLabel} className="card relative mx-4 flex shrink-0 flex-col px-[16.2px] pb-[13.5px] pt-[14.4px]">
       <MangoTape />
       <span className="pointer-events-none absolute -top-[34.2px] left-[12.6px]">
         <Mascot pose={2} size={41.4} />
@@ -172,19 +172,19 @@ export function HeroFrame({ ariaLabel, label, stamp, art, title, sub, inner, chi
           ) : (
             <span />
           )}
-          {stamp ? <span className="-mr-[3.6px] -mt-[7.2px]">{stamp}</span> : null}
+          {stamp ? <span className="-mb-[5.4px] -mr-[3.6px] -mt-[9px]">{stamp}</span> : null}
         </div>
       ) : null}
       {label ? (
-        <svg aria-hidden="true" viewBox="0 0 24 24" width={u(17)} height={u(17)} fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" className="pointer-events-none absolute left-[135px] top-[39.6px]">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width={u(17)} height={u(17)} fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" className="pointer-events-none absolute left-[135px] top-[32.4px]">
           <path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4" />
         </svg>
       ) : null}
-      <div className={`${label || stamp ? "mt-[3.6px]" : ""} flex items-center gap-[16.2px]`}>
+      <div className={`${label || stamp ? "mt-[1.8px]" : ""} flex items-center gap-[13.5px]`}>
         {art}
-        <div className="flex min-w-0 flex-1 flex-col gap-[9px]">
+        <div className="flex min-w-0 flex-1 flex-col gap-[5.4px]">
           {title}
-          {sub ? <span className="text-[13.5px] leading-[1.5] text-muted [word-break:keep-all]">{sub}</span> : null}
+          {sub ? <span className="text-[13.5px] leading-[1.35] text-muted [word-break:keep-all]">{sub}</span> : null}
         </div>
       </div>
       {inner}

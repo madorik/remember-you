@@ -49,8 +49,8 @@ function rememberedOf(p: Person | null, locale: "ko" | "en"): { label: string; v
 
 /** 큰 카드 제목 크기(손글씨): 시안 37px의 90%. 길면 줄인다 */
 function heroTitleSize(len: number, many: boolean): number {
-  if (many) return 21.6;
-  return len <= 5 ? 33.3 : len <= 7 ? 28 : len <= 10 ? 23.4 : 19.8;
+  if (many) return 19.8;
+  return len <= 5 ? 29 : len <= 7 ? 25.2 : len <= 10 ? 21.6 : 18;
 }
 
 /** 칸막이 점선(카드 안 줄): 시안은 남색 16% */
@@ -74,7 +74,7 @@ function ArtBox({ children, dashed = false }: { children: React.ReactNode; dashe
   return (
     <HeroPolaroid>
       {dashed ? (
-        <span aria-hidden="true" className="flex h-[59.4px] w-[59.4px] items-center justify-center rounded-full border border-dashed border-edge bg-white">
+        <span aria-hidden="true" className="flex h-[49.5px] w-[49.5px] items-center justify-center rounded-full border border-dashed border-edge bg-white">
           {children}
         </span>
       ) : (
@@ -200,12 +200,12 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
         art={
           nextFaces.length > 1 ? (
             <HeroPolaroid caption={`${firstName} ${t("home.others", { n: nextFaces.length - 1 })}`}>
-              <FaceStack faces={nextFaces.map((e) => ({ key: e.contactId, avatar: personOf(e.contactId)?.avatar ?? null, label: e.name }))} size={44} />
+              <FaceStack faces={nextFaces.map((e) => ({ key: e.contactId, avatar: personOf(e.contactId)?.avatar ?? null, label: e.name }))} size={36} />
             </HeroPolaroid>
           ) : (
             <Link href={`/people/${next.contactId}`} aria-label={firstName} className="shrink-0">
               <HeroPolaroid caption={firstName}>
-                <Avatar config={nextPerson?.avatar ?? null} size={84} label={firstName} decorative />
+                <Avatar config={nextPerson?.avatar ?? null} size={64} label={firstName} decorative />
               </HeroPolaroid>
             </Link>
           )
@@ -244,11 +244,11 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
         stamp={stamp}
         art={
           <ArtBox>
-            <HolidayArt id="christmas" size={78} />
+            <HolidayArt id="christmas" size={62} />
           </ArtBox>
         }
         title={
-          <h2 className="hand leading-[1.1]" style={{ fontSize: 22.5 }}>
+          <h2 className="hand leading-[1.1]" style={{ fontSize: 21 }}>
             <span className="hl">{t("home.yearEnd")}</span>
           </h2>
         }
@@ -276,7 +276,7 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
         stamp={stamp}
         art={
           <ArtBox>
-            <HolidayArt id={holiday.id} size={78} />
+            <HolidayArt id={holiday.id} size={62} />
           </ArtBox>
         }
         title={heroTitle(holidayTitle, heroTitleSize(holidayTitle.length, false))}
@@ -302,7 +302,7 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
           </ArtBox>
         }
         title={
-          <h2 className="hand leading-[1.1]" style={{ fontSize: 22.5 }}>
+          <h2 className="hand leading-[1.1]" style={{ fontSize: 21 }}>
             <span className="hl">{t("home.newFriend")}</span>
           </h2>
         }
