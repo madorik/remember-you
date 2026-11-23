@@ -11,7 +11,7 @@ export function DeleteAccount({ locale }: { locale: Locale }) {
   const [ask, setAsk] = useState(false);
   if (!ask) {
     return (
-      <button type="button" onClick={() => setAsk(true)} className="flex min-h-12 items-center pl-1 text-[19px] text-red">
+      <button type="button" onClick={() => setAsk(true)} className="flex min-h-[45px] items-center text-[15px] text-red">
         {t("privacy.delete")}
       </button>
     );
@@ -19,12 +19,12 @@ export function DeleteAccount({ locale }: { locale: Locale }) {
   return (
     <form action={deleteAccount} role="alertdialog" aria-label={t("privacy.delete")} className="my-3.5 flex w-full flex-col gap-3.5 rounded-[14px] bg-white p-4 shadow-[inset_0_0_0_1.5px_var(--color-red)]">
       <input type="hidden" name="confirm" value="1" />
-      <p className="text-[19px] leading-[1.5]">{t("privacy.deleteConfirm")}</p>
+      <p className="text-[15px] leading-[1.5]">{t("privacy.deleteConfirm")}</p>
       <div className="grid grid-cols-2 gap-2.5">
-        <button type="button" onClick={() => setAsk(false)} className="btn-outline btn-outline-lift !rounded-2xl !text-[20px]">
+        <button type="button" onClick={() => setAsk(false)} className="btn-outline btn-outline-lift !rounded-[14px] !text-[22px]">
           {t("common.cancel")}
         </button>
-        <button className="btn-primary !rounded-2xl !bg-red !text-[20px] !text-white !shadow-[0_4px_0_#8e2b26]">{t("privacy.deleteYes")}</button>
+        <button className="btn-primary !rounded-[14px] !bg-red !text-[22px] !text-white">{t("privacy.deleteYes")}</button>
       </div>
     </form>
   );

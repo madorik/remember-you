@@ -17,7 +17,7 @@ import { TasteEditor } from "@/components/editors/TasteEditor";
 import { CircleOption, TextField, joinList, splitList, useT } from "@/components/editors/shared";
 import { DrawnCheck, Icon } from "@/components/marks";
 import { AnswerDone } from "@/components/AnswerDone";
-import { Heart, Polaroid, SKY_STAR, Squiggle, Star, Tape, MarginLine } from "@/components/diary";
+import { TornTape } from "@/components/TornTape";
 import { Mascot } from "@/components/Mascot";
 import { SectionIcon } from "@/components/SectionIcon";
 import { summarize } from "@/lib/summary";
@@ -42,7 +42,7 @@ function GiftsLite({ value, onChange, locale }: { value: GiftsData; onChange: (v
         placeholder={t("gift.wishPlaceholder")}
       />
       <div className="flex flex-col gap-1">
-        <span className="text-[19px]">{t("gift.giftCard")}</span>
+        <span className="text-[15px]">{t("gift.giftCard")}</span>
         <div className="flex flex-wrap gap-2">
           <CircleOption large label={t("gift.giftCardYes")} on={value.giftCard === "yes"} onToggle={() => onChange({ ...value, giftCard: value.giftCard === "yes" ? null : "yes" })} />
           <CircleOption large color="ink" label={t("gift.giftCardNo")} on={value.giftCard === "no"} onToggle={() => onChange({ ...value, giftCard: value.giftCard === "no" ? null : "no" })} />
@@ -58,6 +58,16 @@ function GiftsLite({ value, onChange, locale }: { value: GiftsData; onChange: (v
         placeholder={t("gift.skipPlaceholder")}
       />
     </div>
+  );
+}
+
+/** 편지 봉투(나도 물어보기 단추) */
+function Envelope() {
+  return (
+    <svg aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+      <rect x="3.5" y="5.5" width="17" height="13" rx="2.5" />
+      <path d="M4.5 7.5l7.5 5.5 7.5-5.5" />
+    </svg>
   );
 }
 
@@ -168,16 +178,18 @@ export function AnswerForm({
         }
       >
         {inApp ? (
-          <Link href={here} className="btn-primary w-full">
+          <Link href={here} className="btn-primary w-full !text-[26px]">
+            <Envelope />
             {t("answer.askBack")}
           </Link>
         ) : (
-          <GetAppLink href={`/get?from=answer&next=${encodeURIComponent(here)}`} appPath={askBack} className="btn-primary w-full">
+          <GetAppLink href={`/get?from=answer&next=${encodeURIComponent(here)}`} appPath={askBack} className="btn-primary w-full !text-[26px]">
+            <Envelope />
             {t("answer.askBack")}
           </GetAppLink>
         )}
         {state.savedMine ? (
-          <Link href="/me" className="flex min-h-11 items-center justify-center text-[18px]">
+          <Link href="/me" className="flex min-h-11 items-center justify-center text-[14px] text-muted">
             {t("answer.openApp")}
           </Link>
         ) : null}
@@ -208,16 +220,16 @@ export function AnswerForm({
       {signedIn ? (
         <button type="button" aria-pressed={saveMine} onClick={() => setSaveMine(!saveMine)} className="flex min-h-11 items-start gap-3 text-left">
           <DrawnCheck on={saveMine} />
-          <span className="text-[19px] leading-[1.45]">{t("answer.saveMine")}</span>
+          <span className="text-[14px] leading-[1.45]">{t("answer.saveMine")}</span>
         </button>
       ) : null}
       {needsConsent ? (
         <button type="button" aria-pressed={consent} onClick={() => setConsent(!consent)} className="flex min-h-11 items-start gap-3 text-left">
           <DrawnCheck on={consent} />
-          <span className="text-[19px] leading-[1.45]">{t("answer.consent", { from })}</span>
+          <span className="text-[14px] leading-[1.45]">{t("answer.consent", { from })}</span>
         </button>
       ) : null}
-      <span className="text-[16px] leading-[1.45] text-muted">{t("answer.footer", { from })}</span>
+      <span className="text-[12px] leading-[1.45] text-muted">{t("answer.footer", { from })}</span>
     </>
   );
 
@@ -240,72 +252,58 @@ export function AnswerForm({
       {single ? (
         <div className="h-3" />
       ) : (
-        <div className="sticky top-0 z-20 flex items-center gap-2 bg-bg pb-1.5 pl-2 pr-3 pt-1.5" style={{ top: "var(--sat)" }}>
+        <div className="sticky top-0 z-20 flex items-center gap-2 bg-bg pb-1.5 pl-1 pr-4 pt-1.5" style={{ top: "var(--sat)" }}>
           <button type="button" onClick={() => go(step - 1)} disabled={step === 0} aria-label={t("common.back")} className="flex h-11 w-11 shrink-0 items-center justify-center disabled:opacity-0">
-            <Icon name="back" size={22} strokeWidth={2} />
+            <Icon name="back" size={24} strokeWidth={2} />
           </button>
-          <div className="flex flex-1 gap-1.5" aria-hidden="true">
+          <div className="flex flex-1 gap-2" aria-hidden="true">
             {Array.from({ length: total }, (_, i) => (
-              <span key={i} className={`h-2.5 flex-1 rounded-full shadow-[inset_0_0_0_1.5px_var(--color-ink)] ${i <= step ? "bg-sky" : "bg-white"}`} />
+              <span key={i} className={`h-2 flex-1 rounded-full border-[1.5px] border-ink ${i <= step ? "bg-sky" : "bg-white"}`} />
             ))}
           </div>
-          <span className="num w-11 shrink-0 text-center text-[17px] text-muted">
+          <span className="w-8 shrink-0 text-right text-[12px] text-muted">
             {step + 1}/{total}
           </span>
         </div>
       )}
 
       {step === 0 ? (
-        <section className="relative flex items-start gap-3.5 px-5 pt-3.5">
-          <Polaroid photo={66} rotate={-4} className="mt-1 !px-1.5 !pb-[5px] !pt-1.5">
-            <Mascot pose={6} size={56} />
-          </Polaroid>
-          <div className="flex min-w-0 flex-1 flex-col gap-2">
-            <h1 className="text-[27px] leading-[1.25]">{highlightCount(t("answer.title", { from, n: sections.length }))}</h1>
-            {message ? <p className="-rotate-[0.8deg] whitespace-pre-line rounded-[3px] bg-postit px-3.5 pb-[11px] pt-2.5 text-[18px] leading-[1.45] shadow-[0_6px_12px_-9px_rgb(31_35_64/0.45)]">{message}</p> : null}
-            {signedIn ? null : (
-              // 앱을 쓰는 사람이 로그인 안 된 브라우저에서 열었으면: 로그인하고 답하면 내 리드미 값이 미리 채워지고, 물어본 사람 목록에 내 얼굴로 보인다
-              <Link href={`/?next=${encodeURIComponent(`/r/${token}`)}`} className="flex min-h-11 items-center gap-1 self-start text-[18px] text-accent underline decoration-[1.5px] underline-offset-4">
-                {t("answer.signInFirst")}
-                <Icon name="chevron" size={18} strokeWidth={2} />
-              </Link>
-            )}
+        <section className="relative flex flex-col gap-5 px-5 pt-5">
+          <div className="flex items-center gap-4">
+            <figure className="m-0 shrink-0 -rotate-[4deg] border-[1.5px] border-ink bg-white px-[6px] pb-[18px] pt-[6px]">
+              <span className="flex h-[81px] w-[81px] items-center justify-center overflow-hidden bg-white">
+                <Mascot pose={6} size={70} />
+              </span>
+            </figure>
+            <h1 className="hand-written !font-normal min-w-0 flex-1 text-[29px] leading-[1.2]">{highlightCount(t("answer.title", { from, n: sections.length }))}</h1>
           </div>
-          <Star size={20} rotate={14} className="right-3.5 top-1" />
+          {message ? <p className="-rotate-[0.6deg] whitespace-pre-line rounded-[4px_4px_16px_4px] border-[1.5px] border-ink bg-[#fff3b0] px-3.5 py-2.5 hand-written text-[23px] leading-[1.3]">{message}</p> : null}
+          {signedIn ? null : (
+            // 앱을 쓰는 사람이 로그인 안 된 브라우저에서 열었으면: 로그인하고 답하면 내 리드미 값이 미리 채워지고, 물어본 사람 목록에 내 얼굴로 보인다
+            <Link href={`/?next=${encodeURIComponent(`/r/${token}`)}`} className="flex min-h-11 items-center gap-1 self-start text-[14px] text-accent underline decoration-[1.5px] underline-offset-4">
+              {t("answer.signInFirst")}
+              <Icon name="chevron" size={15} strokeWidth={2} />
+            </Link>
+          )}
         </section>
       ) : null}
 
       {s ? (
-        <section key={s} className={`card relative mx-4 mt-3.5 flex flex-col gap-[18px] pb-[22px] pr-5 pt-7 ${step % 2 ? "ruled pl-[42px] [background-position:0_20px]" : "pl-5"}`}>
-          {step % 2 ? (
-            <>
-              <MarginLine left={28} />
-              <Tape color="mint" w={74} h={22} rotate={-8} alpha={0.55} vertical className="-top-2.5 left-3.5" />
-              <Star size={22} rotate={14} className="-right-[7px] top-[50px]" />
-              <Heart size={24} rotate={-14} className="-left-2 bottom-[90px]" />
-              <Squiggle w={56} color="#F59BAE" width={2.4} className="-bottom-2 right-[26px]" />
-            </>
-          ) : (
-            <>
-              <Tape color="mango" w={108} h={26} rotate={-3} alpha={0.62} className="-top-[13px] left-1/2 -ml-[54px]" />
-              <Heart size={24} rotate={16} className="-right-2 top-[52px]" />
-              <Star size={20} rotate={-12} color={SKY_STAR} className="-left-[7px] bottom-[58px]" />
-              <Squiggle w={56} className="-bottom-[7px] right-[30px]" />
-            </>
-          )}
-          <div className="flex items-center gap-3">
-            <SectionIcon section={s} size={52} outline />
-            <h2 className="flex-1 text-[26px] leading-[1.2]">{t(`request.topic.${s}` as "request.topic.dates")}</h2>
+        <section key={s} className="card relative mx-4 mt-9 flex flex-col gap-3.5 px-3.5 pb-3.5 pt-3.5">
+          <TornTape color={step % 2 ? "pink" : "mint"} w={66} h={21} rotate={6} className="-top-3 right-6" />
+          <div className="flex items-center gap-2.5">
+            <SectionIcon section={s} size={44} outline />
+            <h2 className="flex-1 text-[26px] leading-[1.15]">{t(`request.topic.${s}` as "request.topic.dates")}</h2>
           </div>
           {prefill[s] ? (
             <>
-              <div className="flex flex-col gap-1.5 rounded-[3px] bg-[#fff0c9] px-4 pb-[15px] pt-[13px] shadow-[0_6px_12px_-9px_rgb(31_35_64/0.45)] [transform:rotate(0.6deg)]">
-                <span className="text-[16px] text-accent">{t("answer.prefilled", { from })}</span>
-                <span className={`text-[26px] leading-[1.3] ${modes[s] === "fix" ? "text-muted line-through decoration-red decoration-2" : ""}`}>
+              <div className="flex flex-col gap-1.5 rounded-xl border-[1.5px] border-ink bg-sky-soft px-3 pb-3 pt-2.5">
+                <span className="text-[12px]">{t("answer.prefilled", { from })}</span>
+                <span className={`hand-written text-[34px] leading-[1.1] ${modes[s] === "fix" ? "text-muted line-through decoration-red decoration-2" : ""}`}>
                   {summarize(s, prefill[s], locale, t) || t("answer.empty")}
                 </span>
               </div>
-              <div className="flex gap-2.5">
+              <div className="flex gap-2">
                 {(["ok", "fix"] as const).map((m) => (
                   <button
                     key={m}
@@ -316,8 +314,9 @@ export function AnswerForm({
                       // 맞으면 바로 다음 항목으로
                       if (m === "ok") go(step + 1);
                     }}
-                    className={`h-[52px] flex-1 rounded-full text-[20px] shadow-[inset_0_0_0_1.5px_var(--color-edge)] ${modes[s] === m ? "grad" : "bg-white"}`}
+                    className={`inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full border-[1.5px] border-ink text-[15px] ${modes[s] === m ? "bg-sky" : "bg-white"}`}
                   >
+                    {modes[s] === m ? <Icon name="check" size={16} strokeWidth={2} /> : null}
                     {t(m === "ok" ? "answer.right" : "answer.fix")}
                   </button>
                 ))}
@@ -354,20 +353,20 @@ export function AnswerForm({
                 setModes((x) => ({ ...x, [s]: none ? "none" : "new" }));
                 if (none) go(step + 1);
               }}
-              className={`pill self-start !px-5 !text-[18px] ${modes[s] === "none" ? "grad" : ""}`}
+              className={`inline-flex h-8 items-center self-end rounded-full border-[1.5px] border-ink px-4 text-[13px] ${modes[s] === "none" ? "bg-sky" : "bg-white"}`}
             >
               {t("answer.none")}
             </button>
           ) : null}
         </section>
       ) : (
-        <section className="card relative mx-4 mt-3.5 flex flex-col gap-[22px] px-5 pb-6 pt-7">
-          <Tape color="mango" w={108} h={26} rotate={-3} alpha={0.62} className="-top-[13px] left-1/2 -ml-[54px]" />
-          <Heart size={24} rotate={16} className="-right-2 top-10" />
-          <Star size={20} rotate={-12} className="-left-[7px] bottom-[26px]" />
+        <section className="card relative mx-4 mt-9 flex flex-col gap-4 px-3.5 pb-4 pt-3.5">
+          <TornTape color="mint" w={66} h={21} rotate={6} className="-top-3 right-6" />
           <div className="flex items-center gap-3">
             <Mascot pose={6} size={52} />
-            <h2 className="hl text-[28px] leading-[1.25]">{t("answer.almost")}</h2>
+            <h2 className="text-[28px] leading-[1.2]">
+              <span className="hl">{t("answer.almost")}</span>
+            </h2>
           </div>
           {finish}
         </section>
@@ -376,15 +375,15 @@ export function AnswerForm({
 
       <div className="bottom-bar mt-auto flex flex-col gap-2 bg-bg px-4 pt-4">
         {state.error ? (
-          <p role="alert" className="px-1 text-[17px] text-red">
+          <p role="alert" className="px-1 text-[14px] text-red">
             {t(state.error === "consent" ? "answer.needConsent" : state.error === "closed" ? "accept.expired" : state.error === "self" ? "answer.self" : state.error === "empty" ? "answer.needOne" : "common.error")}
           </p>
         ) : last && !answered.length ? (
           // 마지막 화면인데 답한 게 하나도 없다(전부 건드리지 않고 넘겼다): 보낼 수 없는 까닭
-          <p className="px-1 text-[17px] text-muted">{t("answer.needOne")}</p>
+          <p className="px-1 text-[14px] text-muted">{t("answer.needOne")}</p>
         ) : null}
         {canSend ? (
-          <button disabled={pending || !answered.length || (needsConsent && !consent)} className="btn-primary !min-h-[58px] w-full !text-[22px]">
+          <button disabled={pending || !answered.length || (needsConsent && !consent)} className="btn-primary !min-h-[50px] w-full !text-[24px]">
             {t("answer.send")}
           </button>
         ) : (
@@ -396,13 +395,13 @@ export function AnswerForm({
                 setModes((x) => ({ ...x, [s!]: prefill[s!] ? null : x[s!] === "none" ? "none" : null }));
                 go(step + 1);
               }}
-              className="btn-outline btn-outline-lift !min-h-14 w-[34%] shrink-0 !text-[20px]"
+              className="btn-outline !min-h-[50px] w-[40%] shrink-0 !text-[23px]"
             >
               {t("answer.skip")}
             </button>
-            <button type="button" onClick={() => go(step + 1)} className="btn-primary !min-h-14 flex-1 !text-[21px]">
+            <button type="button" onClick={() => go(step + 1)} className="btn-primary !min-h-[50px] flex-1 !text-[24px]">
+              <Icon name="chevron" size={19} strokeWidth={2} />
               {t("answer.next")}
-              <Icon name="arrow" size={20} strokeWidth={2} />
             </button>
           </div>
         )}

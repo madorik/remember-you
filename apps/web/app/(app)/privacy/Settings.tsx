@@ -7,7 +7,6 @@ import { setPreference } from "@/app/actions/account";
 import { saveOffsets } from "@/app/actions/card";
 import { ReminderPicker } from "@/components/editors/ReminderPicker";
 import { useT } from "@/components/editors/shared";
-import { SwitchLook } from "@/components/marks";
 import { useIsNative } from "@/components/native";
 
 /** 서버 액션이 도는 동안 흐리게 하고 누르지 못하게 하는 단추(폼 안에서). 움직임 줄이기를 켜면 깜빡이지 않는다 */
@@ -36,19 +35,19 @@ function SwitchRow({ locale, prefKey, enabled, label, note, disabled = false }: 
           setFailed(true);
         }
       }}
-      className="flex min-h-12 flex-col justify-center border-t-[1.5px] border-dashed border-rule"
+      className="flex min-h-[47px] flex-col justify-center border-t-[1.5px] border-dashed border-ink/[0.18]"
     >
       <input type="hidden" name="key" value={prefKey} />
       <input type="hidden" name="value" value={enabled ? "0" : "1"} />
       <div className="flex items-center gap-3">
         <div className="flex flex-1 flex-col gap-0.5 pl-1">
-          <span className="text-[19px]">{label}</span>
+          <span className="text-[15px]">{label}</span>
           {note}
         </div>
         <SwitchButton label={label} on={on} disabled={disabled} />
       </div>
       {failed ? (
-        <p role="alert" className="pb-2 pl-1 text-[16px] text-red">
+        <p role="alert" className="pb-2 pl-1 text-[13px] text-red">
           {t("common.error")}
         </p>
       ) : null}
@@ -56,10 +55,19 @@ function SwitchRow({ locale, prefKey, enabled, label, note, disabled = false }: 
   );
 }
 
+/** 켜고 끄는 스위치 모양(시안): 48×28 알약 + 1.5px 남색 선, 켜면 망고. 누르는 건 감싼 button이 한다 */
+function SwitchLook({ on }: { on: boolean }) {
+  return (
+    <span className={`flex h-7 w-12 items-center rounded-full border-[1.5px] border-ink p-[2.5px] transition-colors ${on ? "justify-end bg-sky" : "justify-start bg-white"}`}>
+      <span className="h-[19px] w-[19px] rounded-full border-[1.5px] border-ink bg-white" />
+    </span>
+  );
+}
+
 function SwitchButton({ label, on, disabled }: { label: string; on: boolean; disabled: boolean }) {
   const { pending } = useFormStatus();
   return (
-    <button disabled={disabled || pending} aria-label={label} aria-pressed={on} aria-busy={pending} className={`flex h-11 w-16 shrink-0 items-center justify-end disabled:opacity-40 ${pending ? "motion-safe:animate-pulse" : ""}`}>
+    <button disabled={disabled || pending} aria-label={label} aria-pressed={on} aria-busy={pending} className={`flex h-11 w-14 shrink-0 items-center justify-end disabled:opacity-40 ${pending ? "motion-safe:animate-pulse" : ""}`}>
       <SwitchLook on={on} />
     </button>
   );
@@ -74,7 +82,7 @@ export function AppLockSetting({ locale, enabled }: { locale: Locale; enabled: b
       prefKey="app_lock"
       enabled={enabled}
       label={t("privacy.lock")}
-      note={native ? null : <span className="text-[15px] text-muted">{t("privacy.lockUnavailable")}</span>}
+      note={native ? null : <span className="text-[12px] text-muted">{t("privacy.lockUnavailable")}</span>}
       disabled={!native && !enabled}
     />
   );
@@ -112,11 +120,11 @@ export function ReminderSetting({ locale, offsets }: { locale: Locale; offsets: 
       <input type="hidden" name="offsets" value={JSON.stringify(value)} />
       <ReminderPicker value={value} onChange={setValue} locale={locale} compact />
       {failed ? (
-        <p role="alert" className="text-[16px] text-red">
+        <p role="alert" className="text-[13px] text-red">
           {t("common.error")}
         </p>
       ) : null}
-      {dirty ? <PendingButton className="btn-primary !h-11 !text-[18px]">{t("common.save")}</PendingButton> : null}
+      {dirty ? <PendingButton className="btn-primary !h-11 !text-[22px]">{t("common.save")}</PendingButton> : null}
     </form>
   );
 }
@@ -195,12 +203,12 @@ export function WebPushSetting({ locale, publicKey }: { locale: Locale; publicKe
 
   const label = t("privacy.webPush");
   return (
-    <div className="flex min-h-12 flex-col justify-center border-t-[1.5px] border-dashed border-rule">
+    <div className="flex min-h-[47px] flex-col justify-center border-t-[1.5px] border-dashed border-ink/[0.18]">
       <div className="flex items-center gap-3">
         <div className="flex flex-1 flex-col gap-0.5 pl-1">
-          <span className="text-[19px]">{label}</span>
-          {state === "blocked" ? <span className="text-[15px] text-muted">{t("privacy.webPushBlocked")}</span> : null}
-          {state === "install" ? <span className="text-[15px] text-muted">{t("privacy.webPushInstall")}</span> : null}
+          <span className="text-[15px]">{label}</span>
+          {state === "blocked" ? <span className="text-[12px] text-muted">{t("privacy.webPushBlocked")}</span> : null}
+          {state === "install" ? <span className="text-[12px] text-muted">{t("privacy.webPushInstall")}</span> : null}
         </div>
         <button
           type="button"
@@ -219,13 +227,13 @@ export function WebPushSetting({ locale, publicKey }: { locale: Locale; publicKe
               setBusy(false);
             }
           }}
-          className={`flex h-11 w-16 shrink-0 items-center justify-end disabled:opacity-40 ${busy ? "motion-safe:animate-pulse" : ""}`}
+          className={`flex h-11 w-14 shrink-0 items-center justify-end disabled:opacity-40 ${busy ? "motion-safe:animate-pulse" : ""}`}
         >
           <SwitchLook on={on} />
         </button>
       </div>
       {failed ? (
-        <p role="alert" className="pb-2 pl-1 text-[16px] text-red">
+        <p role="alert" className="pb-2 pl-1 text-[13px] text-red">
           {t("common.error")}
         </p>
       ) : null}

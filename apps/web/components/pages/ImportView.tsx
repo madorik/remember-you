@@ -1,7 +1,8 @@
 import { IMPORT_MAX } from "@readme/core";
 import { ImportMemo } from "@/app/(app)/import/ImportMemo";
-import { TopBar } from "@/components/chrome";
-import { Heart, Star } from "@/components/diary";
+import Link from "next/link";
+import { Icon } from "@/components/marks";
+import { Mascot } from "@/components/Mascot";
 import type { ImportData } from "@/lib/pages/import.data";
 import { makeT } from "@/lib/t";
 
@@ -10,11 +11,17 @@ export function ImportView({ locale, scope, people, back }: ImportData) {
   const t = makeT(locale);
   return (
     <div className="flex flex-1 flex-col">
-      <TopBar close={back} label={t("common.close")} />
-      <div className="relative px-6 pt-1.5 [html[data-kb]_&]:hidden">
-        <h1 className="hl inline-block px-1 text-[34px] leading-[1.2]">{t("import.title")}</h1>
-        <Star size={22} rotate={14} className="right-[42px] top-0" />
-        <Heart size={20} rotate={-14} className="right-[96px] top-9" />
+      <div className="flex h-12 shrink-0 items-center justify-between pl-1.5 pr-4 [html[data-kb]_&]:hidden">
+        <div className="flex min-w-0 items-center gap-0.5">
+          <Link href={back} prefetch={false} aria-label={t("common.close")} className="flex h-11 w-11 shrink-0 items-center justify-center">
+            <Icon name="close" size={22} strokeWidth={1.8} />
+          </Link>
+          <h1 className="min-w-0 truncate text-[34px] leading-none">
+            <span className="hl">{t("import.title")}</span>
+          </h1>
+        </div>
+        {/* 책 읽는 캐릭터(시안) */}
+        <Mascot pose={7} size={42} className="shrink-0" />
       </div>
       <ImportMemo
         key={scope.kind === "person" ? scope.id : scope.kind}

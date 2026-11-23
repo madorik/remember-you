@@ -6,7 +6,7 @@ import { createRequest, type InviteState } from "@/app/actions/request";
 import { leaveTour, trackTour } from "@/app/actions/tour";
 import { useT } from "@/components/editors/shared";
 import { Avatar } from "@/components/Avatar";
-import { Heart, MarginLine, Polaroid, Sparkle, Squiggle, SKY_STAR, Star, Tape } from "@/components/diary";
+import { TornTape } from "@/components/TornTape";
 import { CheckGlyph, Icon } from "@/components/marks";
 import { Mascot } from "@/components/Mascot";
 import { SectionIcon } from "@/components/SectionIcon";
@@ -88,39 +88,44 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
   if (state.url) {
     return (
       <div className="flex flex-1 flex-col">
-        <section className="card relative mx-4 mt-[22px] -rotate-[0.5deg] px-5 pb-[22px] pt-[30px]">
-          <Tape color="mango" w={108} h={26} rotate={-3} alpha={0.62} className="-top-[13px] left-1/2 -ml-[54px]" />
+        <section className="card relative mx-4 mt-9 px-3 py-[18px]">
           <div className="flex items-center gap-[18px]">
-            <Polaroid
-              photo={80}
-              rotate={-4}
-              caption={<span className="max-w-[80px] truncate">{name.trim()}</span>}
-            >
-              {who?.kind === "person" ? (
-                <Avatar config={who.person.avatar} size={74} label={who.person.label} decorative />
-              ) : (
-                <Mascot pose={6} size={68} />
-              )}
-            </Polaroid>
-            <h2 className="min-w-0 text-[26px] leading-[1.3]">{t("request.ready", { name: name.trim() })}</h2>
+            {/* 폴라로이드(시안): 남색 선 + 흰 바탕, 안에 얼굴(없으면 편지 든 캐릭터), 위에 분홍 테이프 */}
+            <figure className="relative m-0 flex shrink-0 -rotate-[4deg] flex-col items-center border-[1.5px] border-ink bg-white px-[6px] pb-[18px] pt-[6px]">
+              <TornTape color="pink" w={58} h={20} rotate={-6} className="-top-[13px] left-[18px]" />
+              <span className="flex h-[98px] w-[98px] items-center justify-center overflow-hidden bg-white">
+                {who?.kind === "person" ? <Avatar config={who.person.avatar} size={92} label={who.person.label} decorative /> : <Mascot pose={6} size={84} />}
+              </span>
+              <figcaption className="sr-only">{name.trim()}</figcaption>
+            </figure>
+            <div className="min-w-0 flex-1">
+              <h2 className="hand-written !font-normal text-[26px] leading-[1.15]">{t("request.ready", { name: name.trim() })}</h2>
+              <ul className="mt-2.5 flex flex-wrap gap-x-2 gap-y-1.5">
+                {SECTIONS_BY_IMPORTANCE.filter((x) => topics.includes(x)).map((x) => (
+                  <li key={x} className="hand flex h-[30px] items-center rounded-full border-[1.5px] border-ink bg-[#e4ecfa] px-2.5 text-[16px] leading-none">
+                    {topicLabel(x)}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
-          <ul className="mt-5 flex flex-wrap gap-2">
-            {SECTIONS_BY_IMPORTANCE.filter((x) => topics.includes(x)).map((x) => (
-              <li key={x} className="flex h-[38px] items-center gap-1.5 rounded-full bg-white pl-[5px] pr-3.5 text-[17px] shadow-[inset_0_0_0_1.5px_var(--color-ink)]">
-                <SectionIcon section={x} size={28} round />
-                {topicLabel(x)}
-              </li>
-            ))}
-          </ul>
-          <Heart size={28} rotate={16} className="-right-2 top-[26px]" />
-          <Star size={20} rotate={-12} className="-left-[7px] bottom-6" />
         </section>
-        <section className="card ruled relative mx-4 mt-[22px] flex flex-col pb-5 pl-10 pr-5 pt-[22px] [background-position:0_26px]">
-          <MarginLine left={26} />
-          <Tape color="mint" w={74} h={22} rotate={-8} alpha={0.55} vertical className="-top-2.5 left-3.5" />
-          <h3 className="pb-3 text-[18px] leading-[26px] text-muted">{t("request.message")}</h3>
-          <p className="whitespace-pre-line rounded-[6px_20px_20px_20px] bg-[#d3e9ff] px-4 pb-[15px] pt-3.5 text-[20px] leading-[1.5]">{shareText}</p>
-          <div className="pt-4">
+        <section className="card relative mx-4 mt-9 flex flex-col px-3.5 pb-3.5 pt-2.5">
+          <div className="flex min-h-[34px] items-center">
+            <h3 className="scribble text-[24px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
+              {t("request.message")}
+            </h3>
+          </div>
+          <p className="mt-3 whitespace-pre-line rounded-[20px] border-[1.5px] border-ink bg-[#e4ecfa] px-3.5 py-3 text-[14px] leading-[1.55]">
+            {state.text}
+            {message.trim() ? (
+              <>
+                {"\n"}
+                <span className="hand-written text-[22px] leading-[1.3]">{message.trim()}</span>
+              </>
+            ) : null}
+          </p>
+          <div className="pt-3">
             <LinkField url={state.url} label={t("common.copyLink")} />
           </div>
         </section>
@@ -139,6 +144,10 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
     );
   }
 
+  const chip = "flex h-9 items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-white pl-[5px] pr-3.5 text-[14px]";
+  const h2 = "hand scribble text-[24px] leading-none";
+  const mint = { "--scribble": "#5dbb9a" } as React.CSSProperties;
+
   return (
     <form action={action} className="flex flex-1 flex-col">
       <input type="hidden" name="sections" value={JSON.stringify(topics)} />
@@ -146,41 +155,43 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
       <input type="hidden" name="name" value={name} />
 
       {fixed ? null : (
-        <section className="card relative mx-4 mt-5 flex flex-col px-5 pb-5 pt-[22px]">
-          <Tape color="mango" w={100} h={24} rotate={-3} alpha={0.62} className="-top-[11px] left-1/2 -ml-[50px]" />
-          <label htmlFor="request-who" className="pb-3 text-[21px] leading-[26px]">
-            {t("request.who")}
-          </label>
+        <section className="card relative mx-4 mt-5 flex flex-col px-3.5 pb-3.5 pt-2.5">
+          <TornTape color="pink" w={66} h={21} rotate={6} className="-top-3 right-6" />
+          <div className="flex min-h-[34px] items-center">
+            <label htmlFor="request-who" className={h2} style={mint}>
+              {t("request.who")}
+            </label>
+          </div>
           {who ? (
-            <div className="flex items-center gap-1.5">
-              <span className="flex h-[54px] min-w-0 items-center gap-2 rounded-full bg-[#fff0c9] pl-1.5 pr-5 text-[22px] shadow-[inset_0_0_0_1.5px_var(--color-ink),0_3px_0_var(--color-mango-deep)]">
+            <div className="mt-2.5 flex items-center">
+              <span className="flex h-9 min-w-0 items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-sky pl-[5px] pr-1 text-[14px]">
                 {who.kind === "person" ? (
-                  <Avatar config={who.person.avatar} size={40} label={who.person.label} />
+                  <Avatar config={who.person.avatar} size={26} label={who.person.label} />
                 ) : (
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
-                    <Icon name="personAdd" size={18} strokeWidth={2} />
+                  <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-white">
+                    <Icon name="personAdd" size={15} strokeWidth={2} />
                   </span>
                 )}
                 <span className="truncate">{name}</span>
                 {who.kind === "new" ? <TagChip>{t("voice.newPerson")}</TagChip> : null}
+                <button
+                  type="button"
+                  aria-label={t("request.whoAgain")}
+                  onClick={() => {
+                    setWho(null);
+                    setQuery("");
+                    setTopics(defaults);
+                  }}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center"
+                >
+                  <Icon name="close" size={14} strokeWidth={2.2} />
+                </button>
               </span>
-              <button
-                type="button"
-                aria-label={t("request.whoAgain")}
-                onClick={() => {
-                  setWho(null);
-                  setQuery("");
-                  setTopics(defaults);
-                }}
-                className="flex h-11 w-11 shrink-0 items-center justify-center text-muted"
-              >
-                <Icon name="close" size={18} strokeWidth={2} />
-              </button>
             </div>
           ) : (
             <>
-              <div className="relative">
-                <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" className="pointer-events-none absolute left-[15px] top-4 text-muted">
+              <div className="relative mt-2.5">
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" className="pointer-events-none absolute left-[15px] top-[17px] text-muted">
                   <circle cx="11" cy="11" r="7" />
                   <path d="M20 20l-4-4" />
                 </svg>
@@ -193,20 +204,20 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
                   maxLength={40}
                   enterKeyHint="go"
                   placeholder={t("people.search")}
-                  className="field !pl-[44px] [&::-webkit-search-cancel-button]:appearance-none"
+                  className="field !pl-[42px] [&::-webkit-search-cancel-button]:appearance-none"
                 />
               </div>
               {matches.length || (q && !exact) ? (
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-wrap gap-2">
                   {matches.map((p) => (
-                    <button key={p.id} type="button" onClick={() => choose(p)} className="flex h-12 items-center gap-1.5 rounded-full bg-white pl-[5px] pr-4 text-[19px] shadow-[inset_0_0_0_1.5px_var(--color-edge)]">
-                      <Avatar config={p.avatar} size={36} label={p.label} />
+                    <button key={p.id} type="button" onClick={() => choose(p)} className={chip}>
+                      <Avatar config={p.avatar} size={26} label={p.label} />
                       {p.label}
                     </button>
                   ))}
                   {q && !exact ? (
-                    <button type="button" onClick={chooseNew} className="flex h-12 items-center gap-1.5 rounded-full border-[1.5px] border-dashed border-ink pl-3 pr-3.5 text-[19px] text-accent">
-                      <Icon name="personAdd" size={17} strokeWidth={2} />
+                    <button type="button" onClick={chooseNew} className="flex h-9 items-center gap-1.5 rounded-full border-[1.5px] border-dashed border-ink pl-3 pr-3.5 text-[14px] text-accent">
+                      <Icon name="personAdd" size={15} strokeWidth={2} />
                       {q}
                       <TagChip>{t("voice.newPerson")}</TagChip>
                     </button>
@@ -215,16 +226,17 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
               ) : null}
             </>
           )}
-          <Heart size={26} rotate={16} className="-right-2 top-[18px]" />
         </section>
       )}
 
-      <section className={`card relative mx-4 px-4 py-[18px] ${fixed ? "mt-5" : "mt-4"}`}>
-        <div className="flex items-baseline justify-between px-1">
-          <h2 className="text-[21px]">{t("request.topics")}</h2>
-          <span className="num text-[18px] text-muted">{topics.length}</span>
+      <section className={`card relative mx-4 px-3.5 pb-3.5 pt-2.5 ${fixed ? "mt-5" : "mt-3.5"}`}>
+        <div className="flex min-h-[34px] items-center justify-between">
+          <h2 className={h2} style={mint}>
+            {t("request.topics")}
+          </h2>
+          <span className="hand inline-flex h-[30px] items-center rounded-[10px] border-[1.5px] border-ink bg-sky-soft px-2.5 text-[17px] leading-none">{topics.length}</span>
         </div>
-        <div className="mt-3.5 grid grid-cols-2 gap-x-2 gap-y-2.5 pb-[3px]">
+        <div className="mt-2 grid grid-cols-3 gap-2">
           {SECTIONS_BY_IMPORTANCE.map((x) => {
             const on = topics.includes(x);
             return (
@@ -233,41 +245,46 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
                 type="button"
                 aria-pressed={on}
                 onClick={() => setTopics(on ? topics.filter((y) => y !== x) : SECTIONS.filter((y) => y === x || topics.includes(y)))}
-                className={`relative flex min-h-[60px] items-center gap-2 rounded-[14px] py-2 pl-2 pr-2.5 text-left transition-shadow ${on ? "bg-sky-soft shadow-[inset_0_0_0_1.5px_var(--color-ink),0_3px_0_var(--color-mango-deep)]" : "bg-white shadow-[inset_0_0_0_1.5px_var(--color-ink)]"}`}
+                className={`relative flex h-[58px] flex-col items-center justify-center gap-[3px] rounded-xl text-[12px] leading-none ${on ? "border-[2.5px] border-ink bg-[#e4ecfa]" : "border-[1.5px] border-ink bg-white"}`}
               >
-                <SectionIcon section={x} size={36} />
-                <span className="min-w-0 flex-1 text-[19px] leading-[1.2]">{topicLabel(x)}</span>
+                <SectionIcon section={x} size={30} outline />
+                {topicLabel(x)}
                 {on ? (
-                  <span aria-hidden="true" className="absolute -right-[5px] -top-2 flex h-[22px] w-[22px] items-center justify-center rounded-full bg-sky text-ink shadow-[inset_0_0_0_1.5px_var(--color-ink)]">
-                    <CheckGlyph size={13} />
+                  <span aria-hidden="true" className="absolute -right-[5px] -top-[7px] flex h-5 w-5 items-center justify-center rounded-full border-[1.5px] border-ink bg-sky text-ink">
+                    <CheckGlyph size={12} />
                   </span>
                 ) : null}
               </button>
             );
           })}
         </div>
-        <Star size={20} rotate={-12} color={SKY_STAR} className="-left-[7px] top-[22px]" />
-        <Squiggle w={54} width={2.4} className="-bottom-2 right-[30px]" />
       </section>
 
-      <section className="card ruled relative mx-4 mt-4 flex flex-col pb-5 pl-10 pr-5 pt-[22px] [background-position:0_26px]">
-        <MarginLine left={26} />
-        <Tape color="mint" w={74} h={22} rotate={-8} alpha={0.55} vertical className="-top-2.5 left-3.5" />
-        <label htmlFor="request-message" className="mb-2.5 text-[21px] leading-[26px]">
-          {t("request.message")}
-        </label>
-        <textarea id="request-message" name="message" value={message} onChange={(e) => setMessage(e.target.value)} rows={3} maxLength={300} className="h-24 resize-none border-0 bg-transparent p-0 text-[20px] leading-8 outline-none" />
-        <Star size={22} rotate={12} className="-right-1.5 bottom-[26px]" />
-        <Sparkle size={18} className="right-[30px] top-[18px]" />
+      <section className="card relative mx-4 mt-3.5 flex flex-col px-3.5 pb-3 pt-2.5">
+        <div className="flex min-h-[34px] items-center">
+          <label htmlFor="request-message" className={h2} style={mint}>
+            {t("request.message")}
+          </label>
+        </div>
+        <textarea
+          id="request-message"
+          name="message"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          rows={2}
+          maxLength={300}
+          className="hand-written mt-1 h-[60px] w-full resize-none border-0 bg-transparent p-0 text-[22px] leading-[30px] outline-none [background-image:repeating-linear-gradient(180deg,transparent_0_29px,#d5e1f3_29px_30px)]"
+        />
       </section>
 
-      <div className="bottom-bar mt-auto flex flex-col gap-2 bg-bg px-4 pt-4">
+      <div className="bottom-bar mt-auto flex flex-col items-end gap-2 bg-bg px-4 pt-4">
         {state.error ? (
-          <p role="alert" className="px-1 text-[17px] text-red">
+          <p role="alert" className="w-full px-1 text-[14px] text-red">
             {t(state.error === "pickOne" ? "request.pickOne" : name.trim() ? "common.error" : "request.needName")}
           </p>
         ) : null}
-        <button disabled={pending || !topics.length || !name.trim()} className="btn-primary w-full">
+        <button disabled={pending || !topics.length || !name.trim()} className="inline-flex h-11 items-center gap-[5px] rounded-full border-[1.5px] border-ink bg-sky pl-2.5 pr-3.5 text-[16px] disabled:border-ink/[0.22] disabled:bg-[#e8e1cf] disabled:text-[#5a5f78]">
+          <Icon name="link" size={17} strokeWidth={1.7} />
           {t("request.make")}
         </button>
       </div>

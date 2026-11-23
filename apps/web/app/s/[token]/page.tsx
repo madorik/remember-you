@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { AppTabBar } from "@/components/AppTabBar";
 import { ClaimShare, type ClaimPerson } from "@/components/ClaimShare";
 import { TopBar, Wordmark } from "@/components/chrome";
-import { Heart, SKY_STAR, Squiggle, Star, Tape } from "@/components/diary";
+import { TornTape } from "@/components/TornTape";
 import { aiConfigured } from "@/lib/ai";
 import { getSession, listPeople } from "@/lib/data";
 import { makeT, requestLocale } from "@/lib/i18n";
@@ -32,16 +32,13 @@ export default async function ReceiveSharePage({ params }: { params: Promise<{ t
 
   const message = (text: string, extra?: React.ReactNode) => (
     <main className="screen">
-      <div className="flex min-h-11 items-center px-5">
-        <Wordmark size={26} locale={locale} />
+      <div className="flex min-h-12 items-center px-5">
+        <Wordmark size={24} locale={locale} />
       </div>
-      <section className="card relative mx-4 mt-10 px-6 pb-[34px] pt-9 [transform:rotate(-0.7deg)]">
-        <Tape color="pink" w={108} h={26} rotate={-3} alpha={0.6} className="-top-[13px] left-1/2 -ml-[54px]" />
-        <p className="text-[28px] leading-[1.4]">{text}</p>
+      <section className="card relative mx-4 mt-10 px-5 pb-6 pt-8">
+        <TornTape color="pink" w={66} h={21} rotate={6} className="-top-3 right-6" />
+        <p className="hand text-[28px] leading-[1.3]">{text}</p>
         {extra}
-        <Star size={24} rotate={14} color={SKY_STAR} className="-right-2 top-[22px]" />
-        <Heart size={26} rotate={-14} className="-bottom-2.5 -left-2" />
-        <Squiggle w={56} className="-bottom-[7px] right-7" />
       </section>
     </main>
   );
@@ -57,15 +54,15 @@ export default async function ReceiveSharePage({ params }: { params: Promise<{ t
       <div className="mt-7 flex flex-col gap-2.5">
         {inApp ? null : (
           <>
-            <a href={`kr.readme.app://s/${token}`} className="btn-primary !min-h-[56px] w-full !text-[21px]">
+            <a href={`kr.readme.app://s/${token}`} className="btn-primary w-full">
               {t("share.in.openApp")}
             </a>
-            <a href={`/get?from=share_record&next=${next}`} className="btn-outline btn-outline-lift !min-h-[56px] w-full !text-[20px]">
+            <a href={`/get?from=share_record&next=${next}`} className="btn-outline w-full">
               {t("share.in.getApp")}
             </a>
           </>
         )}
-        <Link href={`/?next=${next}`} className={`${inApp ? "btn-primary" : "btn-outline btn-outline-lift"} !min-h-[56px] w-full !text-[20px]`}>
+        <Link href={`/?next=${next}`} className={`${inApp ? "btn-primary" : "btn-outline"} w-full`}>
           {t("share.in.login")}
         </Link>
       </div>,
@@ -81,7 +78,7 @@ export default async function ReceiveSharePage({ params }: { params: Promise<{ t
   );
 
   // 내가 보낸 링크는 내가 받을 수 없다
-  if (view.fromId === session.user.id) return shell(<p className="px-6 pt-6 text-[24px] leading-[1.4]">{t("share.in.mine")}</p>);
+  if (view.fromId === session.user.id) return shell(<p className="hand px-6 pt-6 text-[26px] leading-[1.35]">{t("share.in.mine")}</p>);
 
   const { record } = view;
   const from = record.name || t("share.in.someone");

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { finishOnboarding, saveAvatar, saveFood } from "@/app/actions/card";
-import { Heart, SKY_STAR, Sparkle, Squiggle, Star, Tape, type TapeColor } from "@/components/diary";
+import { TornTape, type TornTapeColor } from "@/components/TornTape";
 import { AvatarBuilder, NameField } from "@/components/editors/AvatarBuilder";
 import { DateSpecPicker, ReminderPicker } from "@/components/editors/DatesEditor";
 import { Icon } from "@/components/marks";
@@ -26,17 +26,36 @@ export function Submit({ children, disabled, className = "w-full" }: { children:
 function Later({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" name="later" value="1" disabled={pending} className="mt-1 flex min-h-11 w-full items-center justify-center text-[19px] text-muted">
+    <button type="submit" name="later" value="1" disabled={pending} className="mt-1 flex min-h-11 w-full items-center justify-center text-[14px] text-muted">
       {children}
     </button>
   );
 }
 
-/** 온보딩 단계의 종이 시트: 머리 아래에서 화면 끝까지, 윗변 가운데에 테이프 */
-const SHEET = "relative z-10 mt-4 flex flex-1 flex-col rounded-t-[28px] bg-paper shadow-[0_-1px_0_rgb(31_35_64/0.1),0_-14px_28px_-18px_rgb(31_35_64/0.4)]";
+/** 온보딩 단계의 흰 카드(시안): 남색 1.5px 선 + 모서리 18, 윗변 가운데에 테이프 */
+const CARD = "card relative mx-4 mt-8 px-3.5 pb-3.5 pt-3";
+const DASH = "border-t-[1.5px] border-dashed border-ink/20 pt-2.5";
 
-function SheetTape({ color, vertical = false }: { color: TapeColor; vertical?: boolean }) {
-  return <Tape color={color} w={104} h={26} rotate={-3} alpha={color === "mint" ? 0.55 : color === "pink" ? 0.6 : 0.62} vertical={vertical} className="-top-3 left-1/2 -ml-[52px]" />;
+function CardTape({ color }: { color: TornTapeColor }) {
+  return <TornTape color={color} w={71} h={26} rotate={-3} className="-top-3.5 left-1/2 -ml-[35px]" />;
+}
+
+/** 아래 큰 단추의 손그림 아이콘(시안): 글자 왼쪽에 */
+const CTA_ICON = {
+  check: <path d="M5 12.5l4.5 4.5L19 7" />,
+  next: <path d="M9 6l6 6-6 6" />,
+  spark: <path d="M12 3.5c.6 4.2 2.3 5.9 6.5 6.5-4.2.6-5.9 2.3-6.5 6.5-.6-4.2-2.3-5.9-6.5-6.5 4.2-.6 5.9-2.3 6.5-6.5z" />,
+} as const;
+
+function Cta({ icon, children }: { icon: keyof typeof CTA_ICON; children: React.ReactNode }) {
+  return (
+    <Submit className="w-full !text-[26px]">
+      <svg aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+        {CTA_ICON[icon]}
+      </svg>
+      {children}
+    </Submit>
+  );
 }
 
 /**
@@ -45,14 +64,16 @@ function SheetTape({ color, vertical = false }: { color: TapeColor; vertical?: b
  */
 export function ProfileHeader({ title, back, backLabel, save }: { title: string; back: string; backLabel: string; save: string }) {
   return (
-    <div className="sticky z-30 flex items-center gap-1 bg-bg pb-2 pl-2 pr-4 pt-1.5" style={{ top: "var(--sat)" }}>
-      <Link href={back} prefetch={false} aria-label={backLabel} className="flex h-11 w-11 shrink-0 items-center justify-center">
-        <Icon name="back" size={24} />
-      </Link>
-      <h1 className="min-w-0 flex-1 truncate text-[32px] leading-[1.25]">
-        <span className="hl px-1">{title}</span>
-      </h1>
-      <Submit className="!h-11 shrink-0 !rounded-full !px-[22px] !text-[19px] !shadow-[0_3px_0_var(--color-mango-deep)]">{save}</Submit>
+    <div className="sticky z-30 flex h-12 items-center justify-between gap-1.5 bg-bg pl-1.5 pr-2.5" style={{ top: "var(--sat)" }}>
+      <div className="flex min-w-0 items-center gap-0.5">
+        <Link href={back} prefetch={false} aria-label={backLabel} className="flex h-11 w-11 shrink-0 items-center justify-center">
+          <Icon name="back" size={24} />
+        </Link>
+        <h1 className="min-w-0 truncate text-[31px] leading-none">
+          <span className="hl">{title}</span>
+        </h1>
+      </div>
+      <Submit className="!h-[34px] !min-h-0 !w-auto shrink-0 !rounded-full !px-3.5 !py-0 !font-sans !text-[15px] !font-normal !tracking-normal">{save}</Submit>
     </div>
   );
 }
@@ -100,14 +121,15 @@ export function AvatarStep({
       </form>
     );
   return (
-    <form action={saveAvatar} className={`${SHEET} !mt-2.5`}>
+    <form action={saveAvatar} className="flex flex-1 flex-col">
       {hidden}
-      <div className="px-4 pt-4">
-        <AvatarBuilder value={value} onChange={setValue} locale={locale} side={<NameField label={t("onb.avatar.name")} value={name} />} tape="mango" paper />
+      {/* 캐릭터 만들기는 스스로 흰 카드(paper: 윗변에 망고 테이프) */}
+      <div className="mx-4 mt-6">
+        <AvatarBuilder value={value} onChange={setValue} locale={locale} side={<NameField label={t("onb.avatar.name")} value={name} />} paper />
       </div>
       {/* 시작 버튼은 늘 화면 아래에 붙어 보인다 */}
-      <div className="bottom-bar mt-auto bg-paper px-4 pt-3">
-        <Submit>{t("onb.avatar.cta")}</Submit>
+      <div className="bottom-bar mt-auto bg-bg px-4 pt-3">
+        <Cta icon="check">{t("onb.avatar.cta")}</Cta>
       </div>
     </form>
   );
@@ -118,21 +140,19 @@ export function FoodStep({ locale, safety, spicy, next }: { locale: Locale; safe
   const [value, setValue] = useState<SafetyData>(safety ?? emptySection("safety"));
   const [level, setLevel] = useState<number | null>(spicy);
   return (
-    <form action={saveFood} className={SHEET}>
-      <SheetTape color="mint" vertical />
+    <form action={saveFood} className="flex flex-1 flex-col">
       <input type="hidden" name="safety" value={JSON.stringify(value)} />
       <input type="hidden" name="spicy" value={JSON.stringify(level)} />
       <input type="hidden" name="next" value={next} />
-      <div className="relative flex flex-col gap-7 px-5 pt-8">
+      <div className={`${CARD} flex flex-col`}>
+        <CardTape color="mint" />
         <SafetyEditor value={value} onChange={setValue} locale={locale} showNote={false} />
-        <SpicyScale value={level} onChange={setLevel} locale={locale} />
-        <Heart size={26} rotate={16} className="right-3 top-2" />
-        <Squiggle w={54} width={2.4} className="right-[30px] top-[214px]" />
-        <Sparkle size={18} className="left-px top-[380px]" />
-        <Star size={20} rotate={-12} color={SKY_STAR} className="right-2 top-[436px]" />
+        <div className={DASH}>
+          <SpicyScale value={level} onChange={setLevel} locale={locale} />
+        </div>
       </div>
-      <div className="bottom-bar mt-auto bg-paper px-4 pt-4">
-        <Submit>{t("common.next")}</Submit>
+      <div className="bottom-bar mt-auto bg-bg px-4 pt-4">
+        <Cta icon="next">{t("common.next")}</Cta>
       </div>
     </form>
   );
@@ -144,21 +164,19 @@ export function BirthdayStep({ locale, birthday, offsets, next }: { locale: Loca
   const [spec, setSpec] = useState<DateSpec | null>(birthday);
   const [when, setWhen] = useState<ReminderOffset[]>(offsets);
   return (
-    <form action={finishOnboarding} className={SHEET}>
-      <SheetTape color="pink" />
+    <form action={finishOnboarding} className="flex flex-1 flex-col">
       <input type="hidden" name="birthday" value={JSON.stringify(spec)} />
       <input type="hidden" name="offsets" value={JSON.stringify(when)} />
       <input type="hidden" name="next" value={next} />
-      <div className="relative flex flex-col gap-7 px-5 pt-8">
+      <div className={`${CARD} flex flex-col`}>
+        <CardTape color="pink" />
         <DateSpecPicker value={spec} onChange={setSpec} locale={locale} year="birth" />
-        <ReminderPicker value={when} onChange={setWhen} locale={locale} />
-        <Heart size={26} rotate={16} className="right-3.5 top-2.5" />
-        <Star size={22} rotate={12} color={SKY_STAR} className="bottom-[52px] right-[18px]" />
-        <Sparkle size={18} className="right-[74px] top-[62px]" />
-        <Squiggle w={54} width={2.4} className="-bottom-2.5 right-5" />
+        <div className={`${DASH} mt-3`}>
+          <ReminderPicker value={when} onChange={setWhen} locale={locale} />
+        </div>
       </div>
-      <div className="bottom-bar mt-auto bg-paper px-4 pt-4">
-        <Submit>{t("onb.finish")}</Submit>
+      <div className="bottom-bar mt-auto bg-bg px-4 pt-4">
+        <Cta icon="spark">{t("onb.finish")}</Cta>
         <Later>{t("onb.birthday.later")}</Later>
       </div>
     </form>

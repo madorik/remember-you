@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Wordmark } from "@/components/chrome";
-import { HandRule, Heart, Squiggle, Star, SKY_STAR, Tape } from "@/components/diary";
+import { TornTape } from "@/components/TornTape";
 import { FaqList } from "@/components/Faq";
 import { PicksDisclosure } from "@/components/GiftPicks";
 import { GuideList } from "@/components/GuideList";
@@ -79,9 +79,9 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           },
         ]}
       />
-      <nav aria-label="위치" className="flex min-h-11 items-center gap-1.5 px-5 text-[17px] text-muted">
+      <nav aria-label="위치" className="flex min-h-12 items-center gap-1.5 px-5 text-[13px] text-muted">
         <Link href="/" aria-label="기억해유">
-          <Wordmark size={22} locale="ko" />
+          <Wordmark size={24} locale="ko" />
         </Link>
         <span aria-hidden="true">›</span>
         <Link href="/gifts" className="flex min-h-11 items-center">
@@ -89,8 +89,8 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
         </Link>
       </nav>
       <article className="flex flex-col">
-        <header className="relative px-5 pt-3.5">
-          <h1 className="text-[31px] leading-[1.25]">
+        <header className="relative px-5 pt-5">
+          <h1 className="text-[36px] leading-[1.15]">
             {title.rest ? (
               <>
                 <span className="hl">{title.head}</span> <br />
@@ -100,31 +100,26 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
               <span className="hl">{g.title}</span>
             )}
           </h1>
-          <HandRule className="mt-3" />
-          <p className="mt-2.5 text-[16px] text-muted">
+          <p className="mt-3 text-[12px] text-muted">
             <time dateTime={GUIDES_UPDATED}>{koDate(GUIDES_UPDATED)} 업데이트</time>
           </p>
-          <p className="mt-2.5 rounded-[3px] bg-[#fff0c9] px-3.5 pb-3.5 pt-3 text-[18px] leading-[1.55] shadow-[0_6px_12px_-9px_rgb(31_35_64/0.45)] [transform:rotate(-0.4deg)]">{g.answer}</p>
-          <Star size={22} rotate={14} className="right-[22px] top-2" />
-          <Heart size={24} rotate={16} className="-bottom-3 right-3.5" />
+          <p className="mt-3 rounded-[4px_4px_16px_4px] border-[1.5px] border-ink bg-[#fff3b0] px-3.5 py-3 text-[14px] leading-[1.6] [transform:rotate(-0.4deg)]">{g.answer}</p>
         </header>
-        <div className="px-4 pt-[30px]">
+        <div className="px-4 pt-9">
           <GuideList bands={picks.map((b) => ({ band: b.band, title: `${BAND_NAME[b.band]} ${g.who} 선물`, items: b.items.map((x) => ({ id: x.id, title: x.q, name: x.name, url: x.url, image: x.image })) }))} />
         </div>
         <FaqList id="faq" title="자주 묻는 질문" items={faq} />
-        <section className="card relative mx-4 mt-10 flex flex-col gap-4 px-5 pb-[22px] pt-6">
-          <Tape color="mango" w={108} h={26} rotate={-3} alpha={0.62} className="-top-[13px] left-1/2 -ml-[54px]" />
-          <h2 className="text-[26px] leading-[1.3]">{g.who}의 취향을 알면 더 꼭 맞아요</h2>
-          <p className="text-[18px] leading-[1.5] text-ink-2">기억해유에 {g.who}의 취향·사이즈·챙길 날을 적어 두면, 그 사람에게 맞춘 선물을 가격대별로 골라 드려요. 가족과 카드로 같이 고를 수도 있어요.</p>
-          <Link href="/" className="btn-primary w-full !min-h-14 !text-[21px]">
+        <section className="card relative mx-4 mt-10 flex flex-col gap-3 px-3.5 pb-3.5 pt-3">
+          <TornTape color="mango" w={62} h={21} rotate={-4} className="-top-3 right-8" />
+          <h2 className="hand scribble self-start text-[24px] leading-none">{g.who}의 취향을 알면 더 꼭 맞아요</h2>
+          <p className="pt-1 text-[13px] leading-[1.55] text-muted">기억해유에 {g.who}의 취향·사이즈·챙길 날을 적어 두면, 그 사람에게 맞춘 선물을 가격대별로 골라 드려요. 가족과 카드로 같이 고를 수도 있어요.</p>
+          <Link href="/" className="btn-primary w-full !min-h-[50px] !text-[24px]">
+            <Icon name="chevron" size={19} strokeWidth={2} />
             기억해유 시작하기
-            <Icon name="arrow" size={20} strokeWidth={2} />
           </Link>
-          <Star size={24} rotate={14} color={SKY_STAR} className="-right-2 top-6" />
-          <Squiggle w={56} className="-bottom-2 left-6" />
         </section>
         <nav aria-label="다른 선물 가이드" className="flex flex-col gap-3 px-4 pt-[38px]">
-          <h2 className="ml-1 text-[25px]">다른 선물 가이드</h2>
+          <h2 className="ml-1 text-[24px]">다른 선물 가이드</h2>
           <div className="flex flex-wrap gap-2">
             {others.map((x) => (
               <Link key={x.slug} href={`/gifts/${x.slug}`} className="chip">

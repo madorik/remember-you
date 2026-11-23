@@ -70,17 +70,17 @@ export function CaptureTargetSheet({
   const row = (p: TargetPerson) => {
     const on = current.kind === "person" && current.id === p.id;
     return (
-      <li key={p.id} className="border-t border-rule first:border-t-0">
+      <li key={p.id} className="border-t border-ink/[0.18] first:border-t-0">
         <button type="button" aria-pressed={on} onClick={() => onPick({ kind: "person", id: p.id }, all)} className="flex min-h-[64px] w-full items-center gap-3.5 py-1 text-left">
           <span aria-hidden="true">
             <Avatar config={p.avatar} size={44} label={p.name} decorative />
           </span>
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="flex min-w-0 items-center gap-1.5">
-              <span className="min-w-0 truncate text-[19px] tracking-[-0.02em]">{p.name}</span>
+              <span className="min-w-0 truncate hand-written text-[24px] leading-[1.15]">{p.name}</span>
               {p.tag ? <TagChip>{p.tag}</TagChip> : null}
             </span>
-            {p.hint ? <span className="truncate text-[15px] text-muted">{p.hint}</span> : null}
+            {p.hint ? <span className="truncate text-[12px] text-muted">{p.hint}</span> : null}
           </span>
           <DrawnCheck on={on} />
         </button>
@@ -97,7 +97,7 @@ export function CaptureTargetSheet({
       footer={
         <>
           {siblings > 0 ? (
-            <button type="button" role="checkbox" aria-checked={all} onClick={() => setAll(!all)} className="flex min-h-11 items-center gap-3 text-left text-[18px]">
+            <button type="button" role="checkbox" aria-checked={all} onClick={() => setAll(!all)} className="flex min-h-11 items-center gap-3 text-left text-[15px]">
               <DrawnCheck on={all} />
               {labels.all}
             </button>
@@ -109,7 +109,7 @@ export function CaptureTargetSheet({
               if (newName) onPick({ kind: "new", name: newName }, all);
             }}
           >
-            <label htmlFor="capture-new-name" className="flex items-center gap-1.5 text-[17px] text-muted">
+            <label htmlFor="capture-new-name" className="flex items-center gap-1.5 text-[13px] text-muted">
               <Icon name="personAdd" size={17} strokeWidth={2} />
               {labels.asNew}
             </label>
@@ -141,18 +141,18 @@ export function CaptureTargetSheet({
           onChange={(e) => setQuery(e.target.value)}
           placeholder={labels.search}
           aria-label={labels.search}
-          className="h-12 w-full rounded-[14px] bg-fill pl-[42px] pr-3.5 text-[16px] outline-none placeholder:text-muted"
+          className="h-12 w-full rounded-[14px] bg-fill pl-[42px] pr-3.5 text-[15px] outline-none placeholder:text-muted"
         />
       </div>
       {shownTop.length ? (
         <>
-          <p className="px-6 pt-1 text-[16px] text-accent">{labels.sameName.replace("{n}", String(top.length))}</p>
+          <p className="px-6 pt-1 text-[13px] text-accent">{labels.sameName.replace("{n}", String(top.length))}</p>
           <ul className="flex flex-col px-6 pb-1">{shownTop.map(row)}</ul>
-          {shownRest.length ? <div role="separator" className="mx-6 mt-1 border-t-[1.5px] border-dashed border-rule-strong" /> : null}
+          {shownRest.length ? <div role="separator" className="mx-6 mt-1 border-t-[1.5px] border-dashed border-ink/[0.18]-strong" /> : null}
         </>
       ) : null}
       <ul className="flex flex-col px-6 pb-2">{shownRest.map(row)}</ul>
-      {!shownTop.length && !shownRest.length ? <p className="px-6 py-6 text-center text-[17px] text-muted">{labels.empty}</p> : null}
+      {!shownTop.length && !shownRest.length ? <p className="px-6 py-6 text-center text-[14px] text-muted">{labels.empty}</p> : null}
     </Sheet>
   );
 }

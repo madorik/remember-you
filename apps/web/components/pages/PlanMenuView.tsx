@@ -1,10 +1,10 @@
 import { ALCOHOL_KINDS, ALLERGENS, ALLERGY_NOTE_CODE, DIETS, DISLIKES, SPICY_LEVELS, alcoholLabel, groupMemo, judgeMenus, labelOf, mealBrief, orderNote, uncheckedAllergies, type MenuReason, type MenuVerdict, type WhoCode } from "@readme/core";
+import Link from "next/link";
 import { ShareBar } from "@/app/(app)/plan/ShareBar";
 import { ChiliMeter } from "@/components/Chili";
-import { TopBar } from "@/components/chrome";
-import { Heart, SKY_STAR, Squiggle, Star, Tape } from "@/components/diary";
+import { TornTape } from "@/components/TornTape";
 import { CopyButton } from "@/components/CopyButton";
-import { Icon, MarkerCircle } from "@/components/marks";
+import { Icon } from "@/components/marks";
 import { ShareTextButton } from "@/components/ShareButtons";
 import type { PlanMenuData } from "@/lib/pages/plan-menu.data";
 import { makeT, type T } from "@/lib/t";
@@ -40,15 +40,12 @@ export function PlanMenuView({ locale, diners, back }: PlanMenuData) {
   const avoidRow = (label: string, list: WhoCode[], catalog: Parameters<typeof labelOf>[0], red = false) =>
     list.length ? (
       <div className="row">
-        <span className="w-[76px] shrink-0 pt-[3px] text-[16px] text-muted">{label}</span>
-        <span className={`flex min-w-0 flex-1 flex-wrap ${red ? "gap-x-6 gap-y-3 pl-1.5" : "gap-x-4 gap-y-2"}`}>
+        <span className="w-[76px] shrink-0 pt-[3px] text-[12px] text-muted">{label}</span>
+        <span className={`flex min-w-0 flex-1 flex-wrap ${red ? "gap-x-3 gap-y-2" : "gap-x-3 gap-y-1"}`}>
           {list.map((x) => (
-            <span key={x.code} className="flex items-baseline gap-2">
-              <span className={`relative ${red ? "text-[24px] leading-[1.3] text-red" : "text-[22px] leading-[1.3]"}`}>
-                {labelOf(catalog, x.code, locale)}
-                {red ? <MarkerCircle color="warn" pad={[7, 4]} /> : null}
-              </span>
-              <span className="text-[16px] text-muted">{x.who.join(", ")}</span>
+            <span key={x.code} className="flex items-center gap-1.5">
+              <span className={red ? "hand-written rounded-full border-[1.5px] border-red px-[9px] py-0.5 text-[20px] leading-none text-red" : "hand-written text-[22px] leading-[1.2]"}>{labelOf(catalog, x.code, locale)}</span>
+              <span className="text-[12px] text-muted">{x.who.join(", ")}</span>
             </span>
           ))}
         </span>
@@ -57,11 +54,11 @@ export function PlanMenuView({ locale, diners, back }: PlanMenuData) {
   const menuRow = (v: MenuVerdict) => {
     const label = v.item.label[locale];
     return (
-      <li key={v.item.code} className="flex min-h-[68px] flex-col justify-center border-t border-dashed border-rule-strong first:border-t-0">
+      <li key={v.item.code} className="flex min-h-[49px] flex-col justify-center border-t-[1.5px] border-dashed border-ink/[0.18] first:border-t-0">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-px py-2">
-            <span className="text-[22px] leading-[1.25]">{label}</span>
-            <span className="flex flex-wrap gap-x-2.5 text-[16px] leading-[1.35]">
+            <span className="hand-written text-[26px] leading-[1.15]">{label}</span>
+            <span className="flex flex-wrap gap-x-2.5 text-[12px] leading-[1.35]">
               {v.likedBy.length ? <span className="text-accent">{t("plan.likedBy", { names: v.likedBy.join(", ") })}</span> : null}
               {v.milder ? <span className="text-muted">{t("plan.milder")}</span> : null}
               {v.reasons.map((r, i) => (
@@ -74,9 +71,9 @@ export function PlanMenuView({ locale, diners, back }: PlanMenuData) {
           {v.status === "ok" ? (
             <div className="flex shrink-0 items-center">
               <a href={mapUrl(label, locale)} target="_blank" rel="noopener noreferrer" aria-label={`${label} · ${t("plan.findPlace")}`} className="flex h-11 w-11 items-center justify-center text-muted">
-                <Icon name="map" size={22} />
+                <Icon name="map" size={19} strokeWidth={1.8} />
               </a>
-              <ShareTextButton text={t("plan.proposal", { menu: label })} label={t("plan.propose")} doneLabel={t("plan.proposed")} className="flex h-11 items-center whitespace-nowrap px-2 text-[17px] text-ink underline underline-offset-[5px]" />
+              <ShareTextButton text={t("plan.proposal", { menu: label })} label={t("plan.propose")} doneLabel={t("plan.proposed")} className="flex h-11 items-center whitespace-nowrap px-1 text-[13px] text-ink underline underline-offset-[5px]" />
             </div>
           ) : null}
         </div>
@@ -84,30 +81,42 @@ export function PlanMenuView({ locale, diners, back }: PlanMenuData) {
     );
   };
 
+  const h2 = "hand scribble text-[24px] leading-none";
+  const mint = { "--scribble": "#5dbb9a" } as React.CSSProperties;
+  const count = "hand inline-flex h-[30px] items-center rounded-[10px] border-[1.5px] border-ink bg-sky-soft px-2.5 text-[17px] leading-none";
+  const sum = "flex min-h-[46px] cursor-pointer list-none items-center justify-between text-[14px]";
   return (
     <div className="flex flex-1 flex-col">
-      <TopBar back={back} label={t("common.back")} />
-      <div className="relative px-6 pt-1.5">
-        <h1 className="hl inline-block px-1 text-[34px] leading-[1.2]">{t("plan.menuTitle")}</h1>
-        <p className="mx-1 mt-2 text-[19px] text-muted">{diners.map((d) => d.name).join(", ")}</p>
-        <Star size={22} rotate={14} className="right-11 top-1" />
+      <div className="flex h-12 shrink-0 items-center gap-0.5 pl-1.5 pr-4">
+        <Link href={back} prefetch={false} aria-label={t("common.back")} className="flex h-11 w-11 shrink-0 items-center justify-center">
+          <Icon name="back" size={24} />
+        </Link>
+        <h1 className="min-w-0 truncate text-[31px] leading-none">{t("plan.menuTitle")}</h1>
       </div>
+      <ul className="flex flex-wrap gap-2 px-5 pt-0.5">
+        {diners.map((d) => (
+          <li key={d.key} className="inline-flex h-[30px] items-center rounded-full border-[1.5px] border-ink bg-white px-3 text-[14px]">
+            {d.name}
+          </li>
+        ))}
+      </ul>
 
-      <section aria-labelledby="avoid" className="relative flex flex-col">
-        <h2 id="avoid" className="px-6 pb-3 pt-[26px] text-[24px]">
-          {t("plan.mustAvoid")}
-        </h2>
+      <section aria-labelledby="avoid" className="relative mx-4 mt-7 flex flex-col">
         {brief.allergens.length || brief.dislikes.length || brief.diets.length || brief.spicy || check.length ? (
-          <div className="card relative mx-4 px-4 py-1">
+          <div className="card relative px-3.5 pb-1.5 pt-2.5">
+            <TornTape color="pink" w={64} h={20} rotate={6} className="-top-3 right-[22px]" />
+            <h2 id="avoid" className={`${h2} mb-3 w-fit`} style={mint}>
+              {t("plan.mustAvoid")}
+            </h2>
             {avoidRow(t("plan.allergy"), brief.allergens, ALLERGENS, true)}
             {check.length ? (
               <div className="row">
-                <span className="w-[76px] shrink-0 pt-[3px] text-[16px] text-muted">{t("plan.reasonCheckAllergy")}</span>
-                <span className="flex min-w-0 flex-1 flex-wrap gap-x-4 gap-y-2">
+                <span className="w-[76px] shrink-0 pt-[3px] text-[12px] text-muted">{t("plan.reasonCheckAllergy")}</span>
+                <span className="flex min-w-0 flex-1 flex-wrap gap-x-3 gap-y-1">
                   {check.map((x) => (
-                    <span key={x.code} className="flex items-baseline gap-2">
-                      <span className="text-[22px] leading-[1.3]">{x.code === ALLERGY_NOTE_CODE ? t("safety.note") : labelOf(ALLERGENS, x.code, locale)}</span>
-                      <span className="text-[16px] text-muted">{x.who.join(", ")}</span>
+                    <span key={x.code} className="flex items-center gap-1.5">
+                      <span className="hand-written text-[22px] leading-[1.2]">{x.code === ALLERGY_NOTE_CODE ? t("safety.note") : labelOf(ALLERGENS, x.code, locale)}</span>
+                      <span className="text-[12px] text-muted">{x.who.join(", ")}</span>
                     </span>
                   ))}
                 </span>
@@ -117,18 +126,18 @@ export function PlanMenuView({ locale, diners, back }: PlanMenuData) {
             {avoidRow(t("plan.diet"), brief.diets, DIETS)}
             {brief.spicy ? (
               <div className="row">
-                <span className="w-[76px] shrink-0 pt-[3px] text-[16px] text-muted">{t("plan.spicy")}</span>
-                <span className="flex flex-1 flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                  <ChiliMeter level={brief.spicy.level} size={22} />
-                  <span className="text-[22px] leading-[1.3]">{t("plan.spicyUpTo", { level: SPICY_LEVELS[brief.spicy.level]?.[locale] ?? "" })}</span>
-                  <span className="text-[16px] text-muted">{brief.spicy.who.join(", ")}</span>
+                <span className="w-[76px] shrink-0 pt-[3px] text-[12px] text-muted">{t("plan.spicy")}</span>
+                <span className="flex flex-1 flex-wrap items-center gap-x-2 gap-y-0.5">
+                  <ChiliMeter level={brief.spicy.level} size={16} />
+                  <span className="text-[12px] leading-[1.3] text-muted">{t("plan.spicyUpTo", { level: SPICY_LEVELS[brief.spicy.level]?.[locale] ?? "" })}</span>
+                  <span className="text-[12px] text-muted">{brief.spicy.who.join(", ")}</span>
                 </span>
               </div>
             ) : null}
             {brief.alcohol.length ? (
               <div className="row">
-                <span className="w-[76px] shrink-0 pt-0.5 text-[16px] text-muted">{t("plan.alcohol")}</span>
-                <span className="flex flex-1 flex-col gap-1 text-[19px] leading-[1.4]">
+                <span className="w-[76px] shrink-0 pt-0.5 text-[12px] text-muted">{t("plan.alcohol")}</span>
+                <span className="flex flex-1 flex-col gap-1 text-[14px] leading-[1.4]">
                   {brief.alcohol.map((a) => (
                     <span key={a.who}>
                       <span>{a.who}</span> <span className="text-muted">{[alcoholLabel(a.level, locale), ...a.kinds.map((k) => labelOf(ALCOHOL_KINDS, k, locale))].join(" · ")}</span>
@@ -137,65 +146,68 @@ export function PlanMenuView({ locale, diners, back }: PlanMenuData) {
                 </span>
               </div>
             ) : null}
-            <Tape color="pink" w={66} h={20} rotate={5} alpha={0.6} vertical className="-top-[9px] right-[26px]" />
-            <Heart size={24} rotate={16} className="-right-2 bottom-[26px]" />
           </div>
         ) : (
-          <p className="row card mx-4 !px-4 text-[17px] text-muted">{t("plan.nothingToAvoid")}</p>
+          <>
+            <h2 id="avoid" className="sr-only">
+              {t("plan.mustAvoid")}
+            </h2>
+            <p className="row card !px-4 text-[14px] text-muted">{t("plan.nothingToAvoid")}</p>
+          </>
         )}
       </section>
 
       {note ? (
-        <section className="relative mx-4 mt-[22px] flex rotate-[0.6deg] flex-col rounded-[3px] bg-postit pb-3.5 pl-4 pr-3.5 pt-2.5 shadow-[0_6px_12px_-9px_rgb(31_35_64/0.45)]">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[17px] text-[#8a3b4e]">{t("plan.order")}</span>
-            <CopyButton text={note} label={t("plan.copy")} doneLabel={t("plan.copied")} className="flex min-h-11 items-center px-1 text-[17px] underline underline-offset-[5px]" />
-          </div>
-          <p className="text-[21px] leading-[1.5]">{note}</p>
+        <section className="relative mx-4 mt-6 flex -rotate-[0.4deg] flex-col rounded-[12px_14px_14px_12px] border-[1.5px] border-ink bg-postit px-3.5 pb-2.5 pt-2.5">
+          <span className="text-[14px] font-bold">{t("plan.order")}</span>
+          <p className="text-[14px] leading-[1.55]">
+            {note}{" "}
+            <CopyButton text={note} label={t("plan.copy")} doneLabel={t("plan.copied")} className="inline-flex min-h-8 items-center text-[14px] underline underline-offset-[5px]" />
+          </p>
         </section>
       ) : null}
 
-      <section aria-labelledby="ok" className="relative flex flex-col">
-        <h2 id="ok" className="flex items-baseline gap-2 px-6 pb-3 pt-[30px] text-[24px]">
-          {t("plan.okMenus")} <span className="text-[18px] text-muted">{ok.length}</span>
-        </h2>
-        <ul className="card mx-4 flex flex-col pl-4 pr-2">{ok.slice(0, 8).map(menuRow)}</ul>
-        <Tape color="mint" className="left-1.5 top-[66px]" />
-        <Star size={22} rotate={12} color={SKY_STAR} className="right-1.5 top-9" />
-        <Squiggle w={54} width={2.4} className="-bottom-[7px] left-[34px]" />
+      <section aria-labelledby="ok" className="relative mx-4 mt-6 flex flex-col">
+        <div className="card relative px-3.5 pb-1.5 pt-2.5">
+          <div className="mb-1.5 flex min-h-[34px] items-center justify-between">
+            <h2 id="ok" className={h2} style={mint}>
+              {t("plan.okMenus")}
+            </h2>
+            <span className={count}>{ok.length}</span>
+          </div>
+          <ul className="flex flex-col">{ok.slice(0, 8).map(menuRow)}</ul>
+        </div>
       </section>
 
       {soft.length ? (
-        <div className="card relative mx-4 mt-[22px] px-4">
+        <div className="card relative mx-4 mt-6 px-3.5">
           <details>
-            <summary className="flex min-h-[54px] cursor-pointer list-none items-center justify-between text-[21px]">
-              {t("plan.softMenus")} <span className="text-[18px] text-muted">{soft.length}</span>
+            <summary className={sum}>
+              {t("plan.softMenus")} <span className="text-[13px] text-muted">{soft.length}</span>
             </summary>
             <ul className="flex flex-col pb-1.5">{soft.map(menuRow)}</ul>
           </details>
           {avoid.length ? (
-            <details className="border-t border-dashed border-rule-strong">
-              <summary className="flex min-h-[54px] cursor-pointer list-none items-center justify-between text-[21px]">
-                {t("plan.avoidMenus")} <span className="text-[18px] text-muted">{avoid.length}</span>
+            <details className="border-t-[1.5px] border-dashed border-ink/[0.18]">
+              <summary className={sum}>
+                {t("plan.avoidMenus")} <span className="text-[13px] text-muted">{avoid.length}</span>
               </summary>
               <ul className="flex flex-col pb-1.5">{avoid.map(menuRow)}</ul>
             </details>
           ) : null}
-          <Tape color="mango" w={54} h={18} rotate={-34} className="-left-[9px] -top-2" />
         </div>
       ) : avoid.length ? (
-        <div className="card relative mx-4 mt-[22px] px-4">
+        <div className="card relative mx-4 mt-6 px-3.5">
           <details>
-            <summary className="flex min-h-[54px] cursor-pointer list-none items-center justify-between text-[21px]">
-              {t("plan.avoidMenus")} <span className="text-[18px] text-muted">{avoid.length}</span>
+            <summary className={sum}>
+              {t("plan.avoidMenus")} <span className="text-[13px] text-muted">{avoid.length}</span>
             </summary>
             <ul className="flex flex-col pb-1.5">{avoid.map(menuRow)}</ul>
           </details>
-          <Tape color="mango" w={54} h={18} rotate={-34} className="-left-[9px] -top-2" />
         </div>
       ) : null}
 
-      <p className="mx-6 pb-6 pt-[18px] text-[15px] leading-[1.5] text-muted">{t("plan.menuNote")}</p>
+      <p className="mx-6 pb-6 pt-[18px] text-[13px] leading-[1.5] text-muted">{t("plan.menuNote")}</p>
       <ShareBar plain={memo} named={memoNamed} label={t("plan.share")} doneLabel={t("plan.sent")} namesLabel={t("plan.withNames")} />
     </div>
   );

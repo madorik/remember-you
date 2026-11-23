@@ -1,7 +1,7 @@
 import { SECTIONS_BY_IMPORTANCE } from "@readme/core";
 import { MyReadmeList } from "@/app/(app)/me/MyReadmeList";
 import { TopBar } from "@/components/chrome";
-import { NameChip, Star } from "@/components/diary";
+import { NameChip } from "@/components/diary";
 import type { MeEditData } from "@/lib/pages/types";
 import { makeT } from "@/lib/t";
 
@@ -13,10 +13,7 @@ export function MeEditView({ locale, name, avatar, card, open }: MeEditData) {
       <TopBar back="/me" label={t("common.back")} />
       <div className="relative px-6 pt-1.5">
         <NameChip avatar={avatar} name={name} />
-        <div>
-          <h1 className="hl mt-2.5 inline-block px-1 text-[36px] leading-[1.2]">{t("me.title")}</h1>
-        </div>
-        <Star size={22} rotate={14} className="right-9 top-[52px]" />
+        <h1 className="scribble mt-2.5 text-[41px] leading-none">{t("me.title")}</h1>
       </div>
       <MyReadmeList
         rows={SECTIONS_BY_IMPORTANCE.map((section) => ({

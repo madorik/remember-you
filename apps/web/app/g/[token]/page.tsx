@@ -4,10 +4,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { Wordmark } from "@/components/chrome";
-import { Heart, HandRule, Highlight, Star } from "@/components/diary";
+import { Heart, Highlight } from "@/components/diary";
 import { GiftLinkTabs } from "@/components/GiftLinkTabs";
 import { PicksDisclosure } from "@/components/GiftPicks";
 import { Icon } from "@/components/marks";
+import { Mascot } from "@/components/Mascot";
 import { CATALOG_BY_ID, PRICE_BANDS, type CatalogGift } from "@/lib/gift-catalog";
 import { readGiftCard } from "@/lib/gifts";
 import { ogMetadata } from "@/lib/og";
@@ -47,13 +48,13 @@ export default async function GiftCardPage({ params, searchParams }: { params: P
   const initial = c.bands.some((b) => b.band === sp.b) ? sp.b! : c.bands[0]!.band;
   return (
     <main className="screen">
-      <div className="flex min-h-11 items-center px-5">
+      <div className="flex min-h-12 items-center px-5">
         <Link href="/" aria-label={t("app.name")}>
-          <Wordmark size={26} locale={c.locale} />
+          <Wordmark size={24} locale={c.locale} />
         </Link>
       </div>
-      <section className="relative px-5 pt-[18px]">
-        <h1 className="text-[31px] leading-[1.25]">
+      <section className="relative px-5 pt-8">
+        <h1 className="pr-24 text-[36px] leading-[1.15]">
           {title.map((line, i) => (
             <span key={i}>
               {i ? <br /> : null}
@@ -62,10 +63,10 @@ export default async function GiftCardPage({ params, searchParams }: { params: P
             </span>
           ))}
         </h1>
-        {c.event ? <p className="pt-2 text-[20px] text-accent">{c.event}</p> : null}
-        <HandRule className="mt-3" />
-        <Heart size={26} rotate={14} className="right-[26px] top-[30px]" />
-        <Star size={20} rotate={-12} className="right-[78px] top-[62px]" />
+        {c.event ? <p className="pt-2.5 text-[13px] text-accent">{c.event}</p> : null}
+        {/* 별 든 캐릭터(시안) */}
+        <Mascot pose={11} size={74} className="absolute right-6 top-8" />
+        <Heart size={22} rotate={14} className="right-[18px] top-[28px]" />
       </section>
       <GiftLinkTabs
         look="paper"
@@ -79,12 +80,14 @@ export default async function GiftCardPage({ params, searchParams }: { params: P
           items: b.items.map((x) => ({ id: x.id, title: x.q, reason: "", name: x.name, url: x.url, image: x.image })),
         }))}
       />
-      <PicksDisclosure text={t("picks.disclosure")} pad="px-6" />
-      <div className="px-4 pt-5">
-        <Link href="/" className="btn-outline btn-outline-lift w-full !min-h-14 !text-[20px]">
+      <div className="mt-auto flex flex-col">
+      <PicksDisclosure text={t("picks.disclosure")} pad="px-4" />
+      <div className="px-4 pt-3.5">
+        <Link href="/" className="btn-outline w-full !min-h-[50px] !text-[26px]">
+          <Icon name="chevron" size={19} strokeWidth={2} />
           {t("picks.cardOpen")}
-          <Icon name="arrow" size={20} strokeWidth={2} />
         </Link>
+      </div>
       </div>
       <div className="page-end" />
     </main>

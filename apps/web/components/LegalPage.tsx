@@ -1,7 +1,6 @@
 import type { Locale } from "@readme/core";
 import Link from "next/link";
 import { Wordmark } from "./chrome";
-import { HandRule, Star } from "./diary";
 import { formatEffective, SUPPORT_EMAIL } from "@/lib/legal";
 
 const LINKS = [
@@ -18,22 +17,20 @@ export function LegalPage({ locale, path, title, children }: { locale: Locale; p
     <main className="screen px-6">
       <div className="flex items-center justify-between">
         <Link href="/" aria-label={locale === "ko" ? "기억해유 처음으로" : "Remember You home"}>
-          <Wordmark size={26} locale={locale} />
+          <Wordmark size={24} locale={locale} />
         </Link>
-        <Link href={`${path}?lang=${other}`} className="flex min-h-11 items-center px-2 text-[19px] underline underline-offset-4">
+        <Link href={`${path}?lang=${other}`} className="flex min-h-11 items-center px-2 text-[13px] underline underline-offset-4">
           {other === "en" ? "English" : "한국어"}
         </Link>
       </div>
       <div className="relative pt-5">
-        <h1 className="text-[32px] leading-[1.25]">
-          <span className="hl px-1">{title}</span>
+        <h1 className="text-[36px] leading-[1.15]">
+          <span className="hl">{title}</span>
         </h1>
-        <HandRule className="mt-3" />
-        <Star size={22} rotate={14} className="right-1 top-3" />
       </div>
-      <p className="pt-3 text-[16px] text-muted">{locale === "ko" ? `시행일 ${formatEffective(locale)}` : `Effective ${formatEffective(locale)}`}</p>
+      <p className="pt-3 text-[12px] text-muted">{locale === "ko" ? `시행일 ${formatEffective(locale)}` : `Effective ${formatEffective(locale)}`}</p>
       <article className="legal pt-2">{children}</article>
-      <nav className="page-end mt-10 flex flex-wrap gap-x-5 gap-y-1 border-t-[1.5px] border-dashed border-rule-strong pt-4 text-[16px] text-muted">
+      <nav className="page-end mt-10 flex flex-wrap gap-x-5 gap-y-1 border-t-[1.5px] border-dashed border-ink/[0.18] pt-4 text-[13px] text-muted">
         {LINKS.filter((l) => l.path !== path).map((l) => (
           <Link key={l.path} href={`${l.path}?lang=${locale}`} className="flex min-h-11 items-center">
             {l[locale]}

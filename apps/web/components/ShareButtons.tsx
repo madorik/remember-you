@@ -64,14 +64,17 @@ function useFlash<T>(): [T | null, (v: T) => void] {
 /** 보낼 링크(읽기 전용). 눌러서 고를 수 있다 */
 export function LinkField({ url, label }: { url: string; label: string }) {
   return (
-    <input
-      readOnly
-      value={url}
-      aria-label={label}
-      data-testid="invite-url"
-      onFocus={(e) => e.currentTarget.select()}
-      className="field !h-11 !min-h-11 truncate !rounded-xl !border-[1.5px] !border-dashed !bg-fill !text-[17px] text-muted !shadow-none"
-    />
+    <div className="relative">
+      <Icon name="link" size={15} strokeWidth={1.8} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+      <input
+        readOnly
+        value={url}
+        aria-label={label}
+        data-testid="invite-url"
+        onFocus={(e) => e.currentTarget.select()}
+        className="field !h-11 !min-h-11 truncate !rounded-xl !border-dashed !border-ink/[0.35] !bg-transparent !pl-9 !pr-3.5 !text-[13px] text-muted"
+      />
+    </div>
   );
 }
 
@@ -84,19 +87,19 @@ export function ShareButtons({ locale, url, text, sendLabel }: { locale: Locale;
   const copy = async () => flash((await copyText(`${text}\n${url}`)) ? "ok" : "failed");
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-wrap items-center justify-center gap-2">
       <button
         type="button"
         onClick={async () => {
           if (!(await nativeShare(text, url))) await copy();
         }}
-        className="btn-primary w-full"
+        className="inline-flex h-11 items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-sky pl-3 pr-3.5 text-[15px]"
       >
-        <Icon name="share" size={19} strokeWidth={2} />
+        <Icon name="share" size={17} strokeWidth={1.7} />
         {sendLabel ?? t("common.send")}
       </button>
-      <button type="button" onClick={copy} className="btn-soft !h-12 w-full gap-1.5 !rounded-2xl !text-[18px]">
-        <Icon name={copied === "ok" ? "check" : "link"} size={17} />
+      <button type="button" onClick={copy} className="inline-flex h-11 items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-sky-soft pl-3 pr-3.5 text-[15px]">
+        <Icon name={copied === "ok" ? "check" : "link"} size={17} strokeWidth={1.7} />
         {copied === "ok" ? t("common.copied") : copied === "failed" ? t("common.copyFailed") : t("common.copyLink")}
       </button>
       <span role="status" className="sr-only">
@@ -107,7 +110,7 @@ export function ShareButtons({ locale, url, text, sendLabel }: { locale: Locale;
 }
 
 /** 글만 나누기(예: 생일 준비를 가족에게). 보냈거나 복사했으면 doneLabel, 복사도 못 했으면 failedLabel(없으면 앱 언어의 '복사하지 못했어요')을 2초 보인다 */
-export function ShareTextButton({ text, label, doneLabel, failedLabel, className = "" }: { text: string; label: string; doneLabel: string; failedLabel?: string; className?: string }) {
+export function ShareTextButton({ text, label, doneLabel, failedLabel, className = "", icon }: { text: string; label: string; doneLabel: string; failedLabel?: string; className?: string; icon?: React.ReactNode }) {
   const [res, flash] = useFlash<string>();
   return (
     <>
@@ -120,6 +123,7 @@ export function ShareTextButton({ text, label, doneLabel, failedLabel, className
           flash(failedLabel ?? translate(document.documentElement.lang === "en" ? "en" : "ko", "common.copyFailed"));
         }}
       >
+        {icon}
         {res ?? label}
       </button>
       <span role="status" className="sr-only">

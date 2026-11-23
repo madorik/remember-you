@@ -1,7 +1,8 @@
 import { leaveTour } from "@/app/actions/tour";
 import { RequestForm } from "@/app/(app)/request/RequestForm";
-import { TopBar } from "@/components/chrome";
-import { Star, TourNote } from "@/components/diary";
+import Link from "next/link";
+import { TourNote } from "@/components/diary";
+import { Icon } from "@/components/marks";
 import type { RequestData } from "@/lib/pages/types";
 import { makeT } from "@/lib/t";
 
@@ -9,34 +10,38 @@ import { makeT } from "@/lib/t";
 // 아는 사람이면 아직 안 적힌 항목을 먼저 고르고, 받은 답은 그 사람 기록에 들어간다
 export function RequestView({ locale, people, fixed, initialName, defaults, xmas, initialMessage, focus, tour }: RequestData) {
   const t = makeT(locale);
+  const title = fixed ? t("request.titleTo", { name: fixed.label }) : t("request.title");
   return (
     <div className="flex flex-1 flex-col">
       {/* 가입 직후 체험이면 닫기 대신 오른쪽 위 '건너뛰기'(체험을 접고 홈으로), 제목 자리에 안내 */}
-      <TopBar
-        close={tour ? undefined : fixed ? `/people/${fixed.id}` : "/home"}
-        label={t("common.close")}
-        right={
-          tour ? (
-            <form action={leaveTour}>
-              <input type="hidden" name="kind" value="skip" />
-              <input type="hidden" name="source" value="ask" />
-              <button className="flex min-h-11 items-center px-3 text-[19px] text-muted">{t("common.skip")}</button>
-            </form>
-          ) : undefined
-        }
-      />
-      {tour ? (
-        <TourNote label={fixed ? t("request.titleTo", { name: fixed.label }) : t("tour.ask.title")} className="mt-3.5">
-          <span className="num text-[17px] text-[#1f4fa3]">{t("tour.page", { n: tour.n, total: tour.total })}</span>
-          <h1 className="text-[27px] leading-[1.3]">{fixed ? t("request.titleTo", { name: fixed.label }) : t("tour.ask.title")}</h1>
-          <p className="text-[18px] leading-[1.5]">{t("tour.ask.body")}</p>
-        </TourNote>
-      ) : (
-        <div className="relative px-6 pt-1.5">
-          <h1 className="hl inline-block px-1 text-[34px] leading-[1.2]">{fixed ? t("request.titleTo", { name: fixed.label }) : t("request.title")}</h1>
-          <Star size={22} rotate={14} className="left-[150px] top-0.5" />
+      <div className="flex h-12 shrink-0 items-center justify-between gap-1.5 pl-1.5 pr-2.5">
+        <div className="flex min-w-0 items-center gap-0.5">
+          {tour ? null : (
+            <Link href={fixed ? `/people/${fixed.id}` : "/home"} prefetch={false} aria-label={t("common.close")} className="flex h-11 w-11 shrink-0 items-center justify-center">
+              <Icon name="close" size={22} strokeWidth={1.8} />
+            </Link>
+          )}
+          {tour ? null : (
+            <h1 className="min-w-0 truncate text-[34px] leading-none">
+              <span className="hl">{title}</span>
+            </h1>
+          )}
         </div>
-      )}
+        {tour ? (
+          <form action={leaveTour} className="ml-auto">
+            <input type="hidden" name="kind" value="skip" />
+            <input type="hidden" name="source" value="ask" />
+            <button className="flex min-h-11 items-center px-3 text-[14px] text-muted">{t("common.skip")}</button>
+          </form>
+        ) : null}
+      </div>
+      {tour ? (
+        <TourNote label={fixed ? t("request.titleTo", { name: fixed.label }) : t("tour.ask.title")} className="mt-1">
+          <span className="num text-[17px] text-[#1f4fa3]">{t("tour.page", { n: tour.n, total: tour.total })}</span>
+          <h1 className="text-[30px] leading-[1.2]">{fixed ? t("request.titleTo", { name: fixed.label }) : t("tour.ask.title")}</h1>
+          <p className="text-[15px] leading-[1.5]">{t("tour.ask.body")}</p>
+        </TourNote>
+      ) : null}
       <RequestForm locale={locale} people={people} fixed={fixed?.id ?? null} initialName={initialName} defaults={defaults} xmas={xmas} initialMessage={initialMessage} focus={focus} tour={!!tour} />
     </div>
   );
