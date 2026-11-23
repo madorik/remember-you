@@ -92,10 +92,19 @@ export function Sheet({
   onClose,
   children,
   footer,
+  badge,
+  titleClassName = "text-[17px]",
+  handle = false,
 }: {
   id: string;
   title: string;
   icon?: React.ReactNode;
+  /** 제목 바로 옆 작은 글(개수 같은 것) */
+  badge?: React.ReactNode;
+  /** 제목 글 크기 같은 클래스(기본 17px) */
+  titleClassName?: string;
+  /** 위에 작은 손잡이 막대(메모 시트 시안) */
+  handle?: boolean;
   closeLabel: string;
   onClose: () => void;
   children: React.ReactNode;
@@ -118,11 +127,13 @@ export function Sheet({
         className="mx-auto flex max-h-[calc(90dvh-var(--kb,0px))] w-full max-w-[432px] flex-col rounded-t-[25.2px] bg-paper outline-none"
         style={{ marginBottom: "var(--kb, 0px)" }}
       >
-        <div className="flex shrink-0 items-center gap-2.5 pb-1 pl-6 pr-2 pt-3">
+        {handle ? <span aria-hidden="true" className="mx-auto mt-[9px] block h-[3.6px] w-9 shrink-0 rounded-full bg-ink/20" /> : null}
+        <div className={`flex shrink-0 items-center gap-2.5 pb-1 pl-6 pr-2 ${handle ? "pt-1.5" : "pt-3"}`}>
           {icon}
-          <h2 id={id} className="min-w-0 flex-1 truncate text-[17px]">
+          <h2 id={id} className={`min-w-0 truncate ${titleClassName} ${badge ? "" : "flex-1"}`}>
             {title}
           </h2>
+          {badge ? <span className="flex-1 text-[12.6px] text-muted">{badge}</span> : null}
           <button type="button" aria-label={closeLabel} onClick={onClose} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] shrink-0 items-center justify-center text-muted">
             <Icon name="close" size={20} />
           </button>

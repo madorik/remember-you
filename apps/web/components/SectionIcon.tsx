@@ -17,9 +17,19 @@ export const SECTION_TILE: Record<Section, string> = {
   pets: "#E3F4EC",
 };
 
-function Art({ section }: { section: Section }) {
+/** 케이크 한 조각(사람 화면 시안의 생일 그림): 프로필 카드 생일 줄과 '생일과 기념일' 항목 타일이 같이 쓴다 */
+export const CAKE_ART = (
+  <>
+    <path d="M4 20.5h16M5.5 20.5v-6.5a1.5 1.5 0 0 1 1.5-1.5h10a1.5 1.5 0 0 1 1.5 1.5v6.5" />
+    <path d="M5.5 16c1.2 1 2.6 1 3.8 0s2.6-1 3.8 0 2.6 1 3.8 0" />
+    <path d="M12 12.5V9.5M12 6.5c-.9-1 .1-2.2 0-3 1 .9 1.4 2.3 0 3z" />
+  </>
+);
+
+function Art({ section, cake }: { section: Section; cake: boolean }) {
   switch (section) {
     case "dates":
+      if (cake) return CAKE_ART;
       // 달력
       return (
         <>
@@ -98,8 +108,8 @@ function Art({ section }: { section: Section }) {
   }
 }
 
-/** bare: 타일 없이 그림만(받은 것 목록처럼 바탕이 따로 있을 때). round: 동그란 타일 */
-export function SectionIcon({ section, size: sizeIn = 44, round = false, bare = false }: { section: Section; size?: number; round?: boolean; outline?: boolean; bare?: boolean }) {
+/** bare: 타일 없이 그림만(받은 것 목록처럼 바탕이 따로 있을 때). round: 동그란 타일. cake: 생일과 기념일을 달력 대신 케이크로(사람 화면) */
+export function SectionIcon({ section, size: sizeIn = 44, round = false, bare = false, cake = false }: { section: Section; size?: number; round?: boolean; outline?: boolean; bare?: boolean; cake?: boolean }) {
   const size = u(sizeIn);
   const art = (
     <svg
@@ -114,7 +124,7 @@ export function SectionIcon({ section, size: sizeIn = 44, round = false, bare = 
       aria-hidden="true"
       className="shrink-0"
     >
-      <Art section={section} />
+      <Art section={section} cake={cake} />
     </svg>
   );
   if (bare) return art;

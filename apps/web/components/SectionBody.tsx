@@ -24,6 +24,9 @@ import {
   type Section,
   type YMD,
   PET_KINDS,
+  describeRing,
+  describeShoe,
+  describeTop,
   formatSpec,
   monthName,
   nextOccurrence,
@@ -31,15 +34,26 @@ import {
 import type { T } from "@/lib/i18n";
 import { ChiliMeter } from "./Chili";
 import { ColorDot } from "./ColorDot";
+import { DateTiles } from "./DateTiles";
 import { Icon } from "./marks";
 import { sectionSummary } from "./SectionSummary";
 
 /** 시안의 항목 본문 한 줄: 작은 라벨(고운돋움) + 사람이 적은 값(손글씨 400)이 한 줄로 이어진다 */
-function Row({ label, children, center = false }: { label: string; children: React.ReactNode; center?: boolean }) {
+function CompactRow({ label, children, center = false }: { label: string; children: React.ReactNode; center?: boolean }) {
   return (
     <div className={`py-[2.7px] ${center ? "flex flex-wrap items-center gap-x-1.5" : ""}`}>
       <span className="text-[10.8px] leading-[1.3] text-muted">{label} </span>
       <span className="hand-written min-w-0 text-[17.8px] leading-[1.1]">{children}</span>
+    </div>
+  );
+}
+
+/** 사람 화면의 항목 본문 한 줄(시안 Q-Person): 왼쪽 라벨 칸(작은 앱 글) + 오른쪽 사람이 적은 값(손글씨 400)이 두 칸으로 맞춰진다 */
+function RichRow({ label, children }: { label: string; children: React.ReactNode; center?: boolean }) {
+  return (
+    <div className="grid grid-cols-[86.4px_1fr] items-baseline gap-x-[9px] py-[4.5px]">
+      <span className="text-[11.7px] leading-[1.35] text-muted">{label}</span>
+      <span className="hand-written min-w-0 text-[19.8px] leading-[1.25]">{children}</span>
     </div>
   );
 }
@@ -79,22 +93,37 @@ function DateLines({ dates, today, locale }: { dates: DatesData | undefined; tod
   );
 }
 
-/** 사람 기록 한 항목에 기억해 둔 것. 적어 둔 게 없으면 null(빈 항목은 제목 줄만 보인다) */
-export function SectionBody({ section, card, today, locale, t }: { section: Section; card: PartialCard; today: YMD; locale: Locale; t: T }): React.ReactNode {
+/**
+ * 사람 기록 한 항목에 기억해 둔 것. 적어 둔 게 없으면 null(빈 항목은 제목 줄만 보인다).
+ * variant: compact = 나 화면의 촘촘한 미리보기(기본), rich = 사람 화면의 풀 본문(라벨·값 두 칸, 알레르기 알약, 매운맛 고추, 색 동그라미, 생일·기념일 달력 칸)
+ */
+export function SectionBody({ section, card, today, locale, t, variant = "compact" }: { section: Section; card: PartialCard; today: YMD; locale: Locale; t: T; variant?: "compact" | "rich" }): React.ReactNode {
   if (isEmptySection(section, card[section])) return null;
+  const rich = variant === "rich";
+  const Row = rich ? RichRow : CompactRow;
   const and = t("common.and");
   const codes = (list: CatalogItem[], c: string[]) => c.map((x) => labelOf(list, x, locale)).join(and);
 
   switch (section) {
     case "dates":
-      return <DateLines dates={card.dates} today={today} locale={locale} />;
+      return rich ? <DateTiles dates={card.dates} today={today} locale={locale} t={t} /> : <DateLines dates={card.dates} today={today} locale={locale} />;
 
     case "safety": {
       const s = card.safety!;
       const allergens = realCodes(s.allergens);
       return (
         <>
-          {allergens.length ? (
+          {allergens.length && rich ? (
+            <Row label={t("person.allergy")}>
+              <span className="flex flex-wrap gap-1.5">
+                {allergens.map((c) => (
+                  <span key={c} className="inline-flex h-[23.4px] items-center rounded-full bg-red-soft px-[9px] text-[13.5px] leading-none text-red">
+                    {labelOf(ALLERGENS, c, locale)}
+                  </span>
+                ))}
+              </span>
+            </Row>
+          ) : allergens.length ? (
             <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 py-[2.7px]">
               {allergens.map((c) => (
                 <span key={c} className="hand-written rounded-full border border-red px-[8.1px] py-0.5 text-[16.2px] leading-none text-red">
@@ -120,10 +149,17 @@ export function SectionBody({ section, card, today, locale, t }: { section: Sect
           {x.likes.length ? <Row label={t("person.likes")}>{x.likes.join(and)}</Row> : null}
           {x.spicy != null ? (
             <Row label={t("person.spicy")} center>
-              <span className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
-                <ChiliMeter level={x.spicy} size={16} />
-                <span className="font-sans text-[10.8px] text-muted">{SPICY_LEVELS[x.spicy]?.[locale]}</span>
-              </span>
+              {rich ? (
+                <span className="inline-flex flex-wrap items-center gap-x-[5.4px]">
+                  <ChiliMeter level={x.spicy} size={15} />
+                  {SPICY_LEVELS[x.spicy]?.[locale]}
+                </span>
+              ) : (
+                <span className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+                  <ChiliMeter level={x.spicy} size={16} />
+                  <span className="font-sans text-[10.8px] text-muted">{SPICY_LEVELS[x.spicy]?.[locale]}</span>
+                </span>
+              )}
             </Row>
           ) : null}
           {x.dessert ? <Row label={t("fav.dessert")}>{x.dessert}</Row> : null}
@@ -138,6 +174,29 @@ export function SectionBody({ section, card, today, locale, t }: { section: Sect
     }
 
     case "sizes": {
+      if (rich) {
+        const z = card.sizes!;
+        const top = describeTop(z.top, locale);
+        const shoe = describeShoe(z.shoe, locale);
+        const ring = describeRing(z.ring, locale);
+        const cells = [
+          top ? { label: t("size.top"), ...top } : null,
+          z.bottom ? { label: t("size.bottom"), value: z.bottom, unit: t("size.bottomUnit"), hint: null } : null,
+          shoe ? { label: t("size.shoe"), ...shoe } : null,
+          ring ? { label: t("size.ring"), ...ring } : null,
+        ].filter((c) => c !== null);
+        return (
+          <>
+            {cells.map((c) => (
+              <Row key={c.label} label={c.label}>
+                {c.value}
+                {c.unit ? ` ${c.unit}` : ""}
+                {c.hint ? <span className="ml-1.5 font-sans text-[11.7px] text-muted">{c.hint}</span> : null}
+              </Row>
+            ))}
+          </>
+        );
+      }
       const line = sectionSummary("sizes", card, locale, t);
       return line ? <p className="hand-written py-[2.7px] text-[17.8px] leading-[1.1]">{line.text}</p> : null;
     }
@@ -186,7 +245,7 @@ export function SectionBody({ section, card, today, locale, t }: { section: Sect
                   const c = COLORS.find((x) => x.code === code);
                   return (
                     <span key={code} className="flex items-center gap-1.5">
-                      <ColorDot hex={c?.hex ?? "#FFFFFF"} size={18} />
+                      <ColorDot hex={c?.hex ?? "#FFFFFF"} size={rich ? 12.6 : 18} />
                       {c?.label[locale] ?? code}
                     </span>
                   );

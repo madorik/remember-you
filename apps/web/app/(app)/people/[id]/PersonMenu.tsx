@@ -3,17 +3,33 @@
 import Link from "@/components/AppLink";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RemovePersonSheet, type RemoveLabels } from "@/components/RemovePersonSheet";
+import type { FolderView } from "@/lib/folders";
+import { PersonFoldersSheet, type PersonFolderLabels } from "./PersonFolders";
 
 const ICON = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", strokeWidth: 1.7, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true, className: "shrink-0" } as const;
 const ITEM = "flex h-[41.4px] w-full items-center gap-2.5 px-3.5 text-left text-[13.5px]";
 
 /**
- * 사람 화면 오른쪽 위 ···: 누르면 단추 밑에 작은 메뉴(물어보기 · 선물 고르기 · 구분선 · 지우기(빨강))가 열린다.
- * 바깥을 누르거나 Esc로 닫고, 위·아래 화살표로 옮긴다. 지우기는 시트로 한 번 더 확인한다(RemovePersonSheet)
+ * 사람 화면 오른쪽 위 ···: 누르면 단추 밑에 작은 메뉴(물어보기 · 선물 고르기 · 폴더 · 구분선 · 지우기(빨강))가 열린다.
+ * 바깥을 누르거나 Esc로 닫고, 위·아래 화살표로 옮긴다. 폴더는 폴더 고르기 시트를 열고(프로필 카드에는 폴더 칩이 없다), 지우기는 시트로 한 번 더 확인한다(RemovePersonSheet)
  */
-export function PersonMenu({ contactId, labels }: { contactId: string; labels: { more: string; ask: string; gift: string; remove: string; sheet: RemoveLabels } }) {
+export function PersonMenu({
+  contactId,
+  name,
+  folders,
+  mine,
+  labels,
+}: {
+  contactId: string;
+  name: string;
+  folders: FolderView[];
+  mine: string[];
+  labels: { more: string; ask: string; gift: string; folder: string; remove: string; sheet: RemoveLabels; folderSheet: PersonFolderLabels };
+}) {
   const [open, setOpen] = useState(false);
   const [asking, setAsking] = useState(false);
+  const [filing, setFiling] = useState(false);
+  const closeFiling = useCallback(() => setFiling(false), []);
   const wrap = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const closeSheet = useCallback(() => setAsking(false), []);
@@ -82,6 +98,21 @@ export function PersonMenu({ contactId, labels }: { contactId: string; labels: {
               </svg>
               {labels.gift}
             </Link>
+            <button
+              type="button"
+              role="menuitem"
+              aria-haspopup="dialog"
+              onClick={() => {
+                setOpen(false);
+                setFiling(true);
+              }}
+              className={ITEM}
+            >
+              <svg {...ICON} stroke="#1F2340">
+                <path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z" fill="#FFF4D6" />
+              </svg>
+              {labels.folder}
+            </button>
             <div role="separator" className="mx-3 my-1 h-[1.5px] bg-ink/10" />
             <button
               type="button"
@@ -101,6 +132,7 @@ export function PersonMenu({ contactId, labels }: { contactId: string; labels: {
           </div>
         ) : null}
       </div>
+      {filing ? <PersonFoldersSheet contactId={contactId} name={name} folders={folders} mine={mine} labels={labels.folderSheet} onClose={closeFiling} /> : null}
       {asking ? <RemovePersonSheet contactId={contactId} labels={labels.sheet} onClose={closeSheet} /> : null}
     </>
   );

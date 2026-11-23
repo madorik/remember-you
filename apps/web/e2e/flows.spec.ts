@@ -28,9 +28,9 @@ async function remember(who: string, ctx: BrowserContext) {
   sessions[who] = await ctx.storageState();
 }
 
-/** 사람 화면 오른쪽 위 ··· 메뉴에서 항목을 누른다(물어보기 · 선물 고르기 · 지우기) */
-async function personMenu(page: import("@playwright/test").Page, item: "물어보기" | "선물 고르기" | "지우기") {
-  await page.getByRole("button", { name: "더 보기" }).click();
+/** 사람 화면 오른쪽 위 ··· 메뉴에서 항목을 누른다(물어보기 · 선물 고르기 · 폴더 · 지우기) */
+async function personMenu(page: import("@playwright/test").Page, item: "물어보기" | "선물 고르기" | "폴더" | "지우기") {
+  await page.getByRole("button", { name: "더 보기", exact: true }).click();
   await page.getByRole("menuitem", { name: item }).click();
 }
 
@@ -274,7 +274,7 @@ test("답하기: 아무것도 적지 않고 '다음'만 눌러 가면 보낼 수
   await page.getByRole("button", { name: "알림 1" }).click();
   await page.getByRole("region", { name: "알림" }).getByRole("link", { name: /삼촌이 답장을 보냈어요/ }).click();
   await expect(page).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
-  // 사람 화면은 항목마다 한 줄로 줄여 보인다('따뜻한 목도리 · 향초')
+  // 사람 화면은 항목마다 적어 둔 값이 그대로 보인다('따뜻한 목도리', '향초')
   await expect(page.getByText(/따뜻한 목도리/)).toBeVisible();
   await expect(page.getByText(/향초/)).toBeVisible();
   await expect(page.getByRole("link", { name: /좋아하는 음식/ })).toHaveCount(0);
@@ -310,7 +310,7 @@ test("받은 답도 내가 고친다", async ({ browser }) => {
   // 수정 화면에는 비어 있는 항목도 다 있다
   await expect(page.getByRole("button", { name: /^사이즈/ })).toBeVisible();
   await page.goto(personUrl);
-  // 사람 화면은 항목마다 한 줄 요약(알레르기는 '땅콩 알레르기'처럼 붉게)
+  // 사람 화면은 항목마다 적어 둔 값이 그대로(알레르기는 붉은 알약)
   await expect(page.getByText(/땅콩/)).toBeVisible();
   await expect(page.getByText(/굴/)).toBeVisible();
   await personMenu(page, "선물 고르기");
@@ -440,7 +440,7 @@ test("영어로 보면 사이즈가 미국 사이즈로도 보인다", async ({ 
   await jisu.getByRole("button", { name: "English" }).click();
   await jisu.goto("/people");
   await jisu.getByRole("link", { name: /도윤/ }).first().click();
-  // 사람 화면은 사이즈를 한 줄로 줄여 보이고, 미국 사이즈 환산은 그 줄을 눌러 펼친 항목에서 본다
+  // 사람 화면의 사이즈 항목 제목 줄을 누르면 고치는 화면에서 그 항목이 펼쳐지고, 미국 사이즈 환산은 거기서 본다
   await jisu.getByRole("link", { name: /^Sizes/ }).click();
   await expect(jisu.getByText("About US women's 6.5")).toBeVisible();
   await expect(jisu.getByText("About US 6")).toBeVisible();
@@ -454,13 +454,14 @@ test("나만 보는 메모: 사람 화면에 남는다", async ({ browser }) => 
   const jisu = await as(browser, "jisu");
   await jisu.goto("/people");
   await jisu.getByRole("link", { name: /도윤/ }).first().click();
-  // 프로필 줄 오른쪽 끝 '메모'를 누르면 시트에서 보고 적는다(적어도 시트는 열린 채로, 버튼에 개수)
-  await jisu.getByRole("button", { name: /^메모/ }).click();
+  // 프로필 카드의 메모 줄: 메모가 없으면 '+ 메모' 알약, 누르면 시트에서 보고 적는다(적어도 시트는 열린 채로).
+  // 적으면 그 줄에 가장 최근 메모가 보이고 '+more'(메모 더 보기) 알약이 생긴다
+  await jisu.getByRole("button", { name: "+ 메모", exact: true }).click();
   const sheet = jisu.getByRole("dialog", { name: "나만 보는 메모" });
   await sheet.getByLabel("메모", { exact: true }).fill("목도리 줬음. 잘 하고 다님");
   await sheet.getByRole("button", { name: "메모 추가" }).click();
   await expect(sheet.getByText("목도리 줬음. 잘 하고 다님")).toBeVisible();
-  await expect(jisu.getByRole("button", { name: /^메모\s*1$/ })).toBeVisible();
+  await expect(jisu.getByRole("button", { name: "메모 더 보기", exact: true })).toBeVisible();
 });
 
 test("직접 적어 두기: 물어보지 않아도 적어 두면 나만 보고, 생일 알림도 온다", async ({ browser, request }) => {
@@ -717,12 +718,17 @@ test("사람들: 폴더(기본 3개 + 직접 만들기, 한 사람이 여러 폴
 
   // 단짝(탈퇴한 도윤, 태그가 이름이 됨): 사람 화면 폴더 시트에서 친구들에 넣고 즐겨찾기
   await jisu.getByRole("link", { name: /단짝/ }).first().click();
-  await jisu.getByRole("button", { name: "폴더에 넣기" }).click();
+  await personMenu(jisu, "폴더");
   const sheet = jisu.getByRole("dialog");
   await sheet.getByRole("button", { name: /친구들/ }).click();
   await sheet.getByRole("button", { name: "완료" }).click();
   await expect(sheet).toHaveCount(0);
-  await expect(jisu.getByRole("link", { name: "친구들", exact: true })).toBeVisible();
+  // 프로필 카드에는 폴더 칩이 없다: ··· 메뉴의 폴더 시트를 다시 열면 친구들이 체크돼 있다
+  await expect(jisu.getByRole("link", { name: "친구들", exact: true })).toHaveCount(0);
+  await personMenu(jisu, "폴더");
+  await expect(sheet.getByRole("button", { name: /친구들/ })).toHaveAttribute("aria-pressed", "true");
+  await jisu.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
   const star = jisu.getByRole("button", { name: "즐겨찾기" });
   await star.click();
   await expect(star).toHaveAttribute("aria-pressed", "true");
@@ -730,7 +736,7 @@ test("사람들: 폴더(기본 3개 + 직접 만들기, 한 사람이 여러 폴
   // 아빠: 시트에서 새 폴더 '본가'를 만들어 바로 넣고, 가족에도 넣는다(여러 폴더)
   await jisu.goto("/people");
   await jisu.getByRole("link", { name: /아빠/ }).first().click();
-  await jisu.getByRole("button", { name: "폴더에 넣기" }).click();
+  await personMenu(jisu, "폴더");
   await sheet.getByRole("button", { name: "새 폴더" }).click();
   await sheet.getByRole("textbox", { name: "폴더 이름" }).fill("본가");
   await sheet.getByRole("button", { name: "만들기", exact: true }).click();
@@ -738,8 +744,11 @@ test("사람들: 폴더(기본 3개 + 직접 만들기, 한 사람이 여러 폴
   await sheet.getByRole("button", { name: /가족/ }).click();
   await sheet.getByRole("button", { name: "완료" }).click();
   await expect(sheet).toHaveCount(0);
-  await expect(jisu.getByRole("link", { name: "가족", exact: true })).toBeVisible();
-  await expect(jisu.getByRole("link", { name: "본가", exact: true })).toBeVisible();
+  await personMenu(jisu, "폴더");
+  await expect(sheet.getByRole("button", { name: /가족/ })).toHaveAttribute("aria-pressed", "true");
+  await expect(sheet.getByRole("button", { name: /본가/ })).toHaveAttribute("aria-pressed", "true");
+  await jisu.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
 
   // 목록에는 아직 폴더에 없는 사람만(폴더에 넣은 단짝·아빠는 빠진다)
   await jisu.goto("/people");
@@ -908,7 +917,7 @@ test("데모로 둘러보기: 샘플 사람들이 들어 있고, 데모 계정�
   await expect(page.getByRole("link", { name: /아내/ }).first()).toBeVisible();
   await expect(page.getByText("엄마 칠순")).toBeVisible();
   await shot(page, "12-demo-home");
-  // 반려동물: 엄마 기록에 콩이(강아지 · 말티즈)와 좋아하는 간식. 홈의 큰 카드 얼굴을 누르면 사람 화면, 사람 화면은 5줄까지만 보여 줘서 반려동물은 고치기 화면의 항목에서 본다
+  // 반려동물: 엄마 기록에 콩이(강아지 · 말티즈)와 좋아하는 간식. 홈의 큰 카드 얼굴을 누르면 사람 화면, 반려동물 칸은 고치기 화면의 항목에서 본다
   await page.getByRole("link", { name: "엄마", exact: true }).first().click();
   await expect(page).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
   await page.goto(`${new URL(page.url()).pathname}/edit?open=pets`);
@@ -1111,7 +1120,7 @@ test("오늘의 질문: '이 사람에 대해 다시 묻지 않기'를 하면 �
   const card = page.getByRole("region", { name: "오늘의 질문" });
   const href = (await card.getByRole("link").first().getAttribute("href")) ?? "";
   // ··· 메뉴를 열어 '이 사람에 대해 다시 묻지 않기'
-  await card.getByRole("button", { name: "더 보기" }).click();
+  await card.getByRole("button", { name: "더 보기", exact: true }).click();
   await card.getByRole("button", { name: "이 사람에 대해 다시 묻지 않기" }).click();
   await expect(page).toHaveURL(/\/home\?muted=1$/);
   await expect(page.getByRole("status").filter({ hasText: "더 묻지 않을게요" })).toBeVisible();
