@@ -11,7 +11,7 @@ import { TornTape } from "@/components/TornTape";
 import { DrawnCheck, Icon } from "@/components/marks";
 import { OrganizeScene } from "@/components/OrganizeScene";
 import type { CaptureItem } from "@/lib/capture-ai";
-import { nameKey, retarget, whoOf, type CaptureTarget } from "@/lib/capture-target";
+import { nameKey, retarget, sameTarget, whoOf, type CaptureTarget } from "@/lib/capture-target";
 import { prepareImage, type PrepProblem } from "@/lib/image-prep";
 import type { ImportScopeData } from "@/lib/pages/import.data";
 import { startListenGuard, type ListenGuard } from "@/lib/listen-guard";
@@ -64,6 +64,10 @@ interface Labels {
   memo: string;
   wishMe: string;
   me: string;
+  /** 적지 못한 말이 있을 때(제목 · 메모로 남기기 · 다시 하기) */
+  leftover: string;
+  leftoverMemo: string;
+  leftoverRetry: string;
   allSame: string;
   avatarOf: string;
   errors: Record<FailCode, string>;
@@ -147,6 +151,8 @@ export function ImportMemo({
   const [imgError, setImgError] = useState("");
   const [preparing, setPreparing] = useState(false);
   const [skipped, setSkipped] = useState(0);
+  // 읽었는데 어느 줄에도 안 들어간 안전한 말(알레르기·못 먹는 것)
+  const [leftover, setLeftover] = useState<string[]>([]);
   const picker = useRef<HTMLInputElement>(null);
   const imageId = useRef(0);
   const urls = useRef<string[]>([]);
@@ -299,7 +305,7 @@ export function ImportMemo({
         draft = await draftImportImages(form);
       } else draft = await draftImport(text, scopeArg);
     } catch {
-      draft = { lines: [], error: "failed" as FailCode, name: "", skipped: 0 };
+      draft = { lines: [], error: "failed" as FailCode, name: "", skipped: 0, leftover: [] as string[] };
     }
     if (!alive.current) return;
     if (draft.error || !draft.lines.length) {
@@ -309,6 +315,7 @@ export function ImportMemo({
     }
     setNewName(draft.name);
     setSkipped(draft.skipped);
+    setLeftover(draft.leftover ?? []);
     setRows(
       draft.lines.map((line, key) => ({
         key,
@@ -334,6 +341,23 @@ export function ImportMemo({
       // 정한 묶음은 저장할 줄로 켠다
       return next.rows.map((r) => (next.changed.includes(r.key) && !r.line.same ? { ...r, on: true } : r));
     });
+
+  // 적지 못한 말: 줄들이 모두 한 사람 이야기일 때만 그 사람 메모로 남길 수 있다(여럿이면 어느 쪽인지 몰라 다시 하게만)
+  const memoTarget = (() => {
+    const t = rows.map((r) => r.target).filter((x) => x.kind === "person" || x.kind === "new");
+    return t.length === rows.length && t.length > 0 && t.every((x) => sameTarget(x, t[0]!)) ? { target: t[0]!, row: rows[0]! } : null;
+  })();
+  const keepLeftover = () => {
+    if (!memoTarget || !leftover.length) return;
+    const { target, row } = memoTarget;
+    const next: Row[] = leftover.map((text, i) => {
+      const item: CaptureItem = { who: whoOf(target, row.spoken), target: "memo", op: "add", text, codes: null, number: null, date: null, label: null };
+      const line: CaptureDraftLine = { who: row.line.who, isNew: target.kind === "new", op: "add", field: labels.memo, value: text, href: "", item, idx: -1, target, spoken: row.spoken, candidates: [] };
+      return { key: Math.max(-1, ...rows.map((r) => r.key)) + 1 + i, line, item, target, spoken: row.spoken, candidates: [], on: true };
+    });
+    setRows((cur) => [...cur, ...next]);
+    setLeftover([]);
+  };
 
   const chosen = rows.filter((r) => r.on && !r.line.same);
   const unresolved = rows.some((r) => r.on && r.target.kind === "pick");
@@ -521,6 +545,37 @@ export function ImportMemo({
             );
           })}
         </div>
+        {/* 적지 못한 말(알레르기·못 먹는 것이 줄에서 빠졌을 때): 말을 그대로 보이고 메모로 남기거나 처음으로 돌아가 다시 읽게 한다 */}
+        {leftover.length ? (
+          <div role="status" className="mx-4 mt-4 rounded-[12.6px] border border-dashed border-mango-deep bg-sky-soft px-3.5 pb-1.5 pt-2.5">
+            <p className="text-[12.6px] text-red">{labels.leftover}</p>
+            <ul className="mt-1 flex flex-col">
+              {leftover.map((text, i) => (
+                <li key={i} className="hand-written break-words text-[19.4px] leading-[1.25]">
+                  “{text}”
+                </li>
+              ))}
+            </ul>
+            <div className="flex items-center justify-end gap-1">
+              <button
+                type="button"
+                disabled={locked}
+                onClick={() => {
+                  setStep("input");
+                  setError("");
+                }}
+                className="flex min-h-11 items-center px-3 text-[13.5px] text-muted disabled:opacity-50"
+              >
+                {labels.leftoverRetry}
+              </button>
+              {memoTarget ? (
+                <button type="button" disabled={locked} onClick={keepLeftover} className="inline-flex h-9 items-center rounded-full border border-edge bg-white px-3.5 text-[13.5px] disabled:opacity-50">
+                  {labels.leftoverMemo}
+                </button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
         {allSame ? <p className="px-6 pt-4 text-[13.5px] text-muted">{labels.allSame}</p> : null}
         <div className="bottom-bar mt-auto flex flex-col gap-2 bg-bg px-4 pt-4">
           {error ? (

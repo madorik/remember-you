@@ -10,6 +10,8 @@ import { NotificationBell, type BellItem } from "@/components/NotificationBell";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { DateHead, DStamp, HeroButton, HeroFrame, HeroPolaroid, RememberedBox, WeekCard, type WeekDay } from "@/components/HomeParts";
 import { Chev } from "@/components/planner";
+import { ReplyAlertsPrompt } from "@/components/native";
+import { SavedToast } from "@/components/SavedToast";
 import { ReviewMoment } from "@/components/ReviewAsk";
 import { Icon } from "@/components/marks";
 import { eventName, eventsFor, peopleDates } from "@/lib/events";
@@ -325,6 +327,8 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
     <>
       {/* 기록을 저장하고 돌아온 직후면(앱에서만, 며칠 써 본 사람에게만) 스토어 리뷰 부탁 */}
       <ReviewMoment source="saved" when="saved" delay={2500} />
+      {/* 여러 사람 이야기를 적고 돌아왔으면 누구에게 무엇을 적었는지 토스트 */}
+      <SavedToast locale={locale} />
       <header className="relative flex h-11 shrink-0 items-center justify-between pl-5 pr-2.5">
         <Wordmark size={24} locale={locale} />
         <div className="flex items-center gap-0.5">
@@ -351,6 +355,9 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
             <Icon name="check" size={16} className="text-accent" />
             {t(muted ? "home.muted" : "home.answered")}
           </p>
+        ) : people.some((p) => p.asking?.state === "active") ? (
+          // 답장을 기다리는 중인데 아직 알림을 안 켰으면(앱에서만) 알림 켜기 단추
+          <ReplyAlertsPrompt label={t("home.replyAlerts")} className="mx-5" />
         ) : null}
       </div>
 
@@ -366,7 +373,7 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
             noneValue={question.options.some((o) => o.value === NONE) ? NONE : null}
             noneLabel={NONE_LABEL[locale]}
             canOwn={canAnswerOwn(question.id)}
-            labels={{ title: t("home.question"), ask: t("home.questionAsk"), skip: t("common.skip"), more: t("home.more"), mute: t("home.questionMute"), own: t("home.questionOwn"), save: t("common.save") }}
+            labels={{ title: t("home.question"), ask: t("home.questionAsk"), skip: t("common.skip"), more: t("home.more"), mute: t("home.questionMute"), own: t("home.questionOwn"), save: t("common.save"), dontKnow: t("home.questionDontKnow", { name: askedName }) }}
           />
         </>
       ) : null}

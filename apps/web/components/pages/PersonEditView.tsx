@@ -1,4 +1,4 @@
-import { SECTIONS_BY_IMPORTANCE } from "@readme/core";
+import { SECTIONS_BY_IMPORTANCE, isEmptySection } from "@readme/core";
 import Link from "@/components/AppLink";
 import { MyReadmeList } from "@/app/(app)/me/MyReadmeList";
 import { Icon } from "@/components/marks";
@@ -31,6 +31,8 @@ export function PersonEditView({ locale, contactId, name, avatar, card, ai, open
           section,
           title: t(`section.${section}` as "section.safety"),
           sub: section === "gifts" ? t("section.gifts.subOther") : t(`section.${section}.sub` as "section.safety.sub"),
+          // 비어 있는 항목은 그 항목만 그 사람에게 물어보는 길을 옆에 둔다
+          ask: isEmptySection(section, card[section]) ? { href: `/request?to=${contactId}&topic=${section}`, label: t("person.askMore") } : undefined,
         }))}
         card={card}
         locale={locale}

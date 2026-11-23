@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { captureNote, saveCapture, undoCapture, type CaptureDraftLine, type CaptureState } from "@/app/actions/capture";
 import { CaptureBadge, struck, type CaptureBadgeLabels } from "@/components/CaptureBadge";
 import { MarginLine } from "@/components/diary";
 import { Icon } from "@/components/marks";
+import { takeSaved } from "@/lib/capture-saved";
 import { TornTape } from "@/components/TornTape";
 
 /**
@@ -16,10 +18,24 @@ export function QuickNote({
   labels,
 }: {
   contactId: string;
-  labels: CaptureBadgeLabels & { placeholder: string; save: string; undo: string; undone: string; failed: string; limit: string; nothing: string; aiOff: string; holdTitle: string; holdApply: string; holdCancel: string };
+  labels: CaptureBadgeLabels & { placeholder: string; save: string; undo: string; undone: string; failed: string; limit: string; nothing: string; aiOff: string; holdTitle: string; holdApply: string; holdCancel: string; created: string };
 }) {
+  const router = useRouter();
   const [text, setText] = useState("");
   const [result, setResult] = useState<CaptureState | null>(null);
+  // 말로·글로 적기에서 이 사람 이야기를 저장하고 막 넘어왔으면: 그때의 결과(적은 줄 · 되돌리기)를 여기에 보인다. 새로 만든 사람이면 그 말도
+  const [created, setCreated] = useState(false);
+  const claimed = useRef(false);
+  useEffect(() => {
+    if (claimed.current) return;
+    claimed.current = true;
+    const note = takeSaved(contactId);
+    if (!note) return;
+    // 저장소(sessionStorage)는 화면을 그릴 때 읽을 수 없어(서버 그림과 어긋난다) 열린 뒤 한 번 읽어 넣는다
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setResult({ lines: note.lines, undo: note.undo, error: null });
+    setCreated(!!note.created);
+  }, [contactId]);
   const [undone, setUndone] = useState(false);
   // 알레르기·못 먹는 것을 지우거나 바꾸는 줄: 바로 적지 않고 확인을 받는다
   const [held, setHeld] = useState<CaptureDraftLine[]>([]);
@@ -48,6 +64,15 @@ export function QuickNote({
       setUndone(false);
     });
   };
+
+  // 이 말로 새로 만든 사람이면 되돌리면 사람도 사라진다: 지운 사람 화면에 남지 않게 사람들로
+  const undoAll = (ops: CaptureState["undo"]) =>
+    start(async () => {
+      const r = await undoCapture(ops);
+      if (!r.ok) return;
+      setUndone(true);
+      if (created) router.replace("/people");
+    });
 
   const error = result?.error === "ai_off" ? labels.aiOff : result?.error === "nothing" ? labels.nothing : result?.error === "limit" ? labels.limit : result?.error ? labels.failed : null;
 
@@ -95,6 +120,12 @@ export function QuickNote({
           ) : (
             <div className="flex items-end gap-2">
               <ul className={`flex min-w-0 flex-1 flex-col py-1 ${undone ? "opacity-40" : ""}`}>
+                {created ? (
+                  <li className="flex min-h-8 items-center gap-2 text-[15.3px]">
+                    <Icon name="check" size={15} strokeWidth={2.6} className="shrink-0 text-ok" />
+                    <span className="min-w-0 flex-1 truncate">{labels.created}</span>
+                  </li>
+                ) : null}
                 {result.lines.map((l, i) => (
                   <li key={i} className="flex min-h-8 items-center gap-2 text-[15.3px]">
                     <Icon name="check" size={15} strokeWidth={2.6} className={`shrink-0 ${l.same ? "text-muted" : "text-ok"}`} />
@@ -108,12 +139,7 @@ export function QuickNote({
                 <button
                   type="button"
                   disabled={undone || pending}
-                  onClick={() =>
-                    start(async () => {
-                      const r = await undoCapture(result.undo);
-                      if (r.ok) setUndone(true);
-                    })
-                  }
+                  onClick={() => undoAll(result.undo)}
                   className="flex min-h-11 shrink-0 items-center px-1.5 text-[14.4px] text-muted disabled:opacity-60"
                 >
                   {undone ? labels.undone : labels.undo}

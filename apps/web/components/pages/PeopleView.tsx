@@ -26,6 +26,7 @@ export function PeopleView({ locale, rows, folders, meAvatar, initialPick, initi
           bannerCta: t("home.ask"),
           pick: t("people.pick"),
           add: t("people.add"),
+          addRow: t("home.addPerson"),
           cancel: t("people.pickCancel"),
           withMe: t("plan.withMe"),
           meName: t("plan.me"),

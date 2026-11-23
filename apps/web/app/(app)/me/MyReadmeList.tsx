@@ -1,6 +1,7 @@
 "use client";
 
 import type { Locale, PartialCard, Section } from "@readme/core";
+import Link from "@/components/AppLink";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/marks";
 import { SectionIcon } from "@/components/SectionIcon";
@@ -26,6 +27,8 @@ export interface MyRow {
   title: string;
   /** 제목 아래: 이 항목에서 무엇을 고르고 적을 수 있는지(적은 값은 보이지 않는다) */
   sub: string;
+  /** 비어 있는 항목 옆의 작은 '물어보기' 링크(그 사람에게 이 항목을 물어보는 화면으로) */
+  ask?: { href: string; label: string };
 }
 
 /**
@@ -77,7 +80,7 @@ export function MyReadmeList({
   return (
     <div className="relative mx-4 mt-6">
     <ul className="card flex flex-col px-3.5 py-1.5">
-      {rows.map(({ section, title, sub }) => {
+      {rows.map(({ section, title, sub, ask }) => {
         const isOpen = open === section;
         return (
           <li
@@ -88,21 +91,35 @@ export function MyReadmeList({
             className="border-t border-dashed border-ink/30 first:border-t-0"
             style={{ scrollMarginTop: stickyTop }}
           >
-            <button
-              type="button"
-              aria-expanded={isOpen}
-              aria-controls={`edit-${section}`}
-              onClick={() => setOpen(isOpen ? null : section)}
-              className={`flex min-h-12 w-full items-center gap-2.5 py-1.5 text-left ${isOpen ? "sticky z-20 bg-white" : ""}`}
-              style={isOpen ? { top: stickyTop } : undefined}
-            >
-              <SectionIcon section={section} size={36} />
-              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className={`hand text-[18.6px] leading-[1.1] ${section === "safety" ? "text-red" : ""}`}>{title}</span>
-                <span className="text-[10.8px] text-muted">{sub}</span>
-              </span>
-              <Icon name="chevron" size={15} strokeWidth={2} className={`shrink-0 text-muted ${isOpen ? "-rotate-90" : ""}`} />
-            </button>
+            {/* 머리 줄: 펼치는 단추 + (비어 있으면) 그 항목만 물어보는 작은 링크. 링크는 단추 안에 넣지 못하니 줄 오른쪽에 겹쳐 놓고 단추가 그 자리를 비운다 */}
+            <div className={`relative ${isOpen ? "sticky z-20 bg-white" : ""}`} style={isOpen ? { top: stickyTop } : undefined}>
+              <button
+                type="button"
+                aria-expanded={isOpen}
+                aria-controls={`edit-${section}`}
+                onClick={() => setOpen(isOpen ? null : section)}
+                className={`flex min-h-12 w-full items-center gap-2.5 py-1.5 text-left ${ask ? "pr-[106px]" : ""}`}
+              >
+                <SectionIcon section={section} size={36} />
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className={`hand text-[18.6px] leading-[1.1] ${section === "safety" ? "text-red" : ""}`}>{title}</span>
+                  <span className="text-[10.8px] text-muted">{sub}</span>
+                </span>
+                <Icon name="chevron" size={15} strokeWidth={2} className={`absolute right-0 shrink-0 text-muted ${isOpen ? "-rotate-90" : ""}`} />
+              </button>
+              {ask ? (
+                <Link
+                  href={ask.href}
+                  className="absolute right-6 top-1/2 flex h-[27px] -translate-y-1/2 items-center gap-1 whitespace-nowrap rounded-full border border-edge bg-sky-soft pl-2 pr-[9.9px] text-[11.7px] before:absolute before:-inset-x-1 before:-inset-y-2 before:content-['']"
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24" width="14.4" height="14.4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    <rect x="3" y="6" width="18" height="13" rx="2" fill="#F9CBD5" />
+                    <path d="M3.8 7l8.2 6.2L20.2 7" />
+                  </svg>
+                  {ask.label}
+                </Link>
+              ) : null}
+            </div>
             {isOpen ? (
               <div id={`edit-${section}`} className="pt-3">
                 <Suspense fallback={<FormPlaceholder />}>

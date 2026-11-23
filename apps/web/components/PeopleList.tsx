@@ -1,4 +1,4 @@
-import { formatDotted, formatSpec, nextOccurrence, type Locale, type YMD } from "@readme/core";
+import { SECTIONS, formatDotted, formatSpec, isEmptySection, nextOccurrence, type Locale, type YMD } from "@readme/core";
 import Link from "@/components/AppLink";
 import type { T } from "@/lib/i18n";
 import { displayName, type Person } from "@/lib/data";
@@ -16,6 +16,8 @@ export function personRows(people: Person[], today: YMD, locale: Locale, t: T, f
     const next = birthday ? nextOccurrence(birthday, today) : null;
     const inFolders = folders ? folders.filter((f) => p.folderIds.includes(f.id)).map((f) => f.name).join(" · ") : "";
     const sub = p.asking?.state === "active" ? t("home.waiting") : inFolders;
+    // 아직 아무것도 안 적은 사람: 줄에 작은 '비어 있음' 표시(눌러 들어가면 사람 화면에 적기·물어보기 두 단추가 있다)
+    const blank = SECTIONS.every((section) => isEmptySection(section, p.card[section]));
     return {
       contactId: p.contactId,
       name,
@@ -34,6 +36,7 @@ export function personRows(people: Person[], today: YMD, locale: Locale, t: T, f
       soon: !!next && next.daysUntil <= 7,
       folderIds: p.folderIds,
       favorite: p.favorite,
+      blankTag: blank ? t("people.rowEmpty") : "",
     };
   });
 }

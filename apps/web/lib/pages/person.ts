@@ -30,7 +30,7 @@ export async function loadPerson({ params, searchParams: sp }: PageInput): Promi
     locale,
     back,
     today,
-    person: { contactId: p.contactId, personId: p.personId, name: p.name, nickname: p.nickname, avatar: p.avatar, card: p.card, favorite: p.favorite, askOff: p.askOff, folderIds: p.folderIds },
+    person: { contactId: p.contactId, personId: p.personId, name: p.name, nickname: p.nickname, avatar: p.avatar, card: p.card, favorite: p.favorite, askOff: p.askOff, folderIds: p.folderIds, answered: p.answered },
     name,
     notes,
     folders: folderViews(folders, people, t),

@@ -22,6 +22,8 @@ export interface PersonRow {
   folderIds: string[];
   /** 즐겨찾기(맨 위에 고정) */
   favorite: boolean;
+  /** 아직 아무것도 적지 않은 사람이면 '비어 있음', 아니면 "" */
+  blankTag: string;
 }
 
 /** 이름 옆 태그(내가 붙인 부르는 말) */
@@ -51,7 +53,12 @@ export function RowBody({ row }: { row: PersonRow; avatarLabel?: string }) {
           ) : null}
           {row.tag ? <TagChip>{row.tag}</TagChip> : null}
         </span>
-        {row.sub ? <span className="truncate text-[10.8px] text-muted">{row.sub}</span> : null}
+        {row.sub || row.blankTag ? (
+          <span className="flex min-w-0 items-center gap-1.5 text-[10.8px] text-muted">
+            {row.blankTag ? <span className="shrink-0 rounded-md border border-dashed border-ink/30 px-1.5 leading-[1.5]">{row.blankTag}</span> : null}
+            {row.sub ? <span className="truncate">{row.sub}</span> : null}
+          </span>
+        ) : null}
       </span>
       {row.date ? (
         <span className="flex flex-col items-end gap-0.5">

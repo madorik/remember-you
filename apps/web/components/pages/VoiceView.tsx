@@ -99,6 +99,9 @@ export function VoiceView({ locale, people, fixed, tour }: VoiceData) {
           limit: t("voice.limit"),
           nothing: t("voice.nothing"),
           micError: t("voice.micError"),
+          leftover: t("voice.leftover"),
+          leftoverMemo: t("voice.leftoverMemo"),
+          leftoverRetry: t("voice.leftoverRetry"),
         }}
       />
     </div>

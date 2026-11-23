@@ -15,7 +15,8 @@ import { OrganizeScene } from "@/components/OrganizeScene";
 import { TagChip } from "@/components/PersonRow";
 import { markSaved } from "@/components/ReviewAsk";
 import type { CaptureItem } from "@/lib/capture-ai";
-import { firstPick, retarget, siblingCount, whoOf, type CaptureTarget } from "@/lib/capture-target";
+import { planAfterSave, stashSaved } from "@/lib/capture-saved";
+import { firstPick, retarget, sameTarget, siblingCount, whoOf, type CaptureTarget } from "@/lib/capture-target";
 import { insertMention, mentionAt, mentionLabel, resolveMentions, type MentionPerson } from "@/lib/mention";
 import { matchesPerson } from "@/lib/search";
 import { setOrbListening, setOrbLevel } from "@/lib/orb";
@@ -354,6 +355,10 @@ type Labels = CaptureBadgeLabels & {
   limit: string;
   nothing: string;
   micError: string;
+  /** 적지 못한 말이 있을 때(제목 · 메모로 남기기 · 다시 하기) */
+  leftover: string;
+  leftoverMemo: string;
+  leftoverRetry: string;
 };
 
 /** 가입 직후 체험(?tour=)일 때 위에 붙는 안내: "이렇게 말해보세요 / 써보세요 + 예시 문장", 끝나면 다음(물어보기)으로 */
@@ -453,6 +458,8 @@ export function VoiceCapture({ locale, labels, people = [], fixed = null, tour =
   const [result, setResult] = useState<CaptureDraft | null>(null);
   const [rows, setRows] = useState<DraftRow[]>([]);
   const [saveError, setSaveError] = useState<CaptureState["error"]>(null);
+  // 나눴는데 어느 줄에도 안 들어간 안전한 말(알레르기·못 먹는 것): 메모로 남기거나 다시 하게 보인다
+  const [leftover, setLeftover] = useState<string[]>([]);
   // 저장하고 더 말하러 돌아왔다 / 저장을 마치고 다음 화면으로 가는 중
   const [flash, setFlash] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -663,6 +670,7 @@ export function VoiceCapture({ locale, labels, people = [], fixed = null, tour =
       if (wait > 0) await new Promise((done) => setTimeout(done, wait));
       if (!alive.current) return;
       setSaveError(null);
+      setLeftover(r.leftover ?? []);
       setRows(r.lines.map((line, key) => ({ key, line, item: line.item, input: line.value, bad: false, target: line.target, spoken: line.spoken, candidates: line.candidates, same: !!line.same, rev: 0 })));
       setResult(r);
       if (tour && r.error) void trackTour("fail", r.error);
@@ -691,6 +699,30 @@ export function VoiceCapture({ locale, labels, people = [], fixed = null, tour =
       }),
     );
   const removeRow = (key: number) => setRows((all) => all.filter((r) => r.key !== key));
+
+  // 적지 못한 말: 줄들이 모두 한 사람(내 사람·새 사람) 이야기일 때만 그 사람 메모로 남길 수 있다(여럿이면 어느 쪽인지 몰라 다시 하게만)
+  const memoTarget = (() => {
+    const t = rows.map((r) => r.target).filter((x) => x.kind === "person" || x.kind === "new");
+    return t.length === rows.length && t.length > 0 && t.every((x) => sameTarget(x, t[0]!)) ? { target: t[0]!, row: rows[0]! } : null;
+  })();
+  const keepLeftover = () => {
+    if (!memoTarget || !leftover.length) return;
+    const { target, row } = memoTarget;
+    const next: DraftRow[] = leftover.map((text, i) => {
+      const item: CaptureItem = { who: whoOf(target, row.spoken), target: "memo", op: "add", text, codes: null, number: null, date: null, label: null };
+      const line: CaptureDraftLine = { who: row.line.who, isNew: target.kind === "new", op: "add", field: labels.memo, value: text, href: "", item, idx: -1, target, spoken: row.spoken, candidates: [] };
+      return { key: Math.max(-1, ...rows.map((r) => r.key)) + 1 + i, line, item, input: text, bad: false, target, spoken: row.spoken, candidates: [], same: false, rev: 0 };
+    });
+    setRows((all) => [...all, ...next]);
+    setLeftover([]);
+  };
+  // 다시 하기: 받아 적은 글은 그대로 두고 처음 화면으로(고쳐서 다시 기억해 두기)
+  const retryLeftover = () => {
+    setResult(null);
+    setRows([]);
+    setLeftover([]);
+    setTargetOf(null);
+  };
 
   // 대상·항목을 바꾼 줄들을 서버에 물어 '이미 알고 있어요'를 다시 그린다(저장도 AI도 아니다). 늦게 온 답은 그새 또 바뀐 줄에는 얹지 않는다
   const recheck = (list: DraftRow[]) => {
@@ -757,6 +789,7 @@ export function VoiceCapture({ locale, labels, people = [], fixed = null, tour =
   const backToStart = () => {
     setResult(null);
     setRows([]);
+    setLeftover([]);
     setTargetOf(null);
     setText("");
     setTagged([]);
@@ -788,11 +821,19 @@ export function VoiceCapture({ locale, labels, people = [], fixed = null, tour =
         return;
       }
       setLeaving(true);
-      // 체험이 아닌 저장이 끝나 홈으로 돌아가면, 홈이 이 표시를 보고 스토어 리뷰를 부탁할 수 있다
+      // 체험이 아닌 저장이 끝나 홈(또는 그 사람 화면)으로 가면, 그 화면이 이 표시를 보고 스토어 리뷰를 부탁할 수 있다
       if (!tour) markSaved();
       // 체험: 방금 적은 사람이 있으면 그 사람에게 물어보기로(없으면 사람 고르기부터)
       const first = r.lines.map((l) => /^\/people\/([0-9a-f-]{36})$/i.exec(l.href)?.[1]).find(Boolean);
-      router.push(tour ? `/request?tour=2${first ? `&to=${first}` : ""}` : "/home");
+      if (tour) return router.push(`/request?tour=2${first ? `&to=${first}` : ""}`);
+      // 적은 게 한 사람 이야기뿐이면 그 사람 화면으로(무엇을 적었는지 알리고 되돌릴 수 있게), 여러 사람이면 홈에서 누구에게 무엇을 적었는지 알린다
+      const plan = planAfterSave(r.lines);
+      if (plan.kind === "person") {
+        stashSaved({ contactId: plan.id, created: plan.created, lines: r.lines, undo: r.undo });
+        return router.push(`/people/${plan.id}`);
+      }
+      if (plan.kind === "many") stashSaved({ contactId: null, created: null, lines: r.lines, undo: r.undo });
+      router.push("/home");
     });
   };
 
@@ -1068,6 +1109,29 @@ export function VoiceCapture({ locale, labels, people = [], fixed = null, tour =
             })}
           </ul>
         </section>
+        {/* 적지 못한 말(알레르기·못 먹는 것이 줄에서 빠졌을 때): 말을 그대로 보이고 메모로 남기거나 다시 하게 한다 */}
+        {leftover.length ? (
+          <div role="status" className="mx-4 mt-3 rounded-[12.6px] border border-dashed border-mango-deep bg-sky-soft px-3.5 pb-1.5 pt-2.5">
+            <p className="text-[12.6px] text-red">{labels.leftover}</p>
+            <ul className="mt-1 flex flex-col">
+              {leftover.map((text, i) => (
+                <li key={i} className="hand-written break-words text-[19.4px] leading-[1.25]">
+                  “{text}”
+                </li>
+              ))}
+            </ul>
+            <div className="flex items-center justify-end gap-1">
+              <button type="button" disabled={locked} onClick={retryLeftover} className="flex min-h-11 items-center px-3 text-[13.5px] text-muted disabled:opacity-50">
+                {labels.leftoverRetry}
+              </button>
+              {memoTarget ? (
+                <button type="button" disabled={locked} onClick={keepLeftover} className="inline-flex h-9 items-center rounded-full border border-edge bg-white px-3.5 text-[13.5px] disabled:opacity-50">
+                  {labels.leftoverMemo}
+                </button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
         <div className="flex min-h-8 items-center justify-center px-4 pt-3">
           {saveError ? (
             <p role="alert" className="text-center text-[12.6px] text-red">
