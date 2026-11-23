@@ -9,12 +9,14 @@ import { Avatar } from "@/components/Avatar";
 import { TornTape } from "@/components/TornTape";
 import { CheckGlyph, Icon } from "@/components/marks";
 import { Mascot } from "@/components/Mascot";
+import { CuteTopicIcon } from "@/components/CuteTopicIcon";
 import { SectionIcon } from "@/components/SectionIcon";
 import { TagChip } from "@/components/PersonRow";
 import { ReplyAlert } from "@/components/ReplyAlert";
 import { LinkField, ShareButtons } from "@/components/ShareButtons";
 import { Stamp, Star } from "@/components/diary";
 import { requestPreview } from "@/lib/og";
+import { u } from "@/lib/ui-scale";
 import { matchesPerson } from "@/lib/search";
 import { SITE_URL } from "@/lib/site";
 import { AIRMAIL, FacePolaroid, LinkPreview, PostMark, PostageStamp, SpeechBubble } from "./RequestParts";
@@ -197,6 +199,11 @@ export function RequestForm({
   const chip = "flex h-9 items-center gap-1.5 rounded-full border border-edge bg-white pl-[4.5px] pr-3.5 text-[12.6px]";
   const h2 = "hand scribble text-[19.4px] leading-none";
   const mint = { "--scribble": "#5dbb9a" } as React.CSSProperties;
+  // 물어볼 항목: 처음 골라 두는 것(그 사람에게 아직 안 적힌 것부터 3개)은 큰 카드로, 나머지는 '더 물어볼 것' 칩으로. 고르고 끄는 건 둘 다 같은 토글
+  const suggested = SECTIONS_BY_IMPORTANCE.filter((x) => topicsFor(target?.kind === "person" ? target.person : null).includes(x));
+  const more = SECTIONS_BY_IMPORTANCE.filter((x) => !suggested.includes(x));
+  const toggle = (x: Section) => setTopics(topics.includes(x) ? topics.filter((y) => y !== x) : SECTIONS.filter((y) => y === x || topics.includes(y)));
+  const topicEg = (x: Section) => t(`request.eg.${x}` as "request.eg.dates");
 
   // 링크를 받는 사람이 메신저에서 보는 미리보기(/r/<토큰>의 링크 미리보기와 같은 함수)
   const preview = requestPreview(locale, sender.name || undefined, { question, sections: topics });
@@ -311,28 +318,72 @@ export function RequestForm({
             <span className="min-w-0 flex-1 text-[15px] leading-[1.45]">{aboutPrompt(question, name, locale)}</span>
           </div>
         ) : (
-          <div className="mt-2.5 grid grid-cols-3 gap-2">
-            {SECTIONS_BY_IMPORTANCE.map((x) => {
-              const on = topics.includes(x);
-              return (
-                <button
-                  key={x}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => setTopics(on ? topics.filter((y) => y !== x) : SECTIONS.filter((y) => y === x || topics.includes(y)))}
-                  className={`relative flex h-[90px] flex-col items-center justify-center gap-2 rounded-[14px] text-[13.5px] leading-none ${on ? "border-[2.5px] border-ink bg-[#e4ecfa]" : "border border-edge bg-white"}`}
-                >
-                  <SectionIcon section={x} size={44} outline />
-                  {topicLabel(x)}
-                  {on ? (
-                    <span aria-hidden="true" className="absolute -right-[4.5px] -top-[6.3px] flex h-5 w-5 items-center justify-center rounded-full border border-edge bg-sky text-ink">
-                      <CheckGlyph size={12} />
-                    </span>
-                  ) : null}
-                </button>
-              );
-            })}
-          </div>
+          <>
+            <div className="mt-2.5 mb-2 flex items-center gap-2">
+              <h3 className="hand text-[16.2px] leading-none">{t(suggested.length === ASK_DEFAULT_TOPICS ? "request.first3" : "request.first")}</h3>
+              {name.trim() ? <span className="inline-flex h-5.5 max-w-[60%] items-center -rotate-3 rounded-full bg-[#FDE6EB] px-2 text-[9.9px] leading-none text-red"><span className="truncate">{t("request.fitFor", { name: name.trim() })}</span></span> : null}
+            </div>
+            <ul className="flex flex-col gap-2">
+              {suggested.map((x) => {
+                const on = topics.includes(x);
+                return (
+                  <li key={x}>
+                    <button
+                      type="button"
+                      aria-pressed={on}
+                      aria-label={topicLabel(x)}
+                      aria-describedby={`topic-eg-${x}`}
+                      onClick={() => toggle(x)}
+                      className={`flex min-h-15 w-full items-center gap-3 rounded-[12.6px] border border-edge py-2 pr-3 pl-2.5 text-left ${on ? "bg-sky-soft" : "bg-white"}`}
+                    >
+                      <CuteTopicIcon section={x} size={40} />
+                      <span className="flex min-w-0 flex-1 flex-col gap-[2.7px]">
+                        <span className={`hand text-[19.8px] leading-[1.05] ${x === "safety" ? "text-red" : ""}`}>{topicLabel(x)}</span>
+                        <span id={`topic-eg-${x}`} className="text-[10.8px] leading-[1.3] text-muted">
+                          {topicEg(x)}
+                        </span>
+                      </span>
+                      <span aria-hidden="true" className={`flex h-[23.4px] w-[23.4px] shrink-0 items-center justify-center rounded-full border border-edge ${on ? "bg-sky text-ink" : "bg-white"}`}>
+                        {on ? <CheckGlyph size={14} /> : null}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            {more.length ? (
+              <>
+                <div className="mt-4 mb-2 flex items-center gap-2">
+                  <h3 className="hand text-[16.2px] leading-none">{t("request.more")}</h3>
+                  <span aria-hidden="true" className="h-0 flex-1 border-t border-dashed border-edge" />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {more.map((x) => {
+                    const on = topics.includes(x);
+                    return (
+                      <button
+                        key={x}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => toggle(x)}
+                        className={`inline-flex h-9.5 items-center gap-1.5 rounded-full border border-edge pr-3 pl-2 text-[12.2px] leading-none ${on ? "bg-sky-soft" : "bg-white"}`}
+                      >
+                        <CuteTopicIcon section={x} size={24} />
+                        {topicLabel(x)}
+                        {on ? (
+                          <CheckGlyph size={13} />
+                        ) : (
+                          <svg aria-hidden="true" width={u(13)} height={u(13)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="text-muted">
+                            <path d="M12 5v14M5 12h14" />
+                          </svg>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            ) : null}
+          </>
         )}
       </section>
 
