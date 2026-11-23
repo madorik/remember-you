@@ -188,10 +188,10 @@ export function AvatarBuilder({
         })}
       </div>
 
-      {/* 칸 높이를 고정해 탭을 옮겨도 아래 단추·메뉴가 흔들리지 않게(가장 많은 머리·소품 13개 = 4줄, 색깔은 7줄) */}
-      <div role="tabpanel" className="mt-3 min-h-[295.2px]">
+      {/* 칸 높이를 고정해 탭을 옮겨도 아래 단추·메뉴가 흔들리지 않게(가장 많은 머리·소품 13개 = 한 줄에 3개씩 5줄, 색깔은 7줄) */}
+      <div role="tabpanel" className="mt-3 min-h-[540px]">
         {options ? (
-          <div className="grid grid-cols-4 content-start gap-2">
+          <div className="grid grid-cols-3 content-start gap-2.5">
             {options.list.map((id) => {
               const on = value[options.key] === id;
               const label = t(`avatar.${options.key}.${id}` as "avatar.hair.bob");
@@ -202,9 +202,9 @@ export function AvatarBuilder({
                   aria-pressed={on}
                   aria-label={label}
                   onClick={() => set({ [options.key]: id } as Partial<AvatarConfig>)}
-                  className={`flex h-[68.4px] flex-col items-center gap-[2.7px] overflow-hidden rounded-xl border border-edge pt-1.5 text-[9.9px] transition-colors ${on ? "bg-sky-soft shadow-[inset_0_0_0_1px_#1F2340]" : "bg-white"}`}
+                  className={`flex h-[100px] flex-col items-center gap-1 overflow-hidden rounded-xl border border-edge pt-2 text-[12.6px] transition-colors ${on ? "bg-sky-soft shadow-[inset_0_0_0_1px_#1F2340]" : "bg-white"}`}
                 >
-                  <Avatar config={{ ...value, [options.key]: id } as AvatarConfig} size={40} label={label} decorative />
+                  <Avatar config={{ ...value, [options.key]: id } as AvatarConfig} size={64} label={label} decorative />
                   <span className="max-w-full truncate px-1 leading-[1.2]">{label}</span>
                 </button>
               );
