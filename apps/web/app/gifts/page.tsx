@@ -53,17 +53,17 @@ export default function Gifts() {
         </Link>
       </div>
       <header className="relative px-5 pt-5">
-        <h1 className="text-[38px] leading-[1.15]">
+        <h1 className="text-[30.8px] leading-[1.15]">
           <span className="hl">누구에게, 얼마로</span> 줄까요?
         </h1>
-        <p className="pt-3 text-[13px] leading-[1.55] text-muted">{DESCRIPTION}</p>
+        <p className="pt-3 text-[11.7px] leading-[1.55] text-muted">{DESCRIPTION}</p>
       </header>
-      <ul aria-label="선물 가이드 목록" className="relative grid grid-cols-2 gap-x-[10px] gap-y-3 px-4 pt-7">
+      <ul aria-label="선물 가이드 목록" className="relative grid grid-cols-2 gap-x-[9px] gap-y-3 px-4 pt-7">
         {cards.map(({ g, cover }, i) => {
           const tp = TAPES[i % TAPES.length]!;
           return (
             <li key={g.slug} className={`flex ${tp.tilt}`}>
-              <Link href={`/gifts/${g.slug}`} className="card relative flex w-full flex-col gap-2.5 px-[11px] pb-3 pt-3 active:bg-fill">
+              <Link href={`/gifts/${g.slug}`} className="card relative flex w-full flex-col gap-2.5 px-[9.9px] pb-3 pt-3 active:bg-fill">
                 <TornTape color={tp.color} w={56} h={19} rotate={tp.rotate} className="-top-2.5 left-1/2 -ml-7" />
                 <span aria-hidden="true" className="block aspect-square overflow-hidden rounded-lg" style={{ background: TILES[i % TILES.length] }}>
                   {cover?.image ? (
@@ -71,21 +71,21 @@ export default function Gifts() {
                     <img src={cover.image} alt="" loading="lazy" referrerPolicy="no-referrer" className="h-full w-full bg-white object-contain" />
                   ) : null}
                 </span>
-                <span className="hand px-0.5 text-[20px] leading-[1.25]">{g.who} 선물</span>
+                <span className="hand px-0.5 text-[16.2px] leading-[1.25]">{g.who} 선물</span>
               </Link>
             </li>
           );
         })}
       </ul>
       <section className="card relative mx-4 mt-10 flex flex-col gap-3 px-3.5 pb-3.5 pt-3">
-        <h2 className="hand scribble self-start text-[24px] leading-none">그 사람에게 꼭 맞는 선물은</h2>
-        <p className="pt-1 text-[13px] leading-[1.55] text-muted">기억해유에 가까운 사람의 취향·사이즈·챙길 날을 적어 두면, 그 사람에게 맞춘 선물을 가격대별로 골라 드려요.</p>
-        <Link href="/" className="btn-primary w-full !min-h-[50px] !text-[24px]">
+        <h2 className="hand scribble self-start text-[19.4px] leading-none">그 사람에게 꼭 맞는 선물은</h2>
+        <p className="pt-1 text-[11.7px] leading-[1.55] text-muted">기억해유에 가까운 사람의 취향·사이즈·챙길 날을 적어 두면, 그 사람에게 맞춘 선물을 가격대별로 골라 드려요.</p>
+        <Link href="/" className="btn-primary w-full !min-h-[45px] !text-[19.4px]">
           <Icon name="chevron" size={19} strokeWidth={2} />
           기억해유 시작하기
         </Link>
       </section>
-      <p className="px-6 pt-[22px] text-[12px] leading-[1.45] text-muted">이 페이지는 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>
+      <p className="px-6 pt-[19.8px] text-[10.8px] leading-[1.45] text-muted">이 페이지는 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>
       <div className="page-end" />
     </main>
   );

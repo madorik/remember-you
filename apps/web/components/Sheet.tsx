@@ -115,15 +115,15 @@ export function Sheet({
         aria-modal="true"
         aria-labelledby={id}
         tabIndex={-1}
-        className="mx-auto flex max-h-[calc(90dvh-var(--kb,0px))] w-full max-w-[480px] flex-col rounded-t-[28px] bg-paper outline-none"
+        className="mx-auto flex max-h-[calc(90dvh-var(--kb,0px))] w-full max-w-[432px] flex-col rounded-t-[25.2px] bg-paper outline-none"
         style={{ marginBottom: "var(--kb, 0px)" }}
       >
         <div className="flex shrink-0 items-center gap-2.5 pb-1 pl-6 pr-2 pt-3">
           {icon}
-          <h2 id={id} className="min-w-0 flex-1 truncate text-[21px]">
+          <h2 id={id} className="min-w-0 flex-1 truncate text-[17px]">
             {title}
           </h2>
-          <button type="button" aria-label={closeLabel} onClick={onClose} className="flex h-11 w-11 shrink-0 items-center justify-center text-muted">
+          <button type="button" aria-label={closeLabel} onClick={onClose} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] shrink-0 items-center justify-center text-muted">
             <Icon name="close" size={20} />
           </button>
         </div>

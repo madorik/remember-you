@@ -63,23 +63,23 @@ export function ProfileMenu({ avatar, admin = false, labels }: { avatar: AvatarC
         aria-controls={open ? menuId : undefined}
         aria-label={labels.menu}
         onClick={() => setOpen(!open)}
-        className="flex h-11 w-11 items-center justify-center"
+        className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] items-center justify-center"
       >
         <Avatar config={avatar} size={34} label={labels.menu} />
       </button>
       {open ? (
-        <div id={menuId} role="menu" aria-label={labels.menu} onKeyDown={onMenuKey} className="absolute right-1 top-full z-40 mt-1 w-44 overflow-hidden rounded-[14px] bg-paper py-1 shadow-[0_0_0_1.5px_var(--color-ink),0_12px_26px_-12px_rgb(31_35_64/0.5)]">
-          <Link role="menuitem" href="/me/avatar" onClick={() => setOpen(false)} className="flex min-h-12 items-center px-4 text-[17px]">
+        <div id={menuId} role="menu" aria-label={labels.menu} onKeyDown={onMenuKey} className="absolute right-1 top-full z-40 mt-1 w-44 overflow-hidden rounded-[12.6px] bg-paper py-1 shadow-[0_0_0_1px_var(--color-edge),0_12px_26px_-12px_rgb(31_35_64/0.5)]">
+          <Link role="menuitem" href="/me/avatar" onClick={() => setOpen(false)} className="flex min-h-12 items-center px-4 text-[15.3px]">
             {labels.profile}
           </Link>
           {/* 관리자 계정(ADMIN_EMAILS)만. 우리 통계 화면(/admin)으로 간다 */}
           {admin ? (
-            <Link role="menuitem" href="/admin" prefetch={false} onClick={() => setOpen(false)} className="flex min-h-12 items-center border-t border-rule px-4 text-[17px]">
+            <Link role="menuitem" href="/admin" prefetch={false} onClick={() => setOpen(false)} className="flex min-h-12 items-center border-t border-rule px-4 text-[15.3px]">
               {labels.admin}
             </Link>
           ) : null}
           <form action={signOut} className="border-t border-rule">
-            <button role="menuitem" className="flex min-h-12 w-full items-center px-4 text-left text-[17px]">
+            <button role="menuitem" className="flex min-h-12 w-full items-center px-4 text-left text-[15.3px]">
               {labels.signOut}
             </button>
           </form>

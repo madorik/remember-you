@@ -2,6 +2,7 @@ import type { AvatarConfig } from "@readme/core";
 import Link from "@/components/AppLink";
 import { Avatar } from "@/components/Avatar";
 import { Heart, Polaroid } from "@/components/diary";
+import { u } from "@/lib/ui-scale";
 
 // 홈 '다가오는 날' 왼쪽 그림: 그 사람 얼굴을 끼운 폴라로이드(이름 + 하트). 같은 날 여럿이면 폴라로이드를 겹치고,
 // 다가오는 날이 없으면 점선 사진 칸에 사람 + 더하기(새 친구)를 둔다. 명절 그림은 HolidayArt.
@@ -9,7 +10,8 @@ import { Heart, Polaroid } from "@/components/diary";
 const QUIET = "#C3C7D4";
 
 /** 사람 하나 + 더하기의 연한 선(챙길 날이 없을 때 '새 친구'를 부르는 빈 사진 칸) */
-function QuietFriend({ size = 48 }: { size?: number }) {
+function QuietFriend({ size: sizeIn = 48 }: { size?: number }) {
+  const size = u(sizeIn);
   return (
     <svg viewBox="0 0 48 48" width={size} height={size} aria-hidden="true" className="block">
       <g fill="none" stroke={QUIET} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -29,7 +31,7 @@ export function EventPortrait({ href, avatar, name }: { href: string; avatar: Av
         rotate={-4}
         caption={
           <>
-            <span className="max-w-[72px] truncate">{name}</span>
+            <span className="max-w-[64.8px] truncate">{name}</span>
             <Heart size={13} inline />
           </>
         }
@@ -46,14 +48,14 @@ export function EventPortraits({ faces }: { faces: { avatar: AvatarConfig | null
   if (!a || !b) return null;
   const rest = faces.length - 2;
   return (
-    <span aria-hidden="true" className="relative block h-[122px] w-[112px] shrink-0">
+    <span aria-hidden="true" className="relative block h-[109.8px] w-[100.8px] shrink-0">
       <Polaroid rotate={-6} photo={64} className="absolute left-1 top-0">
         <Avatar config={a.avatar} size={58} label={a.name} />
       </Polaroid>
-      <Polaroid rotate={6} photo={64} className="absolute right-0 top-[34px]">
+      <Polaroid rotate={6} photo={64} className="absolute right-0 top-[30.6px]">
         <Avatar config={b.avatar} size={58} label={b.name} />
       </Polaroid>
-      {rest > 0 ? <span className="grad num absolute bottom-0 left-0 rounded-full px-2 py-[2px] text-[14px] shadow-[0_0_0_1.5px_var(--color-ink)]">+{rest}</span> : null}
+      {rest > 0 ? <span className="grad num absolute bottom-0 left-0 rounded-full px-2 py-[2px] text-[11.9px] shadow-[0_0_0_1px_var(--color-edge)]">+{rest}</span> : null}
     </span>
   );
 }

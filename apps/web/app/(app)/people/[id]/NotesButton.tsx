@@ -18,7 +18,7 @@ export interface NoteItem {
 function AddButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
-    <button disabled={pending} className="btn-primary !h-12 shrink-0 !rounded-[14px] px-4 !text-[18px]">
+    <button disabled={pending} className="btn-primary !h-12 shrink-0 !rounded-[12.6px] px-4 !text-[14.6px]">
       {label}
     </button>
   );
@@ -73,9 +73,9 @@ export function NotesButton({
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
-        className="flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-[10px] border-[1.5px] border-ink bg-sky-soft pl-[7px] pr-2.5 text-[13px] active:scale-95"
+        className="flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-[9px] border border-edge bg-sky-soft pl-[6.3px] pr-2.5 text-[11.7px] active:scale-95"
       >
-        <svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#1F2340" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="15.3" height="15.3" fill="none" stroke="#1F2340" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
           <path d="M6 3.5h9l3.5 3.5v13.5H6z" fill="#FFF4D6" />
           <path d="M15 3.5V7h3.5M9 12h6M9 15.5h4" />
         </svg>
@@ -98,18 +98,18 @@ export function NotesButton({
           }
         >
           {failed ? (
-            <p role="alert" className="px-6 pb-1 text-[16px] text-red">
+            <p role="alert" className="px-6 pb-1 text-[14.4px] text-red">
               {translate(document.documentElement.lang === "en" ? "en" : "ko", "common.error")}
             </p>
           ) : null}
           {shown.length ? (
             <ul className="px-6 pb-2">
               {shown.map((n) => (
-                <li key={n.id} className="flex items-start gap-2 border-t border-rule py-3 text-[18px] leading-[1.4] first:border-t-0">
+                <li key={n.id} className="flex items-start gap-2 border-t border-rule py-3 text-[16.2px] leading-[1.4] first:border-t-0">
                   <span className="min-w-0 flex-1 whitespace-pre-line">{n.body}</span>
-                  <span className="shrink-0 pt-[2px] text-[15px] text-muted">{n.when}</span>
+                  <span className="shrink-0 pt-[2px] text-[13.5px] text-muted">{n.when}</span>
                   {/* 눌리는 칸은 44px, 보이는 건 작은 ×(줄 높이는 그대로) */}
-                  <button type="button" aria-label={labels.del} onClick={() => remove(n.id)} className="-my-3 -mr-3 flex h-11 w-11 shrink-0 items-center justify-center text-muted">
+                  <button type="button" aria-label={labels.del} onClick={() => remove(n.id)} className="-my-3 -mr-3 flex h-11 w-11 relative before:absolute before:-inset-[2.2px] shrink-0 items-center justify-center text-muted">
                     <Icon name="close" size={15} />
                   </button>
                 </li>

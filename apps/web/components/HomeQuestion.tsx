@@ -67,16 +67,16 @@ export function HomeQuestion({ contactId, qid, prompt, name, avatar, options, no
 
   return (
     <section aria-label={labels.title} className="card relative mx-4 flex flex-col px-3.5 py-3">
-      <TornTape color="mint" w={60} h={18} rotate={4} className="-top-[11px] left-1/2 -ml-[30px]" />
+      <TornTape color="mint" w={60} h={18} rotate={4} className="-top-[9.9px] left-1/2 -ml-[27px]" />
       <div className="flex h-8 items-center justify-between gap-1.5">
-        <span className="hand scribble whitespace-nowrap text-[24px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
+        <span className="hand scribble whitespace-nowrap text-[19.4px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
           {labels.title}
         </span>
         <div ref={box} className="relative flex items-center gap-0.5">
           <form action={askAbout}>
             {hidden}
-            <button className="flex h-[30px] shrink-0 items-center gap-1 whitespace-nowrap rounded-full border-[1.5px] border-ink bg-sky-soft pl-2 pr-[11px] text-[13px]">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
+            <button className="flex h-[27px] shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-edge bg-sky-soft pl-2 pr-[9.9px] text-[11.7px]">
+              <svg viewBox="0 0 24 24" width="14.4" height="14.4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
                 <rect x="3" y="6" width="18" height="13" rx="2" fill="#F9CBD5" />
                 <path d="M3.8 7l8.2 6.2L20.2 7" />
               </svg>
@@ -85,7 +85,7 @@ export function HomeQuestion({ contactId, qid, prompt, name, avatar, options, no
           </form>
           <form action={skipAbout}>
             {hidden}
-            <button className="flex h-11 items-center gap-0.5 whitespace-nowrap pl-2 pr-0.5 text-[13px] text-muted">
+            <button className="flex h-11 items-center gap-0.5 whitespace-nowrap pl-2 pr-0.5 text-[11.7px] text-muted">
               {labels.skip}
               <Chev size={13} />
             </button>
@@ -96,19 +96,19 @@ export function HomeQuestion({ contactId, qid, prompt, name, avatar, options, no
             aria-expanded={menu}
             aria-controls={menu ? menuId : undefined}
             onClick={() => setMenu(!menu)}
-            className="-mr-2 flex h-11 w-[30px] items-center justify-center"
+            className="-mr-2 flex h-11 w-[27px] items-center justify-center"
           >
-            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16.2" height="16.2" aria-hidden="true">
               <circle cx="5" cy="12" r="1.6" fill="#5B5F78" />
               <circle cx="12" cy="12" r="1.6" fill="#5B5F78" />
               <circle cx="19" cy="12" r="1.6" fill="#5B5F78" />
             </svg>
           </button>
           {menu ? (
-            <div id={menuId} className="absolute right-0 top-full z-30 mt-0.5 w-max max-w-[260px] overflow-hidden rounded-[10px] bg-paper py-0.5 shadow-[0_0_0_1.5px_var(--color-ink),0_12px_26px_-12px_rgb(31_35_64/0.5)]">
+            <div id={menuId} className="absolute right-0 top-full z-30 mt-0.5 w-max max-w-[234px] overflow-hidden rounded-[9px] bg-paper py-0.5 shadow-[0_0_0_1px_var(--color-edge),0_12px_26px_-12px_rgb(31_35_64/0.5)]">
               <form action={muteAbout}>
                 {hidden}
-                <button className="flex min-h-11 w-full items-center px-4 text-left text-[15px]">{labels.mute}</button>
+                <button className="flex min-h-11 w-full items-center px-4 text-left text-[13.5px]">{labels.mute}</button>
               </form>
             </div>
           ) : null}
@@ -120,7 +120,7 @@ export function HomeQuestion({ contactId, qid, prompt, name, avatar, options, no
           <Avatar config={avatar} size={22} label={name} decorative />
           <span className="sr-only">{name}</span>
         </Link>
-        <p role="heading" aria-level={2} className="min-w-0 text-[15px] leading-6">
+        <p role="heading" aria-level={2} className="min-w-0 text-[13.5px] leading-6">
           {prompt}
         </p>
       </div>
@@ -133,7 +133,7 @@ export function HomeQuestion({ contactId, qid, prompt, name, avatar, options, no
             key={o.value}
             name="value"
             value={o.value}
-            className={`flex shrink-0 items-center justify-center rounded-xl border-[1.5px] border-ink bg-white px-3 text-[14px] transition-transform active:scale-95 ${spicy ? "min-h-[38px] flex-col gap-0 py-1" : "h-[38px] whitespace-nowrap"}`}
+            className={`flex shrink-0 items-center justify-center rounded-xl border border-edge bg-white px-3 text-[12.6px] transition-transform active:scale-95 ${spicy ? "min-h-[34.2px] flex-col gap-0 py-1" : "h-[34.2px] whitespace-nowrap"}`}
           >
             {o.label}
             {/* 매운맛 질문은 고추 개수로도(값이 단계 0–4) */}
@@ -141,8 +141,8 @@ export function HomeQuestion({ contactId, qid, prompt, name, avatar, options, no
           </button>
         ))}
         {noneValue ? (
-          <button name="value" value={noneValue} aria-label={noneLabel} className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl border-[1.5px] border-ink bg-white text-muted transition-transform active:scale-95">
-            <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <button name="value" value={noneValue} aria-label={noneLabel} className="flex h-[34.2px] w-[34.2px] shrink-0 items-center justify-center rounded-xl border border-edge bg-white text-muted transition-transform active:scale-95">
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="16.2" height="16.2" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <circle cx="12" cy="12" r="8.5" />
               <path d="M6 6l12 12" />
             </svg>
@@ -154,10 +154,10 @@ export function HomeQuestion({ contactId, qid, prompt, name, avatar, options, no
             aria-label={labels.own}
             aria-expanded={own}
             onClick={() => setOwn(!own)}
-            className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl border-[1.5px] border-dashed bg-transparent"
-            style={{ borderColor: "rgba(31,35,64,.55)" }}
+            className="flex h-[34.2px] w-[34.2px] shrink-0 items-center justify-center rounded-xl border border-dashed bg-transparent"
+            style={{ borderColor: "rgba(31,35,64,.30)" }}
           >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16.2" height="16.2" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M4 20l1-4L16 5l3 3L8 19zM14 7l3 3" />
             </svg>
           </button>
@@ -177,9 +177,9 @@ export function HomeQuestion({ contactId, qid, prompt, name, avatar, options, no
             enterKeyHint="send"
             placeholder={labels.own}
             aria-label={labels.own}
-            className="hand-written h-[38px] min-w-0 flex-1 border-0 border-b-[1.5px] border-dashed border-ink bg-transparent px-0.5 text-[22px] placeholder:text-muted"
+            className="hand-written h-[34.2px] min-w-0 flex-1 border-0 border-b border-dashed border-edge bg-transparent px-0.5 text-[17.8px] placeholder:text-muted"
           />
-          <button aria-label={labels.save} className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full border-[1.5px] border-ink bg-white active:scale-95">
+          <button aria-label={labels.save} className="flex h-[34.2px] w-[34.2px] shrink-0 items-center justify-center rounded-full border border-edge bg-white active:scale-95">
             <CheckGlyph size={18} />
           </button>
         </form>

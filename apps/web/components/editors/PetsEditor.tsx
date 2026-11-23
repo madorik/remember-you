@@ -41,7 +41,7 @@ export function PetsEditor({ value, onChange, locale }: { value: PetsData; onCha
         </div>
       ) : null}
       {pets.map((p, i) => (
-        <section key={i} className="flex flex-col gap-4 border-t-[1.5px] border-dashed border-ink/20 pt-4">
+        <section key={i} className="flex flex-col gap-4 border-t border-dashed border-ink/30 pt-4">
           <div className="flex items-end gap-2">
             <div className="min-w-0 flex-1">
               <TextField label={t("pets.name")} value={p.name} onChange={(v) => set(i, { name: v })} placeholder={t("pets.namePlaceholder")} />

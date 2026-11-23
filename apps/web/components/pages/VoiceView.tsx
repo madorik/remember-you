@@ -16,7 +16,7 @@ export function VoiceView({ locale, people, tour }: VoiceData) {
         {tour ? (
           <span className="w-11" />
         ) : (
-          <Link href="/home" prefetch={false} aria-label={t("common.close")} className="flex h-11 w-11 items-center justify-center">
+          <Link href="/home" prefetch={false} aria-label={t("common.close")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] items-center justify-center">
             <Icon name="close" size={22} strokeWidth={1.8} />
           </Link>
         )}
@@ -24,11 +24,11 @@ export function VoiceView({ locale, people, tour }: VoiceData) {
           <form action={leaveTour}>
             <input type="hidden" name="kind" value="skip" />
             <input type="hidden" name="source" value="voice" />
-            <button className="flex min-h-11 items-center px-3 text-[14px] text-muted">{t("common.skip")}</button>
+            <button className="flex min-h-11 items-center px-3 text-[12.6px] text-muted">{t("common.skip")}</button>
           </form>
         ) : (
           // 가운데 구슬에서도: 적어 둔 메모를 통째로 가져오기(쓰기·말하기)
-          <Link href="/import" className="inline-flex h-8 items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-sky-soft px-3.5 text-[13px] [html[data-draft]_&]:hidden">
+          <Link href="/import" className="inline-flex h-8 items-center gap-1.5 rounded-full border border-edge bg-sky-soft px-3.5 text-[11.7px] [html[data-draft]_&]:hidden">
             <Icon name="pencil" size={16} strokeWidth={1.8} />
             {t("import.open")}
           </Link>
@@ -37,7 +37,7 @@ export function VoiceView({ locale, people, tour }: VoiceData) {
       {/* 키보드가 뜨면(적는 동안) 제목은 숨겨 적는 칸과 사람 줄이 한 화면에. 체험이면 제목 대신 아래 안내(이렇게 말해보세요) */}
       {tour ? null : (
         <div className="px-6 pt-5 text-center [html[data-draft]_&]:hidden [html[data-kb]_&]:hidden">
-          <h1 className="text-[34px] leading-[1.2]">
+          <h1 className="text-[27.5px] leading-[1.2]">
             {t("voice.headline")
               .split("\n")
               .map((line, i, all) => (

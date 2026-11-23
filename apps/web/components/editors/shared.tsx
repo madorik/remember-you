@@ -45,7 +45,7 @@ export function CircleOption({
       type="button"
       aria-pressed={on}
       onClick={onToggle}
-      className={`relative inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-xl border-[1.5px] border-ink text-[14px] before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] ${large ? "h-11 px-4" : "h-9 px-3"} ${on ? "bg-sky" : "bg-white"} ${textClass} ${className}`}
+      className={`relative inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-edge text-[12.6px] before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] ${large ? "h-11 px-4" : "h-9 px-3"} ${on ? "bg-sky" : "bg-white"} ${textClass} ${className}`}
     >
       {on && !noCheck ? <CheckGlyph /> : null}
       {label}
@@ -58,11 +58,11 @@ export const CHIP_ROW = "flex flex-wrap gap-2";
 
 export function CheckRow({ on, onToggle, label, sub }: { on: boolean; onToggle: () => void; label: string; sub?: string }) {
   return (
-    <button type="button" aria-pressed={on} onClick={onToggle} className="flex min-h-[58px] w-full items-center gap-3.5 border-t border-rule text-left first:border-t-0">
+    <button type="button" aria-pressed={on} onClick={onToggle} className="flex min-h-[52.2px] w-full items-center gap-3.5 border-t border-rule text-left first:border-t-0">
       <DrawnCheck on={on} />
       <span className="flex flex-col gap-0.5">
-        <span className="text-[18px]">{label}</span>
-        {sub ? <span className="text-[15px] text-muted">{sub}</span> : null}
+        <span className="text-[16.2px]">{label}</span>
+        {sub ? <span className="text-[13.5px] text-muted">{sub}</span> : null}
       </span>
     </button>
   );
@@ -72,19 +72,19 @@ export function CheckRow({ on, onToggle, label, sub }: { on: boolean; onToggle: 
 export function SectionHeading({ children, tone = "ink", right }: { children: React.ReactNode; tone?: "ink" | "red"; right?: React.ReactNode }) {
   return (
     <div className="flex items-baseline justify-between">
-      <span className={`hand text-[23px] leading-none ${tone === "red" ? "text-red" : ""}`}>{children}</span>
-      {right ? <span className="text-[13px] text-muted">{right}</span> : null}
+      <span className={`hand text-[18.6px] leading-none ${tone === "red" ? "text-red" : ""}`}>{children}</span>
+      {right ? <span className="text-[11.7px] text-muted">{right}</span> : null}
     </div>
   );
 }
 
 /** 항목 더하기 알약(기념일 추가·해주고 싶은 선물 추가 등): 옅은 망고 바탕 + 남색 선 */
 export const ADD_PILL =
-  "relative inline-flex h-[34px] items-center gap-1 self-start whitespace-nowrap rounded-full border-[1.5px] border-ink bg-sky-soft pl-2.5 pr-3.5 text-[13px] before:absolute before:-inset-y-1 before:inset-x-0 before:content-['']";
+  "relative inline-flex h-[30.6px] items-center gap-1 self-start whitespace-nowrap rounded-full border border-edge bg-sky-soft pl-2.5 pr-3.5 text-[11.7px] before:absolute before:-inset-y-1 before:inset-x-0 before:content-['']";
 
 /** 점선 밑줄 입력칸 바탕(시안): 위 작은 라벨 + 밑줄. 안에 적은 값은 손글씨(사람이 적은 글), 안내글은 고운돋움 */
 export const UNDERLINE_INPUT =
-  "hand-written w-full min-w-0 border-0 border-b-[1.5px] border-dashed border-ink/40 bg-transparent p-0 text-[22px] outline-none rounded-none placeholder:font-sans placeholder:text-[15px] placeholder:tracking-[-0.035em] placeholder:text-muted focus:border-ink";
+  "hand-written w-full min-w-0 border-0 border-b border-dashed border-ink/30 bg-transparent p-0 text-[17.8px] outline-none rounded-none placeholder:font-sans placeholder:text-[13.5px] placeholder:text-muted focus:border-edge";
 
 export function TextField({
   label,
@@ -105,7 +105,7 @@ export function TextField({
 }) {
   return (
     <label className="flex flex-col gap-0.5">
-      <span className="text-[12px] text-muted">{label}</span>
+      <span className="text-[10.8px] text-muted">{label}</span>
       {multiline ? (
         <textarea name={name} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={1} className={`${UNDERLINE_INPUT} min-h-10 resize-none py-1.5 leading-[1.3] [field-sizing:content]`} />
       ) : (

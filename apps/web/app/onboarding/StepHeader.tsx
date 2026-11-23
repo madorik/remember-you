@@ -20,7 +20,7 @@ export function StepHeader({ step, back, skip, t, title, locale = "ko", compact 
   const dots = (
     <div role="progressbar" aria-label={t("onb.step", { n: step })} aria-valuemin={1} aria-valuemax={3} aria-valuenow={step} className="flex justify-center gap-1.5">
       {([1, 2, 3] as const).map((n) => (
-        <span key={n} className={`box-border block h-2 rounded-full border-[1.5px] border-ink ${n === step ? "w-[22px] bg-sky" : n < step ? "w-2 bg-sky" : "w-2 bg-white"}`} />
+        <span key={n} className={`box-border block h-2 rounded-full border border-edge ${n === step ? "w-[19.8px] bg-sky" : n < step ? "w-2 bg-sky" : "w-2 bg-white"}`} />
       ))}
     </div>
   );
@@ -28,7 +28,7 @@ export function StepHeader({ step, back, skip, t, title, locale = "ko", compact 
     return (
       <div className="relative">
         <div className="flex h-12 items-center justify-center">{dots}</div>
-        <h1 className="whitespace-nowrap px-6 pt-2 text-[38px] leading-[1.15]">
+        <h1 className="whitespace-nowrap px-6 pt-2 text-[30.8px] leading-[1.15]">
           {words.slice(0, lead).join(" ")} <span className="hl">{words.slice(lead).join(" ")}</span>
         </h1>
       </div>
@@ -38,7 +38,7 @@ export function StepHeader({ step, back, skip, t, title, locale = "ko", compact 
     <div className="relative">
       <div className="grid h-12 grid-cols-[1fr_auto_1fr] items-center pl-1.5 pr-2">
         {back ? (
-          <Link href={back} aria-label={t("common.back")} className="flex h-11 w-11 items-center justify-center justify-self-start">
+          <Link href={back} aria-label={t("common.back")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] items-center justify-center justify-self-start">
             <Icon name="back" size={26} strokeWidth={2} />
           </Link>
         ) : (
@@ -46,19 +46,19 @@ export function StepHeader({ step, back, skip, t, title, locale = "ko", compact 
         )}
         {dots}
         {skip ? (
-          <Link href={skip} className="flex h-11 items-center justify-self-end px-2 text-[14px] text-muted">
+          <Link href={skip} className="flex h-11 items-center justify-self-end px-2 text-[12.6px] text-muted">
             {step === 1 ? t("common.skip") : t("common.later")}
           </Link>
         ) : (
           <span />
         )}
       </div>
-      <div className="flex items-end justify-between gap-1.5 pl-6 pr-[18px] pt-2">
-        <h1 className="mb-2 min-w-0 text-[38px] leading-[1.15]">
+      <div className="flex items-end justify-between gap-1.5 pl-6 pr-[16.2px] pt-2">
+        <h1 className="mb-2 min-w-0 text-[30.8px] leading-[1.15]">
           {words.slice(0, lead).join(" ")} <br />
           <span className="hl">{words.slice(lead).join(" ")}</span>
         </h1>
-        <span aria-hidden="true" className="flex h-[86px] w-[86px] shrink-0 items-end justify-center">
+        <span aria-hidden="true" className="flex h-[77.4px] w-[77.4px] shrink-0 items-end justify-center">
           <Mascot pose={mascot.pose} size={mascot.size} />
         </span>
       </div>

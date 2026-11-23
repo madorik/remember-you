@@ -46,11 +46,11 @@ export function OrganizeScene({ text, steps }: { text: string; steps: string[] }
       {/* 적은 문장 */}
       <section aria-hidden="true" className="card relative w-full px-3.5 py-3">
         <TornTape color="pink" w={72} h={22} rotate={-6} className="-top-3 left-5" />
-        <p className="hand-written line-clamp-3 text-[24px] leading-[30px] [background-image:repeating-linear-gradient(180deg,transparent_0_29px,#d5e1f3_29px_30px)]">{text}</p>
+        <p className="hand-written line-clamp-3 text-[19.4px] leading-[27px] [background-image:repeating-linear-gradient(180deg,transparent_0_26px,#d5e1f3_26px_27px)]">{text}</p>
       </section>
 
       {/* 문장에서 떨어져 나온 조각들이 아래 카드로 날아간다 */}
-      <div aria-hidden="true" className="relative z-10 flex h-[116px] w-full flex-wrap content-start justify-center gap-1.5 px-5 pt-3.5">
+      <div aria-hidden="true" className="relative z-10 flex h-[104.4px] w-full flex-wrap content-start justify-center gap-1.5 px-5 pt-3.5">
         {words.map((w, i) => (
           <span key={i} className="organize-chip" style={{ "--i": i, "--dx": `${((words.length - 1) / 2 - i) * 24}px`, "--r": `${i % 2 ? 4 : -4}deg` } as React.CSSProperties}>
             {w}
@@ -59,11 +59,11 @@ export function OrganizeScene({ text, steps }: { text: string; steps: string[] }
       </div>
 
       {/* 쌓이는 카드와 줄을 쓰는 연필 */}
-      <div aria-hidden="true" className="relative mb-9 h-[138px] w-[78%]">
+      <div aria-hidden="true" className="relative mb-9 h-[124.2px] w-[78%]">
         {LINES.map((widths, k) => (
-          <div key={k} className="organize-card" style={{ "--k": k, "--rot": `${[-2.2, 1.6, -1][k]}deg`, top: k * 38 } as React.CSSProperties}>
-            <span className={`h-[22px] w-[22px] shrink-0 rounded-full shadow-[inset_0_0_0_1.5px_var(--color-ink)] ${["bg-sky", "bg-pink", "bg-mint"][k]}`} />
-            <span className="flex min-w-0 flex-1 flex-col gap-[7px] pt-1">
+          <div key={k} className="organize-card" style={{ "--k": k, "--rot": `${[-2.2, 1.6, -1][k]}deg`, top: k * 34 } as React.CSSProperties}>
+            <span className={`h-[19.8px] w-[19.8px] shrink-0 rounded-full shadow-[inset_0_0_0_1px_var(--color-edge)] ${["bg-sky", "bg-pink", "bg-mint"][k]}`} />
+            <span className="flex min-w-0 flex-1 flex-col gap-[6.3px] pt-1">
               {widths.map((w, l) => (
                 <span key={l} className="organize-line" style={{ width: w, "--l": l } as React.CSSProperties} />
               ))}
@@ -78,7 +78,7 @@ export function OrganizeScene({ text, steps }: { text: string; steps: string[] }
       </div>
 
       {/* 지금 하는 일: 문구가 바뀔 때마다 위로 올라오며 나타난다 */}
-      <p role="status" aria-live="polite" className="hand-written flex h-9 items-center justify-center gap-0.5 text-[26px] leading-none">
+      <p role="status" aria-live="polite" className="hand-written flex h-9 items-center justify-center gap-0.5 text-[21.1px] leading-none">
         <span key={step} className="organize-step">
           {steps[step]}
         </span>

@@ -52,7 +52,7 @@ export function QuickNote({
   const error = result?.error === "ai_off" ? labels.aiOff : result?.error === "nothing" ? labels.nothing : result?.error === "limit" ? labels.limit : result?.error ? labels.failed : null;
 
   return (
-    <div className="card ruled relative mx-4 mt-3 flex flex-col pb-2 pl-[42px] pr-3 pt-2">
+    <div className="card ruled relative mx-4 mt-3 flex flex-col pb-2 pl-[37.8px] pr-3 pt-2">
       <MarginLine />
       <TornTape color="mint" w={60} h={18} rotate={-8} className="-top-2.5 left-3.5" />
       <form
@@ -76,27 +76,27 @@ export function QuickNote({
           enterKeyHint="send"
           placeholder={labels.placeholder}
           aria-label={labels.placeholder}
-          className="max-h-36 min-h-11 min-w-0 flex-1 resize-none border-0 border-b-[1.5px] border-dashed border-ink/40 bg-transparent px-0.5 py-[9px] text-[15px] leading-[1.3] outline-none [field-sizing:content] placeholder:text-muted"
+          className="max-h-36 min-h-11 min-w-0 flex-1 resize-none border-0 border-b border-dashed border-ink/30 bg-transparent px-0.5 py-[8.1px] text-[16px] leading-[1.3] outline-none [field-sizing:content] placeholder:text-muted"
         />
         <button
           type="submit"
           aria-label={labels.save}
           disabled={!text.trim() || pending}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-[1.5px] border-ink bg-sky text-ink transition-colors disabled:bg-fill disabled:text-muted"
+          className="flex h-10 w-10 relative before:absolute before:-inset-[3.6px] shrink-0 items-center justify-center rounded-full border border-edge bg-sky text-ink transition-colors disabled:bg-fill disabled:text-muted"
         >
-          {pending ? <span className="h-[18px] w-[18px] animate-spin rounded-full border-[2.5px] border-current border-t-transparent" /> : <Icon name="up" size={20} strokeWidth={2.4} />}
+          {pending ? <span className="h-[16.2px] w-[16.2px] animate-spin rounded-full border-[2.5px] border-current border-t-transparent" /> : <Icon name="up" size={20} strokeWidth={2.4} />}
         </button>
       </form>
 
       {result && (result.lines.length > 0 || error) ? (
         <div role="status" aria-live="polite" className="mx-2 border-t border-rule pb-0.5 pt-1.5">
           {error ? (
-            <p className="py-2 text-[16px] text-red">{error}</p>
+            <p className="py-2 text-[14.4px] text-red">{error}</p>
           ) : (
             <div className="flex items-end gap-2">
               <ul className={`flex min-w-0 flex-1 flex-col py-1 ${undone ? "opacity-40" : ""}`}>
                 {result.lines.map((l, i) => (
-                  <li key={i} className="flex min-h-8 items-center gap-2 text-[17px]">
+                  <li key={i} className="flex min-h-8 items-center gap-2 text-[15.3px]">
                     <Icon name="check" size={15} strokeWidth={2.6} className={`shrink-0 ${l.same ? "text-muted" : "text-ok"}`} />
                     <span className="shrink-0 text-muted">{l.href === self ? l.field : `${l.who} · ${l.field}`}</span>
                     <span className={`min-w-0 flex-1 truncate ${struck(l)}`}>{l.value}</span>
@@ -114,7 +114,7 @@ export function QuickNote({
                       if (r.ok) setUndone(true);
                     })
                   }
-                  className="flex min-h-11 shrink-0 items-center px-1.5 text-[16px] text-muted disabled:opacity-60"
+                  className="flex min-h-11 shrink-0 items-center px-1.5 text-[14.4px] text-muted disabled:opacity-60"
                 >
                   {undone ? labels.undone : labels.undo}
                 </button>
@@ -125,20 +125,20 @@ export function QuickNote({
       ) : null}
       {held.length ? (
         <div role="group" aria-label={labels.holdTitle} className="mx-2 border-t border-rule pb-0.5 pt-1.5">
-          <p className="text-[16px] text-muted">{labels.holdTitle}</p>
+          <p className="text-[14.4px] text-muted">{labels.holdTitle}</p>
           <ul className="flex flex-col py-1">
             {held.map((l, i) => (
-              <li key={i} className="flex min-h-8 items-center gap-2 text-[17px]">
+              <li key={i} className="flex min-h-8 items-center gap-2 text-[15.3px]">
                 <span className="shrink-0 text-muted">{l.href === self ? l.field : `${l.who} · ${l.field}`}</span>
                 <span className={`min-w-0 flex-1 truncate ${struck(l)}`}>{l.value}</span>
               </li>
             ))}
           </ul>
           <div className="flex items-center justify-end gap-1">
-            <button type="button" disabled={pending} onClick={() => setHeld([])} className="flex min-h-11 items-center px-3 text-[17px] text-muted disabled:opacity-60">
+            <button type="button" disabled={pending} onClick={() => setHeld([])} className="flex min-h-11 items-center px-3 text-[15.3px] text-muted disabled:opacity-60">
               {labels.holdCancel}
             </button>
-            <button type="button" disabled={pending} onClick={confirmHeld} className="btn-primary !h-11 !px-5 !text-[18px] disabled:opacity-60">
+            <button type="button" disabled={pending} onClick={confirmHeld} className="btn-primary !h-11 !px-5 !text-[14.6px] disabled:opacity-60">
               {labels.holdApply}
             </button>
           </div>

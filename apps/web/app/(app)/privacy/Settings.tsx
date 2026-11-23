@@ -35,19 +35,19 @@ function SwitchRow({ locale, prefKey, enabled, label, note, disabled = false }: 
           setFailed(true);
         }
       }}
-      className="flex min-h-[47px] flex-col justify-center border-t-[1.5px] border-dashed border-ink/[0.18]"
+      className="flex min-h-[42.3px] flex-col justify-center border-t border-dashed border-ink/30"
     >
       <input type="hidden" name="key" value={prefKey} />
       <input type="hidden" name="value" value={enabled ? "0" : "1"} />
       <div className="flex items-center gap-3">
         <div className="flex flex-1 flex-col gap-0.5 pl-1">
-          <span className="text-[15px]">{label}</span>
+          <span className="text-[13.5px]">{label}</span>
           {note}
         </div>
         <SwitchButton label={label} on={on} disabled={disabled} />
       </div>
       {failed ? (
-        <p role="alert" className="pb-2 pl-1 text-[13px] text-red">
+        <p role="alert" className="pb-2 pl-1 text-[11.7px] text-red">
           {t("common.error")}
         </p>
       ) : null}
@@ -58,8 +58,8 @@ function SwitchRow({ locale, prefKey, enabled, label, note, disabled = false }: 
 /** 켜고 끄는 스위치 모양(시안): 48×28 알약 + 1.5px 남색 선, 켜면 망고. 누르는 건 감싼 button이 한다 */
 function SwitchLook({ on }: { on: boolean }) {
   return (
-    <span className={`flex h-7 w-12 items-center rounded-full border-[1.5px] border-ink p-[2.5px] transition-colors ${on ? "justify-end bg-sky" : "justify-start bg-white"}`}>
-      <span className="h-[19px] w-[19px] rounded-full border-[1.5px] border-ink bg-white" />
+    <span className={`flex h-7 w-12 items-center rounded-full border border-edge p-[2.3px] transition-colors ${on ? "justify-end bg-sky" : "justify-start bg-white"}`}>
+      <span className="h-[17.1px] w-[17.1px] rounded-full border border-edge bg-white" />
     </span>
   );
 }
@@ -82,7 +82,7 @@ export function AppLockSetting({ locale, enabled }: { locale: Locale; enabled: b
       prefKey="app_lock"
       enabled={enabled}
       label={t("privacy.lock")}
-      note={native ? null : <span className="text-[12px] text-muted">{t("privacy.lockUnavailable")}</span>}
+      note={native ? null : <span className="text-[10.8px] text-muted">{t("privacy.lockUnavailable")}</span>}
       disabled={!native && !enabled}
     />
   );
@@ -120,11 +120,11 @@ export function ReminderSetting({ locale, offsets }: { locale: Locale; offsets: 
       <input type="hidden" name="offsets" value={JSON.stringify(value)} />
       <ReminderPicker value={value} onChange={setValue} locale={locale} compact />
       {failed ? (
-        <p role="alert" className="text-[13px] text-red">
+        <p role="alert" className="text-[11.7px] text-red">
           {t("common.error")}
         </p>
       ) : null}
-      {dirty ? <PendingButton className="btn-primary !h-11 !text-[22px]">{t("common.save")}</PendingButton> : null}
+      {dirty ? <PendingButton className="btn-primary !h-11 !text-[17.8px]">{t("common.save")}</PendingButton> : null}
     </form>
   );
 }
@@ -203,12 +203,12 @@ export function WebPushSetting({ locale, publicKey }: { locale: Locale; publicKe
 
   const label = t("privacy.webPush");
   return (
-    <div className="flex min-h-[47px] flex-col justify-center border-t-[1.5px] border-dashed border-ink/[0.18]">
+    <div className="flex min-h-[42.3px] flex-col justify-center border-t border-dashed border-ink/30">
       <div className="flex items-center gap-3">
         <div className="flex flex-1 flex-col gap-0.5 pl-1">
-          <span className="text-[15px]">{label}</span>
-          {state === "blocked" ? <span className="text-[12px] text-muted">{t("privacy.webPushBlocked")}</span> : null}
-          {state === "install" ? <span className="text-[12px] text-muted">{t("privacy.webPushInstall")}</span> : null}
+          <span className="text-[13.5px]">{label}</span>
+          {state === "blocked" ? <span className="text-[10.8px] text-muted">{t("privacy.webPushBlocked")}</span> : null}
+          {state === "install" ? <span className="text-[10.8px] text-muted">{t("privacy.webPushInstall")}</span> : null}
         </div>
         <button
           type="button"
@@ -233,7 +233,7 @@ export function WebPushSetting({ locale, publicKey }: { locale: Locale; publicKe
         </button>
       </div>
       {failed ? (
-        <p role="alert" className="pb-2 pl-1 text-[13px] text-red">
+        <p role="alert" className="pb-2 pl-1 text-[11.7px] text-red">
           {t("common.error")}
         </p>
       ) : null}

@@ -18,7 +18,7 @@ function AddTag({ label, placeholder, onAdd, large }: { label: string; placehold
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`relative inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-xl border-[1.5px] border-dashed border-ink/55 px-3 text-[14px] text-muted before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] ${large ? "h-11" : "h-9"}`}
+        className={`relative inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-dashed border-ink/30 px-3 text-[12.6px] text-muted before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] ${large ? "h-11" : "h-9"}`}
       >
         <span aria-hidden="true" className="leading-none">
           +
@@ -54,7 +54,7 @@ function AddTag({ label, placeholder, onAdd, large }: { label: string; placehold
           take();
           setOpen(false);
         }}
-        className="flex min-h-11 shrink-0 items-center px-3 text-[14px]"
+        className="flex min-h-11 shrink-0 items-center px-3 text-[12.6px]"
       >
         {label}
       </button>
@@ -105,7 +105,7 @@ export function SafetyEditor({
 
   return (
     <div className="flex flex-col">
-      <div className={`flex flex-col gap-2 pb-3 ${flush ? "" : "border-t-[1.5px] border-dashed border-ink/20 pt-2.5"}`}>
+      <div className={`flex flex-col gap-2 pb-3 ${flush ? "" : "border-t border-dashed border-ink/30 pt-2.5"}`}>
         <SectionHeading tone="red">
           {t("safety.allergens")}
         </SectionHeading>
@@ -116,7 +116,7 @@ export function SafetyEditor({
           ))}
           {custom("allergens")}
           {addTag("allergens")}
-          <button type="button" onClick={() => setMore(!more)} aria-expanded={more} className={`relative inline-flex items-center gap-0.5 whitespace-nowrap px-2.5 text-[13px] text-muted before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] ${large ? "h-11" : "h-9"}`}>
+          <button type="button" onClick={() => setMore(!more)} aria-expanded={more} className={`relative inline-flex items-center gap-0.5 whitespace-nowrap px-2.5 text-[11.7px] text-muted before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] ${large ? "h-11" : "h-9"}`}>
             {more ? t("safety.less") : t("safety.more")}
             <span aria-hidden="true" className={more ? "rotate-180" : ""}>
               ⌄
@@ -125,7 +125,7 @@ export function SafetyEditor({
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 border-t-[1.5px] border-dashed border-ink/20 pb-3 pt-2.5">
+      <div className="flex flex-col gap-2 border-t border-dashed border-ink/30 pb-3 pt-2.5">
         <SectionHeading>{t("safety.dislikes")}</SectionHeading>
         <div className="flex flex-wrap gap-1.5">
           {none("dislikes")}
@@ -138,7 +138,7 @@ export function SafetyEditor({
       </div>
 
       {more ? (
-        <div className="flex flex-col gap-2 border-t-[1.5px] border-dashed border-ink/20 pb-3 pt-2.5">
+        <div className="flex flex-col gap-2 border-t border-dashed border-ink/30 pb-3 pt-2.5">
           <SectionHeading>{t("safety.diets")}</SectionHeading>
           <div className="flex flex-wrap gap-1.5">
             {none("diets")}
@@ -150,7 +150,7 @@ export function SafetyEditor({
       ) : null}
 
       {showNote ? (
-        <div className="border-t-[1.5px] border-dashed border-ink/20 pt-2">
+        <div className="border-t border-dashed border-ink/30 pt-2">
         <TextField label={t("safety.note")} value={value.allergyNote} onChange={(v) => onChange({ ...value, allergyNote: v })} placeholder={t("safety.notePlaceholder")} multiline />
         </div>
       ) : null}

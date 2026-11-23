@@ -26,7 +26,7 @@ export function Submit({ children, disabled, className = "w-full" }: { children:
 function Later({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" name="later" value="1" disabled={pending} className="mt-1 flex min-h-11 w-full items-center justify-center text-[14px] text-muted">
+    <button type="submit" name="later" value="1" disabled={pending} className="mt-1 flex min-h-11 w-full items-center justify-center text-[12.6px] text-muted">
       {children}
     </button>
   );
@@ -34,10 +34,10 @@ function Later({ children }: { children: React.ReactNode }) {
 
 /** 온보딩 단계의 흰 카드(시안): 남색 1.5px 선 + 모서리 18, 윗변 가운데에 테이프 */
 const CARD = "card relative mx-4 mt-8 px-3.5 pb-3.5 pt-3";
-const DASH = "border-t-[1.5px] border-dashed border-ink/20 pt-2.5";
+const DASH = "border-t border-dashed border-ink/30 pt-2.5";
 
 function CardTape({ color }: { color: TornTapeColor }) {
-  return <TornTape color={color} w={71} h={26} rotate={-3} className="-top-3.5 left-1/2 -ml-[35px]" />;
+  return <TornTape color={color} w={71} h={26} rotate={-3} className="-top-3.5 left-1/2 -ml-[31.5px]" />;
 }
 
 /** 아래 큰 단추의 손그림 아이콘(시안): 글자 왼쪽에 */
@@ -49,8 +49,8 @@ const CTA_ICON = {
 
 function Cta({ icon, children }: { icon: keyof typeof CTA_ICON; children: React.ReactNode }) {
   return (
-    <Submit className="w-full !text-[26px]">
-      <svg aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+    <Submit className="w-full !text-[23.4px]">
+      <svg aria-hidden="true" width="18.9" height="18.9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
         {CTA_ICON[icon]}
       </svg>
       {children}
@@ -66,14 +66,14 @@ export function ProfileHeader({ title, back, backLabel, save }: { title: string;
   return (
     <div className="sticky z-30 flex h-12 items-center justify-between gap-1.5 bg-bg pl-1.5 pr-2.5" style={{ top: "var(--sat)" }}>
       <div className="flex min-w-0 items-center gap-0.5">
-        <Link href={back} prefetch={false} aria-label={backLabel} className="flex h-11 w-11 shrink-0 items-center justify-center">
+        <Link href={back} prefetch={false} aria-label={backLabel} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] shrink-0 items-center justify-center">
           <Icon name="back" size={24} />
         </Link>
-        <h1 className="min-w-0 truncate text-[31px] leading-none">
+        <h1 className="min-w-0 truncate text-[25.1px] leading-none">
           <span className="hl">{title}</span>
         </h1>
       </div>
-      <Submit className="!h-[34px] !min-h-0 !w-auto shrink-0 !rounded-full !px-3.5 !py-0 !font-sans !text-[15px] !font-normal !tracking-normal">{save}</Submit>
+      <Submit className="!h-[30.6px] !min-h-0 !w-auto shrink-0 !rounded-full !px-3.5 !py-0 !font-sans !text-[13.5px] !font-normal !tracking-normal">{save}</Submit>
     </div>
   );
 }

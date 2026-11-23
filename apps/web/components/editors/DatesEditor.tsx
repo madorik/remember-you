@@ -85,11 +85,11 @@ export function DateSpecPicker({
   const first = list[0];
   const left = first ? diffDays(today, first) : null;
   const leftText = left == null ? "" : left === 0 ? (locale === "ko" ? "오늘이에요" : "today") : locale === "ko" ? `${left}일 남았어요` : `in ${left} days`;
-  const selectClass = `num w-full appearance-none rounded-xl bg-transparent text-center outline-none ${large ? "h-[60px] text-[44px]" : "h-14 text-[41px]"}`;
+  const selectClass = `num w-full appearance-none rounded-xl bg-transparent text-center outline-none ${large ? "h-[54px] text-[37.4px]" : "h-14 text-[34.9px]"}`;
 
   return (
     <div className="flex flex-col gap-3">
-      <div role="radiogroup" aria-label={`${t("dates.solar")} / ${t("dates.lunar")}`} className="flex w-40 gap-0.5 rounded-xl border-[1.5px] border-ink bg-white p-[3px]">
+      <div role="radiogroup" aria-label={`${t("dates.solar")} / ${t("dates.lunar")}`} className="flex w-40 gap-0.5 rounded-xl border border-edge bg-white p-[2.7px]">
         {(["solar", "lunar"] as const).map((c) => (
           <button
             key={c}
@@ -97,7 +97,7 @@ export function DateSpecPicker({
             role="radio"
             aria-checked={spec.calendar === c}
             onClick={() => set({ calendar: c })}
-            className={`h-[34px] flex-1 whitespace-nowrap rounded-[9px] text-[14px] ${spec.calendar === c ? "bg-sky" : ""}`}
+            className={`h-[30.6px] flex-1 whitespace-nowrap rounded-[8.1px] text-[12.6px] ${spec.calendar === c ? "bg-sky" : ""}`}
           >
             {t(c === "solar" ? "dates.solar" : "dates.lunar")}
           </button>
@@ -106,13 +106,13 @@ export function DateSpecPicker({
 
       {yearLabel ? (
         <label className="flex items-center gap-2.5">
-          <span className="shrink-0 text-[13px] text-muted">{yearLabel}</span>
+          <span className="shrink-0 text-[11.7px] text-muted">{yearLabel}</span>
           <span className="relative flex">
             <select
               aria-label={yearLabel}
               value={spec.year ?? ""}
               onChange={(e) => set({ year: e.target.value ? Number(e.target.value) : undefined })}
-              className="num h-[34px] appearance-none rounded-[10px] border-[1.5px] border-ink bg-white pl-2.5 pr-7 text-[18px] outline-none"
+              className="num h-[30.6px] appearance-none rounded-[9px] border border-edge bg-white pl-2.5 pr-7 text-[16px] outline-none"
             >
               <option value="">{t("dates.yearUnknown")}</option>
               {years.map((y) => (
@@ -123,13 +123,13 @@ export function DateSpecPicker({
             </select>
             <Icon name="chevron" size={14} strokeWidth={2} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rotate-90" />
           </span>
-          <span className="min-w-0 text-[12px] leading-[1.3] text-muted">{t("dates.yearOptional")}</span>
+          <span className="min-w-0 text-[10.8px] leading-[1.3] text-muted">{t("dates.yearOptional")}</span>
         </label>
       ) : null}
 
       <div className="flex flex-wrap items-center gap-2.5">
         <label className="flex items-baseline gap-1">
-          <span className="w-[70px] rounded-xl border-[1.5px] border-ink bg-white">
+          <span className="w-[63px] rounded-xl border border-edge bg-white">
             <select aria-label={t("dates.month")} value={spec.month ?? ""} onChange={(e) => e.target.value && set({ month: Number(e.target.value) })} className={selectClass}>
               {spec.month === undefined ? <option value="">–</option> : null}
               {Array.from({ length: 12 }, (_, i) => (
@@ -139,10 +139,10 @@ export function DateSpecPicker({
               ))}
             </select>
           </span>
-          <span className="text-[14px]">{locale === "ko" ? "월" : "/"}</span>
+          <span className="text-[12.6px]">{locale === "ko" ? "월" : "/"}</span>
         </label>
         <label className="flex items-baseline gap-1">
-          <span className="w-[70px] rounded-xl border-[1.5px] border-ink bg-white">
+          <span className="w-[63px] rounded-xl border border-edge bg-white">
             <select aria-label={t("dates.day")} value={spec.day ?? ""} onChange={(e) => e.target.value && set({ day: Number(e.target.value) })} className={selectClass}>
               {spec.day === undefined ? <option value="">–</option> : null}
               {Array.from({ length: maxDay }, (_, i) => (
@@ -152,27 +152,27 @@ export function DateSpecPicker({
               ))}
             </select>
           </span>
-          {locale === "ko" ? <span className="text-[14px]">일</span> : null}
+          {locale === "ko" ? <span className="text-[12.6px]">일</span> : null}
         </label>
         {spec.calendar === "lunar" ? (
-          <label className="flex min-h-11 items-center gap-1.5 whitespace-nowrap text-[13px]">
-            <input type="checkbox" checked={!!spec.leap} onChange={(e) => set({ leap: e.target.checked })} className="h-[18px] w-[18px] accent-[var(--color-ink)]" />
+          <label className="flex min-h-11 items-center gap-1.5 whitespace-nowrap text-[11.7px]">
+            <input type="checkbox" checked={!!spec.leap} onChange={(e) => set({ leap: e.target.checked })} className="h-[16.2px] w-[16.2px] accent-[var(--color-ink)]" />
             {t("dates.leap")}
           </label>
         ) : null}
       </div>
-      {value?.leap ? <p className="text-[13px] leading-[1.5] text-muted">{t("dates.leapNote", { m: value.month, d: value.day })}</p> : null}
+      {value?.leap ? <p className="text-[11.7px] leading-[1.5] text-muted">{t("dates.leapNote", { m: value.month, d: value.day })}</p> : null}
 
       {preview && value && first ? (
         <div className="flex flex-col">
           {value.calendar === "lunar" ? <WeekOf day={first} locale={locale} /> : null}
-          <p className="mb-1.5 mt-2 -rotate-[0.6deg] rounded-[4px_4px_14px_4px] border-[1.5px] border-ink bg-[#FFF3B0] px-3 py-[9px] text-[14px] leading-[1.45]">
+          <p className="mb-1.5 mt-2 -rotate-[0.6deg] rounded-[3.2px_3.2px_11.3px_3.2px] border border-edge bg-[#FFF3B0] px-3 py-[8.1px] text-[12.6px] leading-[1.45]">
             {value.calendar === "lunar"
               ? t("dates.thisYearLunar", { date: formatDayFull(first, locale), left: leftText })
               : t("dates.nextSolar", { date: formatDateLong(first, locale), left: leftText })}
           </p>
           {yearLabel && value.year ? (
-            <p className="-mt-0.5 mb-1.5 text-[13px] text-muted">
+            <p className="-mt-0.5 mb-1.5 text-[11.7px] text-muted">
               {[
                 (() => {
                   const n = yearsAt(value, first);
@@ -185,8 +185,8 @@ export function DateSpecPicker({
             </p>
           ) : null}
           {list.slice(1).map((d) => (
-            <div key={`${d.y}`} className="flex min-h-[38px] items-center justify-between border-t-[1.5px] border-dashed border-ink/20 text-[14px]">
-              <span className="num text-[16px] text-muted">{d.y}</span>
+            <div key={`${d.y}`} className="flex min-h-[34.2px] items-center justify-between border-t border-dashed border-ink/30 text-[12.6px]">
+              <span className="num text-[13.6px] text-muted">{d.y}</span>
               <span>{formatDayFull(d, locale)}</span>
             </div>
           ))}
@@ -202,24 +202,24 @@ function WeekOf({ day, locale }: { day: YMD; locale: Locale }) {
   const names = weekdayNames(locale);
   return (
     <div aria-hidden="true">
-      <div className="grid grid-cols-7 pb-1 text-center text-[12px]">
+      <div className="grid grid-cols-7 pb-1 text-center text-[10.8px]">
         {names.map((n, i) => (
           <span key={n} className={i === 0 ? "text-red" : i === 6 ? "text-sat" : "text-muted"}>
             {n}
           </span>
         ))}
       </div>
-      <div className="grid grid-cols-7 border-y-[1.5px] border-dashed border-ink/20 text-center">
+      <div className="grid grid-cols-7 border-y border-dashed border-ink/30 text-center">
         {Array.from({ length: 7 }, (_, i) => addDays(start, i)).map((d, i) => {
           const on = d.m === day.m && d.d === day.d;
           const lunar = solarToLunar(d);
           return (
             <div key={i} className="flex flex-col items-center gap-1 pb-2 pt-1.5">
-              <span className={`num relative text-[22px] ${on ? "text-accent" : i === 0 ? "text-red" : i === 6 ? "text-sat" : ""}`}>
+              <span className={`num relative text-[18.7px] ${on ? "text-accent" : i === 0 ? "text-red" : i === 6 ? "text-sat" : ""}`}>
                 {d.d}
                 {on ? <MarkerCircle pad={[12, 7]} width={2.6} /> : null}
               </span>
-              <span className={`text-[12px] ${on ? "text-accent" : "text-muted"}`}>{lunar ? `${lunar.m}.${lunar.d}` : ""}</span>
+              <span className={`text-[10.8px] ${on ? "text-accent" : "text-muted"}`}>{lunar ? `${lunar.m}.${lunar.d}` : ""}</span>
             </div>
           );
         })}
@@ -281,7 +281,7 @@ export function DatesEditor({ value, onChange, locale }: { value: DatesData; onC
         <SectionHeading>{t("dates.birthday")}</SectionHeading>
         <DateSpecPicker value={value.birthday} onChange={(birthday) => onChange({ ...value, birthday })} locale={locale} year="birth" />
       </div>
-      <div className="flex flex-col gap-2 border-t-[1.5px] border-dashed border-ink/20 pb-1.5 pt-3">
+      <div className="flex flex-col gap-2 border-t border-dashed border-ink/30 pb-1.5 pt-3">
         {/* 기념일 제목 줄 오른쪽에 추가 버튼 */}
         <div className="flex min-h-9 items-center justify-between">
           <SectionHeading>{t("dates.anniversaries")}</SectionHeading>
@@ -292,7 +292,7 @@ export function DatesEditor({ value, onChange, locale }: { value: DatesData; onC
                 setPending({ label: "", spec: null });
                 setOpen(null);
               }}
-              className="relative flex h-[30px] items-center gap-[5px] rounded-full border-[1.5px] border-ink bg-sky-soft pl-2.5 pr-3.5 text-[12px] before:absolute before:-inset-y-2 before:inset-x-0 before:content-['']"
+              className="relative flex h-[27px] items-center gap-[4.5px] rounded-full border border-edge bg-sky-soft pl-2.5 pr-3.5 text-[10.8px] before:absolute before:-inset-y-2 before:inset-x-0 before:content-['']"
             >
               <Icon name="plus" size={14} strokeWidth={1.8} />
               {t("dates.addAnniversary")}
@@ -305,15 +305,15 @@ export function DatesEditor({ value, onChange, locale }: { value: DatesData; onC
             <div key={i} className="flex flex-col gap-2 pt-1">
               <div className="flex items-end gap-2.5">
                 <label className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="text-[12px] text-muted">{t("dates.anniversaryLabel")}</span>
-                  <input value={a.label} onChange={(e) => setLabel(i, e.target.value)} placeholder={t("dates.anniversaryPlaceholder")} className={`${UNDERLINE_INPUT} h-10 text-[25px]`} />
+                  <span className="text-[10.8px] text-muted">{t("dates.anniversaryLabel")}</span>
+                  <input value={a.label} onChange={(e) => setLabel(i, e.target.value)} placeholder={t("dates.anniversaryPlaceholder")} className={`${UNDERLINE_INPUT} h-10 text-[22.5px]`} />
                 </label>
                 {!isNew && open !== i ? (
                   <button
                     type="button"
                     onClick={() => setOpen(i)}
                     aria-label={`${a.spec!.calendar === "lunar" ? `${t("dates.lunar")} ` : ""}${a.spec!.month}.${a.spec!.day} ${t("common.edit")}`}
-                    className="hand flex h-10 shrink-0 items-center whitespace-nowrap text-[24px] leading-none"
+                    className="hand flex h-10 shrink-0 items-center whitespace-nowrap text-[19.4px] leading-none"
                   >
                     {a.spec!.calendar === "lunar" ? `${t("dates.lunar")} ` : ""}
                     {locale === "ko" ? `${a.spec!.month}월 ${a.spec!.day}일` : `${a.spec!.month}/${a.spec!.day}`}

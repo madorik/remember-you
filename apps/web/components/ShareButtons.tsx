@@ -72,7 +72,7 @@ export function LinkField({ url, label }: { url: string; label: string }) {
         aria-label={label}
         data-testid="invite-url"
         onFocus={(e) => e.currentTarget.select()}
-        className="field !h-11 !min-h-11 truncate !rounded-xl !border-dashed !border-ink/[0.35] !bg-transparent !pl-9 !pr-3.5 !text-[13px] text-muted"
+        className="field !h-11 !min-h-11 truncate !rounded-xl !border-dashed !border-ink/30 !bg-transparent !pl-9 !pr-3.5 !text-[16px] text-muted"
       />
     </div>
   );
@@ -93,12 +93,12 @@ export function ShareButtons({ locale, url, text, sendLabel }: { locale: Locale;
         onClick={async () => {
           if (!(await nativeShare(text, url))) await copy();
         }}
-        className="inline-flex h-11 items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-sky pl-3 pr-3.5 text-[15px]"
+        className="inline-flex h-11 items-center gap-1.5 rounded-full border border-edge bg-sky pl-3 pr-3.5 text-[13.5px]"
       >
         <Icon name="share" size={17} strokeWidth={1.7} />
         {sendLabel ?? t("common.send")}
       </button>
-      <button type="button" onClick={copy} className="inline-flex h-11 items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-sky-soft pl-3 pr-3.5 text-[15px]">
+      <button type="button" onClick={copy} className="inline-flex h-11 items-center gap-1.5 rounded-full border border-edge bg-sky-soft pl-3 pr-3.5 text-[13.5px]">
         <Icon name={copied === "ok" ? "check" : "link"} size={17} strokeWidth={1.7} />
         {copied === "ok" ? t("common.copied") : copied === "failed" ? t("common.copyFailed") : t("common.copyLink")}
       </button>

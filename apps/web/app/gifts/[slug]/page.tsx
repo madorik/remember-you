@@ -79,7 +79,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           },
         ]}
       />
-      <nav aria-label="위치" className="flex min-h-12 items-center gap-1.5 px-5 text-[13px] text-muted">
+      <nav aria-label="위치" className="flex min-h-12 items-center gap-1.5 px-5 text-[11.7px] text-muted">
         <Link href="/" aria-label="기억해유">
           <Wordmark size={24} locale="ko" />
         </Link>
@@ -90,7 +90,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
       </nav>
       <article className="flex flex-col">
         <header className="relative px-5 pt-5">
-          <h1 className="text-[36px] leading-[1.15]">
+          <h1 className="text-[29.2px] leading-[1.15]">
             {title.rest ? (
               <>
                 <span className="hl">{title.head}</span> <br />
@@ -100,10 +100,10 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
               <span className="hl">{g.title}</span>
             )}
           </h1>
-          <p className="mt-3 text-[12px] text-muted">
+          <p className="mt-3 text-[10.8px] text-muted">
             <time dateTime={GUIDES_UPDATED}>{koDate(GUIDES_UPDATED)} 업데이트</time>
           </p>
-          <p className="mt-3 rounded-[4px_4px_16px_4px] border-[1.5px] border-ink bg-[#fff3b0] px-3.5 py-3 text-[14px] leading-[1.6] [transform:rotate(-0.4deg)]">{g.answer}</p>
+          <p className="mt-3 rounded-[3.2px_3.2px_13px_3.2px] border border-edge bg-[#fff3b0] px-3.5 py-3 text-[12.6px] leading-[1.6] [transform:rotate(-0.4deg)]">{g.answer}</p>
         </header>
         <div className="px-4 pt-9">
           <GuideList bands={picks.map((b) => ({ band: b.band, title: `${BAND_NAME[b.band]} ${g.who} 선물`, items: b.items.map((x) => ({ id: x.id, title: x.q, name: x.name, url: x.url, image: x.image })) }))} />
@@ -111,15 +111,15 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
         <FaqList id="faq" title="자주 묻는 질문" items={faq} />
         <section className="card relative mx-4 mt-10 flex flex-col gap-3 px-3.5 pb-3.5 pt-3">
           <TornTape color="mango" w={62} h={21} rotate={-4} className="-top-3 right-8" />
-          <h2 className="hand scribble self-start text-[24px] leading-none">{g.who}의 취향을 알면 더 꼭 맞아요</h2>
-          <p className="pt-1 text-[13px] leading-[1.55] text-muted">기억해유에 {g.who}의 취향·사이즈·챙길 날을 적어 두면, 그 사람에게 맞춘 선물을 가격대별로 골라 드려요. 가족과 카드로 같이 고를 수도 있어요.</p>
-          <Link href="/" className="btn-primary w-full !min-h-[50px] !text-[24px]">
+          <h2 className="hand scribble self-start text-[19.4px] leading-none">{g.who}의 취향을 알면 더 꼭 맞아요</h2>
+          <p className="pt-1 text-[11.7px] leading-[1.55] text-muted">기억해유에 {g.who}의 취향·사이즈·챙길 날을 적어 두면, 그 사람에게 맞춘 선물을 가격대별로 골라 드려요. 가족과 카드로 같이 고를 수도 있어요.</p>
+          <Link href="/" className="btn-primary w-full !min-h-[45px] !text-[19.4px]">
             <Icon name="chevron" size={19} strokeWidth={2} />
             기억해유 시작하기
           </Link>
         </section>
-        <nav aria-label="다른 선물 가이드" className="flex flex-col gap-3 px-4 pt-[38px]">
-          <h2 className="ml-1 text-[24px]">다른 선물 가이드</h2>
+        <nav aria-label="다른 선물 가이드" className="flex flex-col gap-3 px-4 pt-[34.2px]">
+          <h2 className="ml-1 text-[19.4px]">다른 선물 가이드</h2>
           <div className="flex flex-wrap gap-2">
             {others.map((x) => (
               <Link key={x.slug} href={`/gifts/${x.slug}`} className="chip">

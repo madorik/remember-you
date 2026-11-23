@@ -19,18 +19,18 @@ export function LegalPage({ locale, path, title, children }: { locale: Locale; p
         <Link href="/" aria-label={locale === "ko" ? "기억해유 처음으로" : "Remember You home"}>
           <Wordmark size={24} locale={locale} />
         </Link>
-        <Link href={`${path}?lang=${other}`} className="flex min-h-11 items-center px-2 text-[13px] underline underline-offset-4">
+        <Link href={`${path}?lang=${other}`} className="flex min-h-11 items-center px-2 text-[11.7px] underline underline-offset-4">
           {other === "en" ? "English" : "한국어"}
         </Link>
       </div>
       <div className="relative pt-5">
-        <h1 className="text-[36px] leading-[1.15]">
+        <h1 className="text-[29.2px] leading-[1.15]">
           <span className="hl">{title}</span>
         </h1>
       </div>
-      <p className="pt-3 text-[12px] text-muted">{locale === "ko" ? `시행일 ${formatEffective(locale)}` : `Effective ${formatEffective(locale)}`}</p>
+      <p className="pt-3 text-[10.8px] text-muted">{locale === "ko" ? `시행일 ${formatEffective(locale)}` : `Effective ${formatEffective(locale)}`}</p>
       <article className="legal pt-2">{children}</article>
-      <nav className="page-end mt-10 flex flex-wrap gap-x-5 gap-y-1 border-t-[1.5px] border-dashed border-ink/[0.18] pt-4 text-[13px] text-muted">
+      <nav className="page-end mt-10 flex flex-wrap gap-x-5 gap-y-1 border-t border-dashed border-ink/30 pt-4 text-[11.7px] text-muted">
         {LINKS.filter((l) => l.path !== path).map((l) => (
           <Link key={l.path} href={`${l.path}?lang=${locale}`} className="flex min-h-11 items-center">
             {l[locale]}

@@ -42,7 +42,7 @@ export default async function AnswerPage({ params }: { params: Promise<{ token: 
   const header = (
     <div className="flex min-h-12 items-center justify-between px-5">
       <Wordmark size={24} locale={locale} />
-      <span className="rounded-full border-[1.5px] border-dashed border-ink/40 bg-paper px-3 py-1 text-[12px] text-ink [transform:rotate(-2deg)]">{t("answer.noInstall")}</span>
+      <span className="rounded-full border border-dashed border-ink/30 bg-paper px-3 py-1 text-[10.8px] text-ink [transform:rotate(-2deg)]">{t("answer.noInstall")}</span>
     </div>
   );
 
@@ -72,7 +72,7 @@ export default async function AnswerPage({ params }: { params: Promise<{ token: 
       {header}
       <section className="card relative mx-4 mt-10 px-5 pb-8 pt-8">
         <TornTape color="pink" w={66} h={21} rotate={6} className="-top-3 right-6" />
-        <p className="hand text-[28px] leading-[1.3]">{t(key)}</p>
+        <p className="hand text-[22.7px] leading-[1.3]">{t(key)}</p>
       </section>
     </main>
   );

@@ -7,20 +7,20 @@ import type { Faq } from "@/lib/faq";
  */
 export function FaqList({ id, title, items, lang }: { id: string; title: string; items: Faq[]; lang?: string }) {
   return (
-    <section aria-labelledby={id} lang={lang} className="relative flex flex-col gap-3 px-4 pt-[38px]">
-      <h2 id={id} className="scribble ml-1 self-start text-[24px] leading-none">
+    <section aria-labelledby={id} lang={lang} className="relative flex flex-col gap-3 px-4 pt-[34.2px]">
+      <h2 id={id} className="scribble ml-1 self-start text-[19.4px] leading-none">
         {title}
       </h2>
       <div className="card relative mt-2 px-3.5 py-1">
         {items.map((f) => (
-          <details key={f.q} className="group border-t-[1.5px] border-dashed border-ink/[0.18] first:border-t-0">
-            <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-between gap-2.5 py-1.5 text-[15px] leading-[1.35] [&::-webkit-details-marker]:hidden">
+          <details key={f.q} className="group border-t border-dashed border-ink/30 first:border-t-0">
+            <summary className="flex min-h-[43.2px] cursor-pointer list-none items-center justify-between gap-2.5 py-1.5 text-[13.5px] leading-[1.35] [&::-webkit-details-marker]:hidden">
               <span>{f.q}</span>
-              <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted transition-transform group-open:rotate-180">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="14.4" height="14.4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted transition-transform group-open:rotate-180">
                 <path d="M6 9l6 6 6-6" />
               </svg>
             </summary>
-            <p className="pb-3 text-[13px] leading-[1.6] text-muted">{f.a}</p>
+            <p className="pb-3 text-[11.7px] leading-[1.6] text-muted">{f.a}</p>
           </details>
         ))}
         <TornTape color="mint" w={62} h={20} rotate={6} className="-top-3 right-6" />

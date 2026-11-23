@@ -23,7 +23,7 @@ export function FavoriteStar({ contactId, initial, label }: { contactId: string;
           if (!r.ok) setOn(!next);
         });
       }}
-      className="relative flex h-11 w-11 shrink-0 items-center justify-center active:scale-95"
+      className="relative flex h-11 w-11 before:absolute before:-inset-[2.2px] shrink-0 items-center justify-center active:scale-95"
     >
       <svg aria-hidden="true" width={25} height={25} viewBox="0 0 24 24">
         <path d={STAR} fill={on ? "#FFC23D" : "none"} stroke="#1F2340" strokeWidth="1.5" strokeLinejoin="round" />

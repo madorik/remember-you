@@ -22,16 +22,16 @@ export function ShareAppRow({ locale, url, qr }: { locale: Locale; url: string; 
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="flex min-h-[45px] w-full items-center gap-3 border-t-[1.5px] border-dashed border-ink/[0.18] text-left">
-        <span className="flex-1 text-[15px]">{t("privacy.shareApp")}</span>
+      <button type="button" onClick={() => setOpen(true)} className="flex min-h-[40.5px] w-full items-center gap-3 border-t border-dashed border-ink/30 text-left">
+        <span className="flex-1 text-[13.5px]">{t("privacy.shareApp")}</span>
         <Icon name="share" size={17} strokeWidth={1.8} className="shrink-0 text-muted" />
       </button>
       {open ? (
         <Sheet id="share-app-sheet" title={t("privacy.shareApp")} closeLabel={t("common.close")} onClose={() => setOpen(false)} footer={<ShareButtons locale={locale} url={url} text={t("privacy.shareAppText")} />}>
           <div className="flex flex-col gap-4 px-6 pb-3 pt-2">
             {/* QR은 밝은 바탕에 어두운 점이어야 잘 읽혀서 종이 카드 안에 흰 바탕으로 둔다 */}
-            <div className="relative mx-auto mt-2 rounded-[18px] border-[1.5px] border-ink bg-white p-3.5">
-              <TornTape color="mango" w={76} h={22} rotate={-4} className="-top-[11px] left-1/2 -ml-[38px]" />
+            <div className="relative mx-auto mt-2 rounded-[16.2px] border border-edge bg-white p-3.5">
+              <TornTape color="mango" w={76} h={22} rotate={-4} className="-top-[9.9px] left-1/2 -ml-[34.2px]" />
               <svg role="img" aria-label={t("privacy.shareAppQr")} viewBox={`${-pad} ${-pad} ${span} ${span}`} width="208" height="208" shapeRendering="crispEdges" className="block">
                 <rect x={-pad} y={-pad} width={span} height={span} fill="#fff" />
                 <path d={qr.d} fill="#1F2340" />

@@ -29,14 +29,14 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
 
       <section className="relative flex flex-col gap-3 px-6">
         <HeroHeadline text={t("start.headline")} />
-        <p className="hero-rise whitespace-pre-line text-[15px] leading-[1.6]" style={{ animationDelay: "0.3s" }}>
+        <p className="hero-rise whitespace-pre-line text-[13.5px] leading-[1.6]" style={{ animationDelay: "0.3s" }}>
           {t("start.body")}
         </p>
       </section>
 
       <div className="px-6 pt-7">
         {sp.failed ? (
-          <p role="alert" className="mb-3.5 flex items-center gap-2.5 rounded-[14px] border-[1.5px] border-red bg-red-soft px-4 py-3 text-[14px] leading-[1.35] text-red">
+          <p role="alert" className="mb-3.5 flex items-center gap-2.5 rounded-[12.6px] border border-red bg-red-soft px-4 py-3 text-[12.6px] leading-[1.35] text-red">
             <Icon name="alert" size={22} strokeWidth={2.2} className="shrink-0" />
             {t("login.failed")}
           </p>

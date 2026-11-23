@@ -13,10 +13,10 @@ export function ImportView({ locale, scope, people, back }: ImportData) {
     <div className="flex flex-1 flex-col">
       <div className="flex h-12 shrink-0 items-center justify-between pl-1.5 pr-4 [html[data-kb]_&]:hidden">
         <div className="flex min-w-0 items-center gap-0.5">
-          <Link href={back} prefetch={false} aria-label={t("common.close")} className="flex h-11 w-11 shrink-0 items-center justify-center">
+          <Link href={back} prefetch={false} aria-label={t("common.close")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] shrink-0 items-center justify-center">
             <Icon name="close" size={22} strokeWidth={1.8} />
           </Link>
-          <h1 className="min-w-0 truncate text-[34px] leading-none">
+          <h1 className="min-w-0 truncate text-[27.5px] leading-none">
             <span className="hl">{t("import.title")}</span>
           </h1>
         </div>

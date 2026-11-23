@@ -6,7 +6,7 @@ import { useFormStatus } from "react-dom";
 export function SaveButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
-    <button disabled={pending} className="hand flex h-9 items-center rounded-full border-[1.5px] border-ink bg-sky px-4 text-[23px] leading-none active:translate-y-px disabled:opacity-60">
+    <button disabled={pending} className="hand flex h-9 items-center rounded-full border border-edge bg-sky px-4 text-[18.6px] leading-none active:translate-y-px disabled:opacity-60">
       {label}
     </button>
   );

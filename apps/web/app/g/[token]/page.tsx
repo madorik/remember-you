@@ -54,7 +54,7 @@ export default async function GiftCardPage({ params, searchParams }: { params: P
         </Link>
       </div>
       <section className="relative px-5 pt-8">
-        <h1 className="pr-24 text-[36px] leading-[1.15]">
+        <h1 className="pr-24 text-[29.2px] leading-[1.15]">
           {title.map((line, i) => (
             <span key={i}>
               {i ? <br /> : null}
@@ -63,10 +63,10 @@ export default async function GiftCardPage({ params, searchParams }: { params: P
             </span>
           ))}
         </h1>
-        {c.event ? <p className="pt-2.5 text-[13px] text-accent">{c.event}</p> : null}
+        {c.event ? <p className="pt-2.5 text-[11.7px] text-accent">{c.event}</p> : null}
         {/* 별 든 캐릭터(시안) */}
         <Mascot pose={11} size={74} className="absolute right-6 top-8" />
-        <Heart size={22} rotate={14} className="right-[18px] top-[28px]" />
+        <Heart size={22} rotate={14} className="right-[16.2px] top-[25.2px]" />
       </section>
       <GiftLinkTabs
         look="paper"
@@ -83,7 +83,7 @@ export default async function GiftCardPage({ params, searchParams }: { params: P
       <div className="mt-auto flex flex-col">
       <PicksDisclosure text={t("picks.disclosure")} pad="px-4" />
       <div className="px-4 pt-3.5">
-        <Link href="/" className="btn-outline w-full !min-h-[50px] !text-[26px]">
+        <Link href="/" className="btn-outline w-full !min-h-[45px] !text-[21.1px]">
           <Icon name="chevron" size={19} strokeWidth={2} />
           {t("picks.cardOpen")}
         </Link>

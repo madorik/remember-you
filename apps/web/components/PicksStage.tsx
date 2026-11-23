@@ -131,7 +131,7 @@ export function PicksStage({ children, lines, shout, compact }: { children: Reac
       {!gone ? (
         <div
           role="status"
-          className="picks-scene relative mx-4 mt-3 overflow-hidden rounded-[28px]"
+          className="picks-scene relative mx-4 mt-3 overflow-hidden rounded-[25.2px]"
           style={{ "--picks-h": compact ? "310px" : "410px", height: "var(--picks-h)", background: "linear-gradient(140deg, #fff6dd 0%, #ffe7a6 55%, #ffd36b 100%)" } as React.CSSProperties}
         >
           <span aria-hidden="true" className="absolute -right-16 top-6 size-56 rounded-full bg-white/30" />
@@ -148,10 +148,10 @@ export function PicksStage({ children, lines, shout, compact }: { children: Reac
           <div aria-live="polite" className="pointer-events-none absolute left-3 top-3 max-w-[46%] opacity-0 transition-opacity duration-300 group-data-[scene=on]/stage:opacity-100">
             <p
               key={yap ? "yap" : line}
-              className={`relative rounded-2xl rounded-bl-md border-2 border-ink bg-white px-3 py-2 leading-[1.3] text-ink motion-safe:animate-[picks-pop_360ms_cubic-bezier(.3,1.5,.5,1)] ${yap ? "hand text-[30px]" : "hand-written text-[22px]"}`}
+              className={`relative rounded-2xl rounded-bl-md border-2 border-ink bg-white px-3 py-2 leading-[1.3] text-ink motion-safe:animate-[picks-pop_360ms_cubic-bezier(.3,1.5,.5,1)] ${yap ? "hand text-[24.3px]" : "hand-written text-[17.8px]"}`}
             >
               {yap ? shout : lines[line]}
-              <span aria-hidden="true" className="absolute -bottom-[7px] right-7 size-3 rotate-45 border-b-2 border-r-2 border-ink bg-white" />
+              <span aria-hidden="true" className="absolute -bottom-[6.3px] right-7 size-3 rotate-45 border-b-2 border-r-2 border-ink bg-white" />
             </p>
           </div>
         </div>

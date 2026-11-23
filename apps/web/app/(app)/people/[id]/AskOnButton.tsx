@@ -18,7 +18,7 @@ export function AskOnButton({ contactId, label }: { contactId: string; label: st
           if (r.ok) setGone(true);
         })
       }
-      className="pill !min-h-11 !px-4 !text-[16px] disabled:opacity-60"
+      className="pill !min-h-11 !px-4 !text-[14.4px] disabled:opacity-60"
     >
       {label}
     </button>

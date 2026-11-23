@@ -13,7 +13,7 @@ const SectionForm = lazy(loadForm);
 /** 편집기를 받는 동안 자리(펼친 모양과 비슷한 높이, 글자 없음) */
 function FormPlaceholder() {
   return (
-    <div aria-hidden="true" className="flex min-h-[220px] flex-col gap-3 pt-1">
+    <div aria-hidden="true" className="flex min-h-[198px] flex-col gap-3 pt-1">
       <div className="h-12 rounded-2xl bg-fill" />
       <div className="h-12 w-2/3 rounded-2xl bg-fill" />
       <div className="h-12 w-1/2 rounded-2xl bg-fill" />
@@ -85,7 +85,7 @@ export function MyReadmeList({
             ref={(el) => {
               items.current[section] = el;
             }}
-            className="border-t-[1.5px] border-dashed border-ink/20 first:border-t-0"
+            className="border-t border-dashed border-ink/30 first:border-t-0"
             style={{ scrollMarginTop: stickyTop }}
           >
             <button
@@ -98,8 +98,8 @@ export function MyReadmeList({
             >
               <SectionIcon section={section} size={36} />
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className={`hand text-[23px] leading-[1.1] ${section === "safety" ? "text-red" : ""}`}>{title}</span>
-                <span className="text-[12px] text-muted">{sub}</span>
+                <span className={`hand text-[18.6px] leading-[1.1] ${section === "safety" ? "text-red" : ""}`}>{title}</span>
+                <span className="text-[10.8px] text-muted">{sub}</span>
               </span>
               <Icon name="chevron" size={15} strokeWidth={2} className={`shrink-0 text-muted ${isOpen ? "-rotate-90" : ""}`} />
             </button>
@@ -115,7 +115,7 @@ export function MyReadmeList({
       })}
     </ul>
     <TornTape color="pink" w={72} h={22} rotate={-6} className="-top-3 left-5" />
-    <TornTape color="mint" w={60} h={18} rotate={5} className="-bottom-2.5 right-[22px]" />
+    <TornTape color="mint" w={60} h={18} rotate={5} className="-bottom-2.5 right-[19.8px]" />
     </div>
   );
 }

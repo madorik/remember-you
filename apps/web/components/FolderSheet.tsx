@@ -55,7 +55,7 @@ export function FolderSheet({ folder, labels, onClose }: { folder?: FolderView |
       footer={
         <>
           {failed ? (
-            <p role="alert" className="pb-1 text-[16px] text-red">
+            <p role="alert" className="pb-1 text-[14.4px] text-red">
               {labels.error}
             </p>
           ) : null}
@@ -63,7 +63,7 @@ export function FolderSheet({ folder, labels, onClose }: { folder?: FolderView |
             {folder ? labels.save : labels.create}
           </button>
           {folder && !builtin ? (
-            <button type="button" disabled={busy} onClick={remove} className="flex min-h-11 items-center justify-center text-[17px] text-red">
+            <button type="button" disabled={busy} onClick={remove} className="flex min-h-11 items-center justify-center text-[15.3px] text-red">
               {labels.del}
             </button>
           ) : null}

@@ -40,12 +40,12 @@ export function PlanMenuView({ locale, diners, back }: PlanMenuData) {
   const avoidRow = (label: string, list: WhoCode[], catalog: Parameters<typeof labelOf>[0], red = false) =>
     list.length ? (
       <div className="row">
-        <span className="w-[76px] shrink-0 pt-[3px] text-[12px] text-muted">{label}</span>
+        <span className="w-[68.4px] shrink-0 pt-[2.7px] text-[10.8px] text-muted">{label}</span>
         <span className={`flex min-w-0 flex-1 flex-wrap ${red ? "gap-x-3 gap-y-2" : "gap-x-3 gap-y-1"}`}>
           {list.map((x) => (
             <span key={x.code} className="flex items-center gap-1.5">
-              <span className={red ? "hand-written rounded-full border-[1.5px] border-red px-[9px] py-0.5 text-[20px] leading-none text-red" : "hand-written text-[22px] leading-[1.2]"}>{labelOf(catalog, x.code, locale)}</span>
-              <span className="text-[12px] text-muted">{x.who.join(", ")}</span>
+              <span className={red ? "hand-written rounded-full border border-red px-[8.1px] py-0.5 text-[16.2px] leading-none text-red" : "hand-written text-[17.8px] leading-[1.2]"}>{labelOf(catalog, x.code, locale)}</span>
+              <span className="text-[10.8px] text-muted">{x.who.join(", ")}</span>
             </span>
           ))}
         </span>
@@ -54,11 +54,11 @@ export function PlanMenuView({ locale, diners, back }: PlanMenuData) {
   const menuRow = (v: MenuVerdict) => {
     const label = v.item.label[locale];
     return (
-      <li key={v.item.code} className="flex min-h-[49px] flex-col justify-center border-t-[1.5px] border-dashed border-ink/[0.18] first:border-t-0">
+      <li key={v.item.code} className="flex min-h-[44.1px] flex-col justify-center border-t border-dashed border-ink/30 first:border-t-0">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-px py-2">
-            <span className="hand-written text-[26px] leading-[1.15]">{label}</span>
-            <span className="flex flex-wrap gap-x-2.5 text-[12px] leading-[1.35]">
+            <span className="hand-written text-[21.1px] leading-[1.15]">{label}</span>
+            <span className="flex flex-wrap gap-x-2.5 text-[10.8px] leading-[1.35]">
               {v.likedBy.length ? <span className="text-accent">{t("plan.likedBy", { names: v.likedBy.join(", ") })}</span> : null}
               {v.milder ? <span className="text-muted">{t("plan.milder")}</span> : null}
               {v.reasons.map((r, i) => (
@@ -70,10 +70,10 @@ export function PlanMenuView({ locale, diners, back }: PlanMenuData) {
           </div>
           {v.status === "ok" ? (
             <div className="flex shrink-0 items-center">
-              <a href={mapUrl(label, locale)} target="_blank" rel="noopener noreferrer" aria-label={`${label} · ${t("plan.findPlace")}`} className="flex h-11 w-11 items-center justify-center text-muted">
+              <a href={mapUrl(label, locale)} target="_blank" rel="noopener noreferrer" aria-label={`${label} · ${t("plan.findPlace")}`} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] items-center justify-center text-muted">
                 <Icon name="map" size={19} strokeWidth={1.8} />
               </a>
-              <ShareTextButton text={t("plan.proposal", { menu: label })} label={t("plan.propose")} doneLabel={t("plan.proposed")} className="flex h-11 items-center whitespace-nowrap px-1 text-[13px] text-ink underline underline-offset-[5px]" />
+              <ShareTextButton text={t("plan.proposal", { menu: label })} label={t("plan.propose")} doneLabel={t("plan.proposed")} className="flex h-11 items-center whitespace-nowrap px-1 text-[11.7px] text-ink underline underline-offset-[4.5px]" />
             </div>
           ) : null}
         </div>
@@ -81,21 +81,21 @@ export function PlanMenuView({ locale, diners, back }: PlanMenuData) {
     );
   };
 
-  const h2 = "hand scribble text-[24px] leading-none";
+  const h2 = "hand scribble text-[19.4px] leading-none";
   const mint = { "--scribble": "#5dbb9a" } as React.CSSProperties;
-  const count = "hand inline-flex h-[30px] items-center rounded-[10px] border-[1.5px] border-ink bg-sky-soft px-2.5 text-[17px] leading-none";
-  const sum = "flex min-h-[46px] cursor-pointer list-none items-center justify-between text-[14px]";
+  const count = "hand inline-flex h-[27px] items-center rounded-[9px] border border-edge bg-sky-soft px-2.5 text-[13.8px] leading-none";
+  const sum = "flex min-h-[41.4px] cursor-pointer list-none items-center justify-between text-[12.6px]";
   return (
     <div className="flex flex-1 flex-col">
       <div className="flex h-12 shrink-0 items-center gap-0.5 pl-1.5 pr-4">
-        <Link href={back} prefetch={false} aria-label={t("common.back")} className="flex h-11 w-11 shrink-0 items-center justify-center">
+        <Link href={back} prefetch={false} aria-label={t("common.back")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] shrink-0 items-center justify-center">
           <Icon name="back" size={24} />
         </Link>
-        <h1 className="min-w-0 truncate text-[31px] leading-none">{t("plan.menuTitle")}</h1>
+        <h1 className="min-w-0 truncate text-[25.1px] leading-none">{t("plan.menuTitle")}</h1>
       </div>
       <ul className="flex flex-wrap gap-2 px-5 pt-0.5">
         {diners.map((d) => (
-          <li key={d.key} className="inline-flex h-[30px] items-center rounded-full border-[1.5px] border-ink bg-white px-3 text-[14px]">
+          <li key={d.key} className="inline-flex h-[27px] items-center rounded-full border border-edge bg-white px-3 text-[12.6px]">
             {d.name}
           </li>
         ))}
@@ -104,19 +104,19 @@ export function PlanMenuView({ locale, diners, back }: PlanMenuData) {
       <section aria-labelledby="avoid" className="relative mx-4 mt-7 flex flex-col">
         {brief.allergens.length || brief.dislikes.length || brief.diets.length || brief.spicy || check.length ? (
           <div className="card relative px-3.5 pb-1.5 pt-2.5">
-            <TornTape color="pink" w={64} h={20} rotate={6} className="-top-3 right-[22px]" />
+            <TornTape color="pink" w={64} h={20} rotate={6} className="-top-3 right-[19.8px]" />
             <h2 id="avoid" className={`${h2} mb-3 w-fit`} style={mint}>
               {t("plan.mustAvoid")}
             </h2>
             {avoidRow(t("plan.allergy"), brief.allergens, ALLERGENS, true)}
             {check.length ? (
               <div className="row">
-                <span className="w-[76px] shrink-0 pt-[3px] text-[12px] text-muted">{t("plan.reasonCheckAllergy")}</span>
+                <span className="w-[68.4px] shrink-0 pt-[2.7px] text-[10.8px] text-muted">{t("plan.reasonCheckAllergy")}</span>
                 <span className="flex min-w-0 flex-1 flex-wrap gap-x-3 gap-y-1">
                   {check.map((x) => (
                     <span key={x.code} className="flex items-center gap-1.5">
-                      <span className="hand-written text-[22px] leading-[1.2]">{x.code === ALLERGY_NOTE_CODE ? t("safety.note") : labelOf(ALLERGENS, x.code, locale)}</span>
-                      <span className="text-[12px] text-muted">{x.who.join(", ")}</span>
+                      <span className="hand-written text-[17.8px] leading-[1.2]">{x.code === ALLERGY_NOTE_CODE ? t("safety.note") : labelOf(ALLERGENS, x.code, locale)}</span>
+                      <span className="text-[10.8px] text-muted">{x.who.join(", ")}</span>
                     </span>
                   ))}
                 </span>
@@ -126,18 +126,18 @@ export function PlanMenuView({ locale, diners, back }: PlanMenuData) {
             {avoidRow(t("plan.diet"), brief.diets, DIETS)}
             {brief.spicy ? (
               <div className="row">
-                <span className="w-[76px] shrink-0 pt-[3px] text-[12px] text-muted">{t("plan.spicy")}</span>
+                <span className="w-[68.4px] shrink-0 pt-[2.7px] text-[10.8px] text-muted">{t("plan.spicy")}</span>
                 <span className="flex flex-1 flex-wrap items-center gap-x-2 gap-y-0.5">
                   <ChiliMeter level={brief.spicy.level} size={16} />
-                  <span className="text-[12px] leading-[1.3] text-muted">{t("plan.spicyUpTo", { level: SPICY_LEVELS[brief.spicy.level]?.[locale] ?? "" })}</span>
-                  <span className="text-[12px] text-muted">{brief.spicy.who.join(", ")}</span>
+                  <span className="text-[10.8px] leading-[1.3] text-muted">{t("plan.spicyUpTo", { level: SPICY_LEVELS[brief.spicy.level]?.[locale] ?? "" })}</span>
+                  <span className="text-[10.8px] text-muted">{brief.spicy.who.join(", ")}</span>
                 </span>
               </div>
             ) : null}
             {brief.alcohol.length ? (
               <div className="row">
-                <span className="w-[76px] shrink-0 pt-0.5 text-[12px] text-muted">{t("plan.alcohol")}</span>
-                <span className="flex flex-1 flex-col gap-1 text-[14px] leading-[1.4]">
+                <span className="w-[68.4px] shrink-0 pt-0.5 text-[10.8px] text-muted">{t("plan.alcohol")}</span>
+                <span className="flex flex-1 flex-col gap-1 text-[12.6px] leading-[1.4]">
                   {brief.alcohol.map((a) => (
                     <span key={a.who}>
                       <span>{a.who}</span> <span className="text-muted">{[alcoholLabel(a.level, locale), ...a.kinds.map((k) => labelOf(ALCOHOL_KINDS, k, locale))].join(" · ")}</span>
@@ -152,24 +152,24 @@ export function PlanMenuView({ locale, diners, back }: PlanMenuData) {
             <h2 id="avoid" className="sr-only">
               {t("plan.mustAvoid")}
             </h2>
-            <p className="row card !px-4 text-[14px] text-muted">{t("plan.nothingToAvoid")}</p>
+            <p className="row card !px-4 text-[12.6px] text-muted">{t("plan.nothingToAvoid")}</p>
           </>
         )}
       </section>
 
       {note ? (
-        <section className="relative mx-4 mt-6 flex -rotate-[0.4deg] flex-col rounded-[12px_14px_14px_12px] border-[1.5px] border-ink bg-postit px-3.5 pb-2.5 pt-2.5">
-          <span className="text-[14px] font-bold">{t("plan.order")}</span>
-          <p className="text-[14px] leading-[1.55]">
+        <section className="relative mx-4 mt-6 flex -rotate-[0.4deg] flex-col rounded-[9.7px_11.3px_11.3px_9.7px] border border-edge bg-postit px-3.5 pb-2.5 pt-2.5">
+          <span className="text-[12.6px] font-bold">{t("plan.order")}</span>
+          <p className="text-[12.6px] leading-[1.55]">
             {note}{" "}
-            <CopyButton text={note} label={t("plan.copy")} doneLabel={t("plan.copied")} className="inline-flex min-h-8 items-center text-[14px] underline underline-offset-[5px]" />
+            <CopyButton text={note} label={t("plan.copy")} doneLabel={t("plan.copied")} className="inline-flex min-h-8 items-center text-[12.6px] underline underline-offset-[4.5px]" />
           </p>
         </section>
       ) : null}
 
       <section aria-labelledby="ok" className="relative mx-4 mt-6 flex flex-col">
         <div className="card relative px-3.5 pb-1.5 pt-2.5">
-          <div className="mb-1.5 flex min-h-[34px] items-center justify-between">
+          <div className="mb-1.5 flex min-h-[30.6px] items-center justify-between">
             <h2 id="ok" className={h2} style={mint}>
               {t("plan.okMenus")}
             </h2>
@@ -183,14 +183,14 @@ export function PlanMenuView({ locale, diners, back }: PlanMenuData) {
         <div className="card relative mx-4 mt-6 px-3.5">
           <details>
             <summary className={sum}>
-              {t("plan.softMenus")} <span className="text-[13px] text-muted">{soft.length}</span>
+              {t("plan.softMenus")} <span className="text-[11.7px] text-muted">{soft.length}</span>
             </summary>
             <ul className="flex flex-col pb-1.5">{soft.map(menuRow)}</ul>
           </details>
           {avoid.length ? (
-            <details className="border-t-[1.5px] border-dashed border-ink/[0.18]">
+            <details className="border-t border-dashed border-ink/30">
               <summary className={sum}>
-                {t("plan.avoidMenus")} <span className="text-[13px] text-muted">{avoid.length}</span>
+                {t("plan.avoidMenus")} <span className="text-[11.7px] text-muted">{avoid.length}</span>
               </summary>
               <ul className="flex flex-col pb-1.5">{avoid.map(menuRow)}</ul>
             </details>
@@ -200,14 +200,14 @@ export function PlanMenuView({ locale, diners, back }: PlanMenuData) {
         <div className="card relative mx-4 mt-6 px-3.5">
           <details>
             <summary className={sum}>
-              {t("plan.avoidMenus")} <span className="text-[13px] text-muted">{avoid.length}</span>
+              {t("plan.avoidMenus")} <span className="text-[11.7px] text-muted">{avoid.length}</span>
             </summary>
             <ul className="flex flex-col pb-1.5">{avoid.map(menuRow)}</ul>
           </details>
         </div>
       ) : null}
 
-      <p className="mx-6 pb-6 pt-[18px] text-[13px] leading-[1.5] text-muted">{t("plan.menuNote")}</p>
+      <p className="mx-6 pb-6 pt-[16.2px] text-[11.7px] leading-[1.5] text-muted">{t("plan.menuNote")}</p>
       <ShareBar plain={memo} named={memoNamed} label={t("plan.share")} doneLabel={t("plan.sent")} namesLabel={t("plan.withNames")} />
     </div>
   );

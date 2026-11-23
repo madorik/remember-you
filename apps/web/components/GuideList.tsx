@@ -17,21 +17,21 @@ const MARKS = ["#ffd978", "#c0e8d6", "#f9cbd5", "#cfe6f5"];
 
 export function GuideList({ bands }: { bands: GuideBand[] }) {
   return (
-    <div className="flex flex-col gap-[26px]">
+    <div className="flex flex-col gap-[23.4px]">
       {bands.map((b, bi) => {
         const mark = MARKS[bi % MARKS.length]!;
         return (
           <section key={b.band} aria-labelledby={`band-${b.band}`} className="card relative flex flex-col px-3.5 pb-1 pt-3">
             <h2
               id={`band-${b.band}`}
-              className="mb-2.5 self-start px-0.5 text-[25px] leading-[1.15]"
+              className="mb-2.5 self-start px-0.5 text-[20.3px] leading-[1.15]"
               style={{ backgroundImage: `linear-gradient(transparent 55%, ${mark} 55%, ${mark} 92%, transparent 92%)` }}
             >
               {b.title}
             </h2>
             <ol className="flex flex-col">
               {b.items.map((it, n) => (
-                <li key={it.id} className="border-t-[1.5px] border-dashed border-ink/[0.18]">
+                <li key={it.id} className="border-t border-dashed border-ink/30">
                   <a
                     href={it.url}
                     target="_blank"
@@ -39,8 +39,8 @@ export function GuideList({ bands }: { bands: GuideBand[] }) {
                     onClick={() => beacon("gift_click", { i: it.id, b: b.band, s: "guide" })}
                     className="flex items-center gap-3 py-2.5 active:bg-fill"
                   >
-                    <span aria-hidden="true" className={`shrink-0 border-[1.5px] border-ink bg-white px-[5px] pb-1 pt-[5px] ${n % 2 ? "[transform:rotate(3deg)]" : "[transform:rotate(-3deg)]"}`}>
-                      <span className="flex h-[50px] w-[50px] items-center justify-center overflow-hidden bg-[#fff1cc]">
+                    <span aria-hidden="true" className={`shrink-0 border border-edge bg-white px-[4.5px] pb-1 pt-[4.5px] ${n % 2 ? "[transform:rotate(3deg)]" : "[transform:rotate(-3deg)]"}`}>
+                      <span className="flex h-[45px] w-[45px] items-center justify-center overflow-hidden bg-[#fff1cc]">
                         {it.image ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={it.image} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" className="h-full w-full bg-white object-contain" />
@@ -51,10 +51,10 @@ export function GuideList({ bands }: { bands: GuideBand[] }) {
                     </span>
                     <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <span className="flex items-center justify-between gap-2">
-                        <span className="hand-written truncate text-[25px] leading-[1.15]">{it.title}</span>
+                        <span className="hand-written truncate text-[20.3px] leading-[1.15]">{it.title}</span>
                         <Icon name="external" size={15} strokeWidth={2} className="shrink-0 text-muted" />
                       </span>
-                      {it.name ? <span className="line-clamp-2 text-[12px] leading-[1.35] text-muted">{it.name}</span> : null}
+                      {it.name ? <span className="line-clamp-2 text-[10.8px] leading-[1.35] text-muted">{it.name}</span> : null}
                     </span>
                   </a>
                 </li>

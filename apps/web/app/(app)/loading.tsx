@@ -5,9 +5,9 @@ export default function AppLoading() {
   return (
     <div aria-busy="true" className="page-end flex flex-1 flex-col gap-3.5 px-4 pt-4">
       <div className={`${block} h-8 w-40 rounded-xl bg-rule`} />
-      <div className={`${block} h-44 rounded-[24px] bg-white`} />
-      <div className={`${block} h-28 rounded-[24px] bg-white`} />
-      <div className={`${block} h-28 rounded-[24px] bg-white`} />
+      <div className={`${block} h-44 rounded-[21.6px] bg-white`} />
+      <div className={`${block} h-28 rounded-[21.6px] bg-white`} />
+      <div className={`${block} h-28 rounded-[21.6px] bg-white`} />
     </div>
   );
 }

@@ -17,7 +17,7 @@ export function FavoritesEditor({ value, onChange, locale }: { value: FavoritesD
   };
   const chips = (key: CodeKey, label: string, list: CatalogItem[]) => (
     <div className="flex flex-col gap-1">
-      <span className="hand text-[21px] leading-none">{label}</span>
+      <span className="hand text-[17px] leading-none">{label}</span>
       <div className="flex flex-wrap gap-2 pt-1">
         <CircleOption label={NONE_LABEL[locale]} on={(value[key] ?? []).includes(NONE)} color="ink" onToggle={() => toggle(key, NONE)} textClass="whitespace-nowrap" />
         {list.map((i) => (
@@ -31,7 +31,7 @@ export function FavoritesEditor({ value, onChange, locale }: { value: FavoritesD
   );
   const group = (title: string, children: React.ReactNode) => (
     <section className="flex flex-col gap-4">
-      <div className="border-b-[1.5px] border-dashed border-ink/20 pb-1.5">
+      <div className="border-b border-dashed border-ink/30 pb-1.5">
         <SectionHeading>{title}</SectionHeading>
       </div>
       {children}

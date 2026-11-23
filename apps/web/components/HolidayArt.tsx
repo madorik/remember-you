@@ -1,5 +1,6 @@
 import type { HolidayId } from "@readme/core";
 import { Polaroid } from "@/components/diary";
+import { u } from "@/lib/ui-scale";
 
 // 홈 '다가오는 날' 왼쪽 그림(명절·챙기는 날): 폴라로이드 사진 칸에 손으로 그린 듯한 그림 하나.
 // 남색 선 + 망고·분홍·하늘·민트 채움으로, 다이어리의 별·하트와 같은 결. 모두 장식이라 aria-hidden(이름은 옆 글자가 읽어 준다).
@@ -217,7 +218,8 @@ const ART: Record<HolidayId, () => React.JSX.Element> = {
 };
 
 /** 명절·챙기는 날의 손그림(사진 칸 안에 들어가는 크기) */
-export function HolidayArt({ id, size = 70 }: { id: HolidayId; size?: number }) {
+export function HolidayArt({ id, size: sizeIn = 70 }: { id: HolidayId; size?: number }) {
+  const size = u(sizeIn);
   const Art = ART[id];
   return (
     <svg viewBox="0 0 64 64" width={size} height={size} aria-hidden="true" className="block" fill="none" stroke={INK} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

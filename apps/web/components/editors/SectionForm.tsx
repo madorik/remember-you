@@ -119,7 +119,7 @@ export function SectionForm<S extends Section>({
         {editors}
         {/* 저장 상태는 저장 중·저장됨·실패일 때만. 쓰는 법 설명은 두지 않는다 */}
         <div className={`sticky z-10 min-h-11 items-center justify-center bg-paper pb-3 pt-3 ${status === "idle" ? "hidden" : "flex"}`} style={{ bottom: stickTo }}>
-          <p role="status" aria-live="polite" className={`flex items-center gap-1 text-[12px] ${status === "error" ? "text-red" : "text-muted"}`}>
+          <p role="status" aria-live="polite" className={`flex items-center gap-1 text-[10.8px] ${status === "error" ? "text-red" : "text-muted"}`}>
             {status === "saving" ? t("me.saving") : null}
             {status === "saved" ? (
               <>
@@ -136,7 +136,7 @@ export function SectionForm<S extends Section>({
                 unsaved.current = true;
                 flush.current();
               }}
-              className="ml-3 flex min-h-11 items-center px-2 text-[14px] text-accent"
+              className="ml-3 flex min-h-11 items-center px-2 text-[12.6px] text-accent"
             >
               {t("me.retry")}
             </button>
@@ -162,13 +162,13 @@ export function SectionForm<S extends Section>({
       {header ? (
         <div className="page-end flex min-h-11 flex-col items-center justify-center gap-1 pt-3">
           {state.saved && !dirty ? (
-            <p role="status" className="flex items-center gap-1 text-[12px] text-muted">
+            <p role="status" className="flex items-center gap-1 text-[10.8px] text-muted">
               <Icon name="check" size={14} strokeWidth={2.4} className="text-[#5DBB9A]" />
               {t("me.saved")}
             </p>
           ) : null}
           {state.error ? (
-            <p role="alert" className="text-[13px] text-red">
+            <p role="alert" className="text-[11.7px] text-red">
               {t("common.error")}
             </p>
           ) : null}
@@ -179,12 +179,12 @@ export function SectionForm<S extends Section>({
           style={inline ? { bottom: stickTo } : undefined}
         >
           {state.saved && !dirty ? (
-            <p role="status" className="text-[15px] text-ok">
+            <p role="status" className="text-[13.5px] text-ok">
               {t("me.saved")}
             </p>
           ) : null}
           {state.error ? (
-            <p role="alert" className="text-[15px] text-red">
+            <p role="alert" className="text-[13.5px] text-red">
               {t("common.error")}
             </p>
           ) : null}

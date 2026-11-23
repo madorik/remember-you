@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRef } from "react";
 import { mascotStyle, type MascotPose } from "./Mascot";
+import { u } from "@/lib/ui-scale";
 
 /**
  * 아래 메뉴 가운데 단추 '구슬 속 캐릭터': 유리 구슬(망고빛 그라데이션 + 위 반사광 + 아래 테두리 반사 + 공기방울) 안의 캐릭터.
@@ -20,7 +21,8 @@ function Pose({ pose, className, scale }: { pose: MascotPose; className: string;
   return <span className={`pose ${className}`} style={mascotStyle(pose, scale)} />;
 }
 
-export function CharOrbLink({ href, label, size = 62 }: { href: string; label: string; size?: number }) {
+export function CharOrbLink({ href, label, size: sizeIn = 62 }: { href: string; label: string; size?: number }) {
+  const size = u(sizeIn);
   const wrap = useRef<HTMLSpanElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scale = size * SCALE;

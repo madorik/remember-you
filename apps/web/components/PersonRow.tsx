@@ -27,7 +27,7 @@ export interface PersonRow {
 /** 이름 옆 태그(내가 붙인 부르는 말) */
 export function TagChip({ children, large = false }: { children: React.ReactNode; large?: boolean }) {
   return (
-    <span className={`max-w-[9em] shrink-0 truncate rounded-md bg-fill text-muted ${large ? "px-2 py-[3px] text-[14px]" : "px-1.5 py-px text-[12px]"}`}>
+    <span className={`max-w-[9em] shrink-0 truncate rounded-md bg-fill text-muted ${large ? "px-2 py-[2.7px] text-[12.6px]" : "px-1.5 py-px text-[10.8px]"}`}>
       {children}
     </span>
   );
@@ -43,20 +43,20 @@ export function RowBody({ row }: { row: PersonRow; avatarLabel?: string }) {
       <Avatar config={row.avatar} size={40} label={row.name} decorative />
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="flex min-w-0 items-center gap-1.5">
-          <span className="hand-written truncate pr-1 text-[25px] leading-[1.1]">{row.name}</span>
+          <span className="hand-written truncate pr-1 text-[20.3px] leading-[1.1]">{row.name}</span>
           {row.favorite ? (
-            <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="#E8627C" className="shrink-0">
+            <svg aria-hidden="true" width="13.5" height="13.5" viewBox="0 0 24 24" fill="#E8627C" className="shrink-0">
               <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />
             </svg>
           ) : null}
           {row.tag ? <TagChip>{row.tag}</TagChip> : null}
         </span>
-        {row.sub ? <span className="truncate text-[12px] text-muted">{row.sub}</span> : null}
+        {row.sub ? <span className="truncate text-[10.8px] text-muted">{row.sub}</span> : null}
       </span>
       {row.date ? (
         <span className="flex flex-col items-end gap-0.5">
-          <span className="num text-[20px]">{row.date}</span>
-          <span className={`text-[11px] ${row.soon ? "text-red" : "text-muted"}`}>{row.dateSub}</span>
+          <span className="num text-[17px]">{row.date}</span>
+          <span className={`text-[9.9px] ${row.soon ? "text-red" : "text-muted"}`}>{row.dateSub}</span>
         </span>
       ) : null}
     </>

@@ -87,7 +87,7 @@ export function useUndoToast(locale?: Locale): { show: (offer: UndoOffer) => voi
       role="status"
       aria-live="polite"
       className="pointer-events-none fixed inset-x-0 z-[70] flex justify-center px-4"
-      style={{ bottom: "calc(max(var(--pb), var(--kb, 0px)) + 80px)" }}
+      style={{ bottom: "calc(max(var(--pb), var(--kb, 0px)) + 72px)" }}
     >
       {shown ? <UndoToast key={shown.id} text={shown.text} undoLabel={shown.undo} onUndo={undo} /> : null}
     </div>
@@ -104,12 +104,12 @@ function UndoToast({ text, undoLabel, onUndo }: { text: string; undoLabel: strin
   }, []);
   return (
     <div
-      className={`pointer-events-auto flex min-h-12 w-full max-w-[420px] items-center gap-2 rounded-2xl bg-ink pl-4 pr-1 text-white shadow-[0_8px_24px_rgba(31,35,64,0.28)] motion-safe:transition-[opacity,transform] motion-safe:duration-200 ${
+      className={`pointer-events-auto flex min-h-12 w-full max-w-[378px] items-center gap-2 rounded-2xl bg-ink pl-4 pr-1 text-white shadow-[0_8px_24px_rgba(31,35,64,0.28)] motion-safe:transition-[opacity,transform] motion-safe:duration-200 ${
         on ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
       }`}
     >
-      <span className="min-w-0 flex-1 text-[17px]">{text}</span>
-      <button type="button" onClick={onUndo} className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl px-3 text-[17px] text-sky active:opacity-70">
+      <span className="min-w-0 flex-1 text-[15.3px]">{text}</span>
+      <button type="button" onClick={onUndo} className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl px-3 text-[15.3px] text-sky active:opacity-70">
         <Icon name="undo" size={16} strokeWidth={2} />
         {undoLabel}
       </button>

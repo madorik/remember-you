@@ -44,7 +44,7 @@ export function PeopleList({ people, today, locale, t }: { people: Person[]; tod
     <ul className="flex flex-col px-6">
       {personRows(people, today, locale, t).map((row) => (
         <li key={row.contactId} className="border-b border-rule">
-          <Link href={`/people/${row.contactId}`} className="flex min-h-[60px] items-center gap-3">
+          <Link href={`/people/${row.contactId}`} className="flex min-h-[54px] items-center gap-3">
             <RowBody row={row} avatarLabel={t("avatar.of", { name: row.name })} />
           </Link>
         </li>

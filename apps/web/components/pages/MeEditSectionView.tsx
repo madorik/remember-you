@@ -9,7 +9,7 @@ export function MeEditSectionView({ locale, section, card }: MeEditSectionData) 
     <div className="flex flex-1 flex-col">
       <TopBar back={`/me/edit?open=${section}`} label={t("common.back")} />
       <div className="relative px-6 pt-1.5">
-        <h1 className="scribble text-[36px] leading-none">{t(`section.${section}` as "section.safety")}</h1>
+        <h1 className="scribble text-[29.2px] leading-none">{t(`section.${section}` as "section.safety")}</h1>
       </div>
       <SectionForm section={section} initial={card[section] ?? null} locale={locale} />
     </div>

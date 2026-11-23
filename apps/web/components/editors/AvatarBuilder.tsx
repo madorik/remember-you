@@ -38,7 +38,7 @@ const any = <T,>(list: readonly T[]): T => list[Math.floor(Math.random() * list.
 /** 색 동그라미: 누르는 칸은 40×44, 동그라미는 28. 골랐을 땐 흰 틈을 두고 남색 테두리 */
 function Swatch({ fill, on, label, ringBg, onPick }: { fill: string; on: boolean; label: string; ringBg: string; onPick: () => void }) {
   return (
-    <button type="button" aria-pressed={on} aria-label={label} onClick={onPick} className="flex h-[42px] w-10 items-center justify-center">
+    <button type="button" aria-pressed={on} aria-label={label} onClick={onPick} className="flex h-[37.8px] w-10 items-center justify-center">
       <span
         className="h-7 w-7 rounded-full transition-shadow"
         style={{ background: fill, boxShadow: on ? `inset 0 0 0 1.5px rgba(31,35,64,0.14), 0 0 0 2.5px ${ringBg}, 0 0 0 4.5px var(--color-ink)` : "inset 0 0 0 1.5px rgba(31,35,64,0.14)" }}
@@ -65,7 +65,7 @@ export function NameField({
 }) {
   return (
     <label className="flex flex-col gap-0.5">
-      <span className="text-[12px] text-muted">{label}</span>
+      <span className="text-[10.8px] text-muted">{label}</span>
       <input
         name="name"
         defaultValue={value}
@@ -74,7 +74,7 @@ export function NameField({
         autoFocus={autoFocus}
         placeholder={placeholder ?? label}
         aria-invalid={invalid || undefined}
-        className="hand-written h-10 w-full min-w-0 border-0 border-b-[1.5px] border-dashed border-ink/40 bg-transparent p-0 text-[25px] outline-none placeholder:font-sans placeholder:text-[15px] placeholder:tracking-[-0.035em] placeholder:text-muted aria-invalid:border-red"
+        className="hand-written h-10 w-full min-w-0 border-0 border-b border-dashed border-ink/30 bg-transparent p-0 text-[20.3px] outline-none placeholder:font-sans placeholder:text-[16px] placeholder:text-muted aria-invalid:border-red"
       />
     </label>
   );
@@ -142,9 +142,9 @@ export function AvatarBuilder({
       {paper ? <TornTape color="mango" w={72} h={22} rotate={-4} className="-top-3 left-[40%]" /> : null}
       <div className="flex items-center gap-4 px-1 pt-1.5">
         <div className="relative shrink-0">
-          <span className="relative block -rotate-3 border-[1.5px] border-ink bg-white px-1.5 pb-[18px] pt-1.5">
-            <span className="flex h-[104px] w-[104px] items-center justify-center overflow-hidden bg-[#FFF0C9]">
-              <span className="block overflow-hidden rounded-full shadow-[0_0_0_3px_#1F2340]" style={{ width: 92, height: 92, background: avatarBackground(value) }}>
+          <span className="relative block -rotate-3 border border-edge bg-white px-1.5 pb-[16.2px] pt-1.5">
+            <span className="flex h-[93.6px] w-[93.6px] items-center justify-center overflow-hidden bg-[#FFF0C9]">
+              <span className="block overflow-hidden rounded-full shadow-[0_0_0_3px_#1F2340]" style={{ width: 83, height: 83, background: avatarBackground(value) }}>
                 <AvatarArt config={value} size={92} />
               </span>
             </span>
@@ -155,9 +155,9 @@ export function AvatarBuilder({
             type="button"
             aria-label={t("avatar.shuffle")}
             onClick={shuffle}
-            className="absolute -bottom-2 -right-2.5 flex h-10 w-10 items-center justify-center rounded-full border-[1.5px] border-ink bg-sky shadow-[2px_2px_0_#1F2340] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1F2340]"
+            className="absolute -bottom-2 -right-2.5 flex h-10 w-10 before:absolute before:-inset-[3.6px] items-center justify-center rounded-full border border-edge bg-sky shadow-[2px_2px_0_#1F2340] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0_#1F2340]"
           >
-            <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1F2340" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg aria-hidden="true" width="19.8" height="19.8" viewBox="0 0 24 24" fill="none" stroke="#1F2340" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <rect x="4" y="4" width="16" height="16" rx="3.5" />
               <circle cx="9" cy="9" r="1.2" fill="#1F2340" />
               <circle cx="15" cy="15" r="1.2" fill="#1F2340" />
@@ -170,7 +170,7 @@ export function AvatarBuilder({
       </div>
 
       {/* 여섯 칸: 고른 탭은 손글씨 + 밑줄 낙서, 나머지는 흐린 글 */}
-      <div role="tablist" aria-label={t("avatar.parts")} className="mt-3.5 grid grid-cols-[repeat(6,minmax(0,1fr))] border-b-[1.5px] border-dashed border-ink/20">
+      <div role="tablist" aria-label={t("avatar.parts")} className="mt-3.5 grid grid-cols-[repeat(6,minmax(0,1fr))] border-b border-dashed border-ink/30">
         {TABS.map((k) => {
           const on = tab === k;
           return (
@@ -180,7 +180,7 @@ export function AvatarBuilder({
               role="tab"
               aria-selected={on}
               onClick={() => setTab(k)}
-              className={`flex h-[38px] items-center justify-center whitespace-nowrap ${on ? "hand text-[22px] text-ink" : "text-[14px] text-muted"}`}
+              className={`flex h-[34.2px] items-center justify-center whitespace-nowrap ${on ? "hand text-[17.8px] text-ink" : "text-[11.3px] text-muted"}`}
             >
               {on ? <span className="scribble leading-none">{t(TAB_KEY[k])}</span> : t(TAB_KEY[k])}
             </button>
@@ -189,7 +189,7 @@ export function AvatarBuilder({
       </div>
 
       {/* 칸 높이를 고정해 탭을 옮겨도 아래 단추·메뉴가 흔들리지 않게(가장 많은 머리·소품 13개 = 4줄, 색깔은 7줄) */}
-      <div role="tabpanel" className="mt-3 min-h-[328px]">
+      <div role="tabpanel" className="mt-3 min-h-[295.2px]">
         {options ? (
           <div className="grid grid-cols-4 content-start gap-2">
             {options.list.map((id) => {
@@ -202,7 +202,7 @@ export function AvatarBuilder({
                   aria-pressed={on}
                   aria-label={label}
                   onClick={() => set({ [options.key]: id } as Partial<AvatarConfig>)}
-                  className={`flex h-[76px] flex-col items-center gap-[3px] overflow-hidden rounded-xl border-[1.5px] border-ink pt-1.5 text-[11px] transition-colors ${on ? "bg-sky-soft shadow-[inset_0_0_0_1px_#1F2340]" : "bg-white"}`}
+                  className={`flex h-[68.4px] flex-col items-center gap-[2.7px] overflow-hidden rounded-xl border border-edge pt-1.5 text-[9.9px] transition-colors ${on ? "bg-sky-soft shadow-[inset_0_0_0_1px_#1F2340]" : "bg-white"}`}
                 >
                   <Avatar config={{ ...value, [options.key]: id } as AvatarConfig} size={40} label={label} decorative />
                   <span className="max-w-full truncate px-1 leading-[1.2]">{label}</span>
@@ -215,7 +215,7 @@ export function AvatarBuilder({
           <div className="flex flex-col gap-1">
             {groups.map((g) => (
               <div key={g.title} className="flex items-start gap-1">
-                <span className={`shrink-0 pt-3 text-[14px] ${locale === "en" ? "w-[84px]" : "w-[52px]"}`}>{g.title}</span>
+                <span className={`shrink-0 pt-3 text-[12.6px] ${locale === "en" ? "w-[75.6px]" : "w-[46.8px]"}`}>{g.title}</span>
                 <div className="flex min-w-0 flex-1 flex-wrap">
                   {g.swatches.map((s) => (
                     <Swatch key={s.id} fill={s.fill} on={s.on} label={s.label} ringBg={ringBg} onPick={s.pick} />

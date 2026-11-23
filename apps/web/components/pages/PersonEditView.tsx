@@ -12,11 +12,11 @@ export function PersonEditView({ locale, contactId, name, avatar, card, ai, open
   return (
     <div className="page-end flex flex-1 flex-col">
       <div className="flex h-12 items-center justify-between pl-1.5 pr-2.5">
-        <Link href={`/people/${contactId}`} prefetch={false} aria-label={t("common.back")} className="flex h-11 w-11 items-center justify-center">
+        <Link href={`/people/${contactId}`} prefetch={false} aria-label={t("common.back")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] items-center justify-center">
           <Icon name="back" size={26} strokeWidth={2} />
         </Link>
         {ai ? (
-          <Link href={`/import?to=${contactId}`} className="flex h-8 items-center gap-[5px] rounded-full border-[1.5px] border-ink bg-sky-soft pl-2.5 pr-3.5 text-[13px]">
+          <Link href={`/import?to=${contactId}`} className="flex h-8 items-center gap-[4.5px] rounded-full border border-edge bg-sky-soft pl-2.5 pr-3.5 text-[11.7px]">
             <Icon name="pencil" size={16} strokeWidth={1.7} />
             {t("import.open")}
           </Link>
@@ -24,7 +24,7 @@ export function PersonEditView({ locale, contactId, name, avatar, card, ai, open
       </div>
       <div className="flex flex-col gap-2 px-5">
         <PersonNameChip avatar={avatar} name={name} />
-        <h1 className="scribble self-start text-[41px] leading-none">{t("person.mineList")}</h1>
+        <h1 className="scribble self-start text-[33.2px] leading-none">{t("person.mineList")}</h1>
       </div>
       <MyReadmeList
         rows={SECTIONS_BY_IMPORTANCE.map((section) => ({

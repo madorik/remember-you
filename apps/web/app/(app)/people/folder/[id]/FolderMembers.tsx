@@ -78,8 +78,8 @@ export function FolderMembers({
     <>
       <ul className="flex flex-col">
         {shown.map((r) => (
-          <li key={r.contactId} className="flex items-center border-t-[1.5px] border-dashed border-rule first-of-type:border-t-0">
-            <Link href={`/people/${r.contactId}?back=${encodeURIComponent(here)}`} className="flex min-h-[56px] min-w-0 flex-1 items-center gap-2.5">
+          <li key={r.contactId} className="flex items-center border-t border-dashed border-ink/30 first-of-type:border-t-0">
+            <Link href={`/people/${r.contactId}?back=${encodeURIComponent(here)}`} className="flex min-h-[50.4px] min-w-0 flex-1 items-center gap-2.5">
               <RowBody row={r} />
             </Link>
             <button
@@ -87,25 +87,25 @@ export function FolderMembers({
               aria-label={labels.remove.replace("{name}", r.name)}
               onClick={() => remove(r)}
               // 보이는 동그라미는 26px, 누르는 자리는 44px
-              className="-mr-1.5 flex h-11 w-[30px] shrink-0 items-center justify-center text-ink active:bg-fill"
+              className="-mr-1.5 flex h-11 w-[27px] shrink-0 items-center justify-center text-ink active:bg-fill"
             >
-              <span className="flex h-[22px] w-[22px] items-center justify-center rounded-full border-[1.5px] border-ink">
+              <span className="flex h-[19.8px] w-[19.8px] items-center justify-center rounded-full border border-edge">
                 <Icon name="close" size={11} strokeWidth={2.4} />
               </span>
             </button>
           </li>
         ))}
-        <li className="border-t-[1.5px] border-dashed border-rule first-of-type:border-t-0">
-          <Link href={`${here}${here.includes("?") ? "&" : "?"}add=1`} scroll={false} className="flex min-h-[54px] items-center gap-2.5 text-muted">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-[1.5px] border-dashed border-ink/50 text-muted">
+        <li className="border-t border-dashed border-ink/30 first-of-type:border-t-0">
+          <Link href={`${here}${here.includes("?") ? "&" : "?"}add=1`} scroll={false} className="flex min-h-[48.6px] items-center gap-2.5 text-muted">
+            <span className="flex h-10 w-10 relative before:absolute before:-inset-[3.6px] shrink-0 items-center justify-center rounded-full border border-dashed border-ink/30 text-muted">
               <Icon name="plus" size={18} strokeWidth={1.8} />
             </span>
-            <span className="text-[15px] leading-[1.35]">{labels.addPeople}</span>
+            <span className="text-[13.5px] leading-[1.35]">{labels.addPeople}</span>
           </Link>
         </li>
       </ul>
       {failed ? (
-        <p role="alert" className="pb-3 text-[16px] text-red">
+        <p role="alert" className="pb-3 text-[14.4px] text-red">
           {labels.error}
         </p>
       ) : null}

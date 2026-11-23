@@ -1,3 +1,4 @@
+import { u } from "@/lib/ui-scale";
 // 캐릭터: 손그림 우주 캐릭터(배경 투명, 색 그대로) 12동작 스프라이트(public/char-sprite-v1.webp, 988×597, 4열×3줄, 칸 247×199).
 // 동작 번호: 1 별 안기(!!) · 2 빼꼼(선 위에 손) · 3 하트 점프 · 4 큰 하트 · 5 구름 잠 · 6 편지 들고 달리기 · 7 책 읽기 · 8 비행접시 · 9 깜짝 · 10 뒷모습 · 11 별 들고 웃기 · 12 누워 쉬기.
 // 쓰는 곳: 가운데 단추=7(구슬 안), 물어보기 카드·물어보기 완성·답하기=6, 사람 상세·시작·마음이 전해졌어요=4, 말로 적기 듣는 중=1,
@@ -55,5 +56,5 @@ export function mascotStyle(pose: MascotPose, scale: number): React.CSSPropertie
 
 /** 캐릭터 한 동작. size는 그림의 높이(px)이고 가로는 동작에 맞게 따라온다. 빈 투명 부분은 잘라 내서 자리가 딱 맞는다 */
 export function Mascot({ pose = 6, size = 64, className = "", style }: { pose?: MascotPose; size?: number; className?: string; style?: React.CSSProperties }) {
-  return <span aria-hidden="true" className={`block shrink-0 ${className}`} style={{ ...mascotStyle(pose, size / BOX[pose].h), ...style }} />;
+  return <span aria-hidden="true" className={`block shrink-0 ${className}`} style={{ ...mascotStyle(pose, u(size) / BOX[pose].h), ...style }} />;
 }

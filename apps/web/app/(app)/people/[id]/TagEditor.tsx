@@ -69,9 +69,9 @@ export function TagEditor({
             enterKeyHint="done"
             placeholder={labels.placeholder}
             aria-label={labels.tag}
-            className="field !h-11 !min-h-11 min-w-0 flex-1 !px-3 !text-[18px]"
+            className="field !h-11 !min-h-11 min-w-0 flex-1 !px-3 !text-[16.2px]"
           />
-          <button disabled={pending || (nameIsTag && !clean)} className="btn-primary !min-h-11 shrink-0 !rounded-[14px] px-3.5 !text-[17px]">
+          <button disabled={pending || (nameIsTag && !clean)} className="btn-primary !min-h-11 shrink-0 !rounded-[12.6px] px-3.5 !text-[13.8px]">
             {labels.save}
           </button>
           <button
@@ -88,7 +88,7 @@ export function TagEditor({
           </button>
         </div>
         {error ? (
-          <p role="alert" className="text-[16px] text-red">
+          <p role="alert" className="text-[14.4px] text-red">
             {labels.error}
           </p>
         ) : null}
@@ -100,7 +100,7 @@ export function TagEditor({
   return (
     <span className="flex">
       {nameIsTag ? (
-        <button type="button" onClick={() => setEditing(true)} className="relative flex min-h-8 items-center gap-1 text-[16px] text-muted before:absolute before:-inset-x-1.5 before:-inset-y-1.5">
+        <button type="button" onClick={() => setEditing(true)} className="relative flex min-h-8 items-center gap-1 text-[14.4px] text-muted before:absolute before:-inset-x-1.5 before:-inset-y-1.5">
           <Icon name="pencil" size={14} strokeWidth={2} />
           {labels.rename}
         </button>
@@ -109,13 +109,13 @@ export function TagEditor({
           type="button"
           onClick={() => setEditing(true)}
           aria-label={`${labels.tag} ${value} ${labels.edit}`}
-          className="relative flex max-w-full items-center gap-1 rounded-md bg-fill px-2 py-[3px] text-[16px] text-muted before:absolute before:-inset-x-1.5 before:-inset-y-2.5"
+          className="relative flex max-w-full items-center gap-1 rounded-md bg-fill px-2 py-[2.7px] text-[14.4px] text-muted before:absolute before:-inset-x-1.5 before:-inset-y-2.5"
         >
           <span className="truncate">{value}</span>
           <Icon name="pencil" size={12} strokeWidth={2} className="shrink-0" />
         </button>
       ) : (
-        <button type="button" onClick={() => setEditing(true)} className="relative flex items-center gap-0.5 rounded-md px-2 py-[3px] text-[16px] text-muted shadow-[inset_0_0_0_1px_var(--color-edge)] before:absolute before:-inset-x-1.5 before:-inset-y-2.5">
+        <button type="button" onClick={() => setEditing(true)} className="relative flex items-center gap-0.5 rounded-md px-2 py-[2.7px] text-[14.4px] text-muted shadow-[inset_0_0_0_1px_var(--color-edge)] before:absolute before:-inset-x-1.5 before:-inset-y-2.5">
           <Icon name="plus" size={13} strokeWidth={2.2} />
           {labels.add}
         </button>

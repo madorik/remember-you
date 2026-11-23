@@ -60,31 +60,31 @@ export function NotificationBell({ items, labels }: { items: BellItem[]; labels:
         aria-controls={open ? listId : undefined}
         aria-label={count ? `${labels.title} ${count}` : labels.title}
         onClick={() => setOpen(!open)}
-        className="relative flex h-11 w-11 items-center justify-center rounded-full text-ink active:bg-fill"
+        className="relative flex h-11 w-11 before:absolute before:-inset-[2.2px] items-center justify-center rounded-full text-ink active:bg-fill"
       >
-        <svg aria-hidden="true" viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="22.5" height="22.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.6 2.1H4.4z" />
           <path d="M10 21a2.2 2.2 0 0 0 4 0" />
         </svg>
         {/* 새 알림이 있으면 망고 점(개수는 읽어 주는 이름에 있다) */}
-        {count ? <span aria-hidden="true" className="absolute right-2.5 top-[9px] h-[9px] w-[9px] rounded-full bg-sky shadow-[0_0_0_1.5px_var(--color-ink)]" /> : null}
+        {count ? <span aria-hidden="true" className="absolute right-2.5 top-[8.1px] h-[8.1px] w-[8.1px] rounded-full bg-sky shadow-[0_0_0_1px_var(--color-edge)]" /> : null}
       </button>
       {open ? (
         <div
           id={listId}
           role="region"
           aria-label={labels.title}
-          className="absolute right-3 top-full z-40 mt-1 max-h-[min(60dvh,26rem)] w-[min(22rem,calc(100vw-1.5rem))] overflow-y-auto overscroll-contain rounded-[14px] bg-paper py-1 shadow-[0_0_0_1.5px_var(--color-ink),0_12px_26px_-12px_rgb(31_35_64/0.5)]"
+          className="absolute right-3 top-full z-40 mt-1 max-h-[min(60dvh,26rem)] w-[min(22rem,calc(100vw-1.5rem))] overflow-y-auto overscroll-contain rounded-[12.6px] bg-paper py-1 shadow-[0_0_0_1px_var(--color-edge),0_12px_26px_-12px_rgb(31_35_64/0.5)]"
         >
           {count ? (
             <ul className="flex flex-col">
               {items.map((n, i) => (
                 <li key={n.id} className={i ? "border-t border-rule" : ""}>
-                  <Link href={n.href} onClick={() => setOpen(false)} className="flex min-h-[60px] items-center gap-3 px-3.5 py-2 active:bg-fill">
+                  <Link href={n.href} onClick={() => setOpen(false)} className="flex min-h-[54px] items-center gap-3 px-3.5 py-2 active:bg-fill">
                     <Avatar config={n.avatar} size={38} label={n.name} />
                     <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="truncate text-[17px]">{n.title}</span>
-                      <span className="text-[14px] text-muted">{n.when}</span>
+                      <span className="truncate text-[15.3px]">{n.title}</span>
+                      <span className="text-[12.6px] text-muted">{n.when}</span>
                     </span>
                     <Icon name="chevron" size={18} className="shrink-0 text-muted" />
                   </Link>
@@ -92,7 +92,7 @@ export function NotificationBell({ items, labels }: { items: BellItem[]; labels:
               ))}
             </ul>
           ) : (
-            <p className="px-4 py-4 text-[16px] text-muted">{labels.empty}</p>
+            <p className="px-4 py-4 text-[14.4px] text-muted">{labels.empty}</p>
           )}
         </div>
       ) : null}

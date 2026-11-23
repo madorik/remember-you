@@ -21,7 +21,7 @@ export function LifeEditor({ value, onChange, locale }: { value: LifeData; onCha
         placeholder={t("life.hobbiesPlaceholder")}
       />
       <div className="flex flex-col gap-1">
-        <span className="hand text-[21px] leading-none">{t("fav.seasons")}</span>
+        <span className="hand text-[17px] leading-none">{t("fav.seasons")}</span>
         <div className="flex flex-wrap gap-2 pt-1">
           <CircleOption label={NONE_LABEL[locale]} color="ink" on={value.seasons.includes(NONE)} onToggle={() => toggle(NONE)} textClass="whitespace-nowrap" />
           {SEASONS.map((i) => (

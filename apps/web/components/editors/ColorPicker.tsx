@@ -25,12 +25,12 @@ export function ColorPicker({ value, onChange, locale }: { value: string[]; onCh
           return (
             <button key={c.code} type="button" aria-pressed={on} onClick={() => toggle(c.code)} className="flex flex-col items-center gap-1.5 py-1">
               <ColorDot hex={c.hex} size={44} on={on} />
-              <span className={`text-[16px] ${on ? "text-accent" : ""}`}>{c.label[locale]}</span>
+              <span className={`text-[14.4px] ${on ? "text-accent" : ""}`}>{c.label[locale]}</span>
             </button>
           );
         })}
       </div>
-      <button type="button" aria-expanded={more} onClick={() => setMore(!more)} className="chip self-start !bg-transparent text-muted !shadow-[inset_0_0_0_1.5px_var(--color-edge)]">
+      <button type="button" aria-expanded={more} onClick={() => setMore(!more)} className="chip self-start !bg-transparent text-muted !shadow-[inset_0_0_0_1px_var(--color-edge)]">
         {more ? t("safety.less") : t("gift.moreColors")}
       </button>
     </div>

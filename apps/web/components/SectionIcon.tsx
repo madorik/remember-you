@@ -1,4 +1,5 @@
 import type { Section } from "@readme/core";
+import { u } from "@/lib/ui-scale";
 
 // 항목 아이콘(플래너 시안): 남색 가는 선 그림을 연한 색 타일(남색 1.5px 선, 모서리 둥근 네모) 위에
 const INK = "#1F2340";
@@ -98,7 +99,8 @@ function Art({ section }: { section: Section }) {
 }
 
 /** bare: 타일 없이 그림만(받은 것 목록처럼 바탕이 따로 있을 때). round: 동그란 타일 */
-export function SectionIcon({ section, size = 44, round = false, bare = false }: { section: Section; size?: number; round?: boolean; outline?: boolean; bare?: boolean }) {
+export function SectionIcon({ section, size: sizeIn = 44, round = false, bare = false }: { section: Section; size?: number; round?: boolean; outline?: boolean; bare?: boolean }) {
+  const size = u(sizeIn);
   const art = (
     <svg
       width={bare ? size : Math.round(size * 0.62)}
@@ -119,7 +121,7 @@ export function SectionIcon({ section, size = 44, round = false, bare = false }:
   return (
     <span
       aria-hidden="true"
-      className={`flex shrink-0 items-center justify-center border-[1.5px] border-ink ${round ? "rounded-full" : ""}`}
+      className={`flex shrink-0 items-center justify-center border border-edge ${round ? "rounded-full" : ""}`}
       style={{ width: size, height: size, background: SECTION_TILE[section], borderRadius: round ? undefined : Math.round(size * 0.28) }}
     >
       {art}

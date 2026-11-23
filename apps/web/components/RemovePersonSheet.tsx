@@ -45,7 +45,7 @@ export function RemovePersonSheet({ contactId, labels, onClose }: { contactId: s
         </div>
       }
     >
-      <p className="px-6 pb-3 pt-1 text-[18px] leading-[1.6]">{labels.body}</p>
+      <p className="px-6 pb-3 pt-1 text-[16.2px] leading-[1.6]">{labels.body}</p>
     </Sheet>
   );
 }

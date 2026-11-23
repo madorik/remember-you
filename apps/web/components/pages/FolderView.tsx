@@ -16,7 +16,7 @@ export function FolderView({ locale, folder, rows, byName, memberIds, people, op
   const withParam = (key: string) => `${here}${byName ? "&" : "?"}${key}=1`;
   const faces = rows.map((r) => ({ key: r.contactId, avatar: r.avatar, label: r.name }));
   // 정렬 토글(카드 맨 위 알약 두 칸): 고른 쪽은 망고
-  const seg = (on: boolean) => `flex h-[34px] flex-1 items-center justify-center whitespace-nowrap rounded-[9px] text-[14px] ${on ? "bg-sky" : ""}`;
+  const seg = (on: boolean) => `flex h-[30.6px] flex-1 items-center justify-center whitespace-nowrap rounded-[8.1px] text-[12.6px] ${on ? "bg-sky" : ""}`;
 
   return (
     <>
@@ -24,7 +24,7 @@ export function FolderView({ locale, folder, rows, byName, memberIds, people, op
         back="/people"
         label={t("common.back")}
         right={
-          <Link href={withParam("edit")} scroll={false} aria-label={t("folder.edit")} className="flex h-11 w-11 items-center justify-center rounded-full active:bg-fill">
+          <Link href={withParam("edit")} scroll={false} aria-label={t("folder.edit")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] items-center justify-center rounded-full active:bg-fill">
             <Icon name="pencil" size={21} strokeWidth={1.8} />
           </Link>
         }
@@ -35,15 +35,15 @@ export function FolderView({ locale, folder, rows, byName, memberIds, people, op
           <FolderArt icon={folder.icon} color={folder.color} size={120} faces={faces} />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <h1 className="hl line-clamp-2 self-start break-words text-[48px] leading-none">{folder.name}</h1>
-          <span className="text-[13px] leading-[1.3] text-muted">{t("folder.count", { n: memberIds.length })}</span>
+          <h1 className="hl line-clamp-2 self-start break-words text-[38.9px] leading-none">{folder.name}</h1>
+          <span className="text-[11.7px] leading-[1.3] text-muted">{t("folder.count", { n: memberIds.length })}</span>
         </div>
       </div>
 
       <div className="card relative mx-4 mt-7 flex flex-col px-3.5 pb-1.5 pt-3">
         <TornTape color="mango" w={70} h={21} rotate={6} className="-top-3 right-6" />
         {memberIds.length > 1 ? (
-          <div className="mb-1 flex gap-0.5 rounded-xl border-[1.5px] border-ink bg-white p-[3px]">
+          <div className="mb-1 flex gap-0.5 rounded-xl border border-edge bg-white p-[2.7px]">
             <Link href={`/people/folder/${folder.id}`} replace scroll={false} aria-current={!byName ? "true" : undefined} className={seg(!byName)}>
               {t("folder.sortSoon")}
             </Link>

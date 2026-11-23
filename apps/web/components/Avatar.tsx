@@ -1,10 +1,12 @@
 import { AVATAR_BG_FILLS, AVATAR_INK, BODY_OUTLINE, BODY_PATHS, FACE_SHAPES, GLASSES_PATHS, HAIR_PATHS, ITEM_PATHS, type AvatarConfig } from "@readme/core";
+import { u } from "@/lib/ui-scale";
 
 const INK = AVATAR_INK;
 const PINK = "#FF9DB0";
 
 /** 선 캐릭터 그림만(배경 없음). 캐릭터 만들기의 큰 미리보기·고르기 칸에서 쓴다. bold: 작게 그릴 때 선이 가늘어 보이지 않게 선을 굵게 */
-export function AvatarArt({ config, size, label, bold = false }: { config: AvatarConfig; size: number; label?: string; bold?: boolean }) {
+export function AvatarArt({ config, size: sizeIn, label, bold = false }: { config: AvatarConfig; size: number; label?: string; bold?: boolean }) {
+  const size = u(sizeIn);
   const k = bold ? 1.3 : 1;
   const [back, front] = HAIR_PATHS[config.hair];
   const body = BODY_PATHS[config.body];
@@ -50,7 +52,8 @@ export function avatarBackground(config: AvatarConfig): string {
  * 동그라미 안의 선 캐릭터(남색 1.5px 테두리). 얼굴이 없으면 가는 테두리 동그라미에 첫 글자.
  * decorative: 같은 링크·단추 안에 이름이 이미 있어 읽어 줄 필요가 없을 때(스크린리더에서 숨긴다. label은 첫 글자 만들 때만 쓴다)
  */
-export function Avatar({ config, size = 44, label, decorative = false }: { config: AvatarConfig | null; size?: number; label: string; decorative?: boolean }) {
+export function Avatar({ config, size: sizeIn = 44, label, decorative = false }: { config: AvatarConfig | null; size?: number; label: string; decorative?: boolean }) {
+  const size = u(sizeIn);
   if (!config) {
     const initial = label.trim().slice(0, 1) || "?";
     return (
@@ -58,7 +61,7 @@ export function Avatar({ config, size = 44, label, decorative = false }: { confi
         role={decorative ? undefined : "img"}
         aria-label={decorative ? undefined : label}
         aria-hidden={decorative ? true : undefined}
-        className="flex shrink-0 items-center justify-center rounded-full bg-sky-soft text-accent shadow-[0_0_0_1.5px_var(--color-ink)]"
+        className="flex shrink-0 items-center justify-center rounded-full bg-sky-soft text-accent shadow-[0_0_0_1px_var(--color-edge)]"
         style={{ width: size, height: size, fontSize: Math.round(size * 0.38) }}
       >
         {initial}
@@ -66,8 +69,8 @@ export function Avatar({ config, size = 44, label, decorative = false }: { confi
     );
   }
   return (
-    <span className="block shrink-0 overflow-hidden rounded-full leading-none shadow-[0_0_0_1.5px_var(--color-ink)]" style={{ width: size, height: size, background: avatarBackground(config) }}>
-      <AvatarArt config={config} size={size} label={decorative ? undefined : label} />
+    <span className="block shrink-0 overflow-hidden rounded-full leading-none shadow-[0_0_0_1px_var(--color-edge)]" style={{ width: size, height: size, background: avatarBackground(config) }}>
+      <AvatarArt config={config} size={sizeIn} label={decorative ? undefined : label} />
     </span>
   );
 }

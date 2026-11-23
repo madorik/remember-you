@@ -23,18 +23,18 @@ import { makeT } from "@/lib/t";
 
 /** 한 번에 보여 줄 '기억해 둔 것' 줄 수(나머지는 'N개 더 보기'로 고치는 화면에서) */
 const SHOWN = 5;
-const DAY_LEFT = "font-hand font-bold tracking-[-0.12em] text-[#A8481A]";
+const DAY_LEFT = "font-hand tracking-[-0.01em] text-[#A8481A]";
 
 /** 한 장 뜯어 쓰는 작은 달력: 위 망고 띠에 달, 아래 큰 날(시안). 위에 고리 두 개 */
 function CalendarLeaf({ m, d, locale }: { m: number; d: number; locale: Locale }) {
   return (
-    <span aria-hidden="true" className="relative block h-[54px] w-[46px] shrink-0">
-      <span className="absolute left-0 top-[3px] flex h-[51px] w-[46px] flex-col overflow-hidden rounded-[9px] border-[1.5px] border-ink bg-white">
-        <span className="flex h-4 shrink-0 items-center justify-center border-b-[1.5px] border-ink bg-sky text-[11px] leading-none">{monthName(m, locale)}</span>
-        <span className="hand flex flex-1 items-center justify-center text-[31px] leading-none">{d}</span>
+    <span aria-hidden="true" className="relative block h-[48.6px] w-[41.4px] shrink-0">
+      <span className="absolute left-0 top-[2.7px] flex h-[45.9px] w-[41.4px] flex-col overflow-hidden rounded-[8.1px] border border-edge bg-white">
+        <span className="flex h-4 shrink-0 items-center justify-center border-b border-edge bg-sky text-[9.9px] leading-none">{monthName(m, locale)}</span>
+        <span className="hand flex flex-1 items-center justify-center text-[25.1px] leading-none">{d}</span>
       </span>
-      <span className="absolute left-2 top-0 h-[9px] w-1 rounded-[3px] bg-ink" />
-      <span className="absolute left-[34px] top-0 h-[9px] w-1 rounded-[3px] bg-ink" />
+      <span className="absolute left-2 top-0 h-[8.1px] w-1 rounded-[2.7px] bg-ink" />
+      <span className="absolute left-[30.6px] top-0 h-[8.1px] w-1 rounded-[2.7px] bg-ink" />
     </span>
   );
 }
@@ -73,7 +73,7 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
       <ReviewMoment source="answer" delay={4000} armed={answered} />
       {/* 위 줄: 뒤로 … 즐겨찾기 별 · ··· 메뉴(물어보기 · 선물 고르기 · 지우기). 사람 기록 공유하기는 개인정보 우려로 껐다(2026-11-21) */}
       <div className="flex h-11 items-center justify-between pl-1.5 pr-2">
-        <Link href={back} prefetch={false} aria-label={t("common.back")} className="flex h-11 w-11 items-center justify-center">
+        <Link href={back} prefetch={false} aria-label={t("common.back")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] items-center justify-center">
           <Icon name="back" size={26} strokeWidth={2} />
         </Link>
         <div className="flex items-center gap-0.5">
@@ -107,13 +107,13 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
 
       {/* 프로필 카드: 폴라로이드 얼굴(누르면 얼굴·부르는 말 꾸미기) · 이름(형광펜) · 든 폴더 · 모서리에 큰 하트 든 캐릭터 */}
       <section aria-label={displayName} className="card relative mx-4 mt-3 flex items-center gap-4 py-3.5 pl-4 pr-3.5">
-        <TornTape color="pink" w={74} h={22} rotate={7} className="-top-3 right-[26px]" />
-        <Link href={`/people/${p.contactId}/profile`} aria-label={t("me.face")} className="block shrink-0 -rotate-3 border-[1.5px] border-ink bg-white px-1.5 pb-[18px] pt-1.5">
+        <TornTape color="pink" w={74} h={22} rotate={7} className="-top-3 right-[23.4px]" />
+        <Link href={`/people/${p.contactId}/profile`} aria-label={t("me.face")} className="block shrink-0 -rotate-3 border border-edge bg-white px-1.5 pb-[16.2px] pt-1.5">
           <Avatar config={p.avatar} size={80} label={t("avatar.of", { name: displayName })} />
         </Link>
         <div className="flex min-w-0 flex-1 flex-col items-start gap-2.5 pb-1">
           {/* 긴 이름은 두 줄까지 */}
-          <h1 className="hl line-clamp-2 min-w-0 max-w-full break-words px-0.5 text-[48px] leading-none">{displayName}</h1>
+          <h1 className="hl line-clamp-2 min-w-0 max-w-full break-words px-0.5 text-[38.9px] leading-none">{displayName}</h1>
           {/* 앱 사용자와 이어진 사람은 내가 단 태그도 이름 밑에서 바로 고친다 */}
           {p.personId ? (
             <TagEditor
@@ -158,13 +158,13 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
 
       {/* 물어보고 답을 기다리는 중: 아직 아무도 안 연 링크는 여기서 취소한다 */}
       {waiting ? (
-        <div className="mx-4 mt-3 flex min-h-12 items-center gap-2.5 rounded-[14px] border-[1.5px] border-ink bg-sky-soft pl-4 pr-1.5">
+        <div className="mx-4 mt-3 flex min-h-12 items-center gap-2.5 rounded-[12.6px] border border-edge bg-sky-soft pl-4 pr-1.5">
           <Icon name="link" size={17} strokeWidth={2} className="shrink-0 text-accent" />
-          <span className="min-w-0 flex-1 text-[14px]">{t("home.waiting")}</span>
+          <span className="min-w-0 flex-1 text-[12.6px]">{t("home.waiting")}</span>
           <form action={cancelInvite}>
             <input type="hidden" name="id" value={waiting.inviteId} />
             <input type="hidden" name="back" value={`/people/${p.contactId}`} />
-            <button className="flex min-h-11 items-center px-2.5 text-[14px] text-red">{t("privacy.linkCancel")}</button>
+            <button className="flex min-h-11 items-center px-2.5 text-[12.6px] text-red">{t("privacy.linkCancel")}</button>
           </form>
         </div>
       ) : null}
@@ -175,13 +175,13 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
           {birthday ? (
             <Link href={editDates} className="flex items-center gap-2.5">
               <CalendarLeaf m={nextBirthday ? nextBirthday.date.m : birthday.month} d={nextBirthday ? nextBirthday.date.d : birthday.day} locale={locale} />
-              <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
-                <span className="text-[12px] text-muted">
+              <span className="flex min-w-0 flex-1 flex-col gap-[2.7px]">
+                <span className="text-[10.8px] text-muted">
                   {nextBirthday
                     ? [birthday.calendar === "lunar" ? formatSpec(birthday, locale) : null, weekdayLong(nextBirthday.date, locale)].filter(Boolean).join(" · ")
                     : formatSpec(birthday, locale)}
                 </span>
-                <span className="hand whitespace-nowrap text-[24px] leading-none">
+                <span className="hand whitespace-nowrap text-[19.4px] leading-none">
                   {birthdayTitle}
                   {nextBirthday ? <span className={`${DAY_LEFT} ml-1.5`}>{dayLeft(nextBirthday.daysUntil, t)}</span> : null}
                 </span>
@@ -191,15 +191,15 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
           {anniversaries.map((a, i) => {
             const next = nextOccurrence(a.spec, today);
             return (
-              <Link key={i} href={editDates} className={`flex h-[30px] items-center gap-2 pt-1.5 text-[13px] text-muted ${birthday || i ? "border-t-[1.5px] border-dashed border-ink/20" : ""}`}>
-                <svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+              <Link key={i} href={editDates} className={`flex h-[27px] items-center gap-2 pt-1.5 text-[11.7px] text-muted ${birthday || i ? "border-t border-dashed border-ink/30" : ""}`}>
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="13.5" height="13.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                   <rect x="3.5" y="5" width="17" height="15.5" rx="3" />
                   <path d="M3.5 10h17M8 3v4M16 3v4" />
                 </svg>
                 <span className="min-w-0 flex-1 truncate">
                   {a.label} · {next ? whenText(a.spec, next.date, locale) : formatSpec(a.spec, locale)}
                 </span>
-                {next ? <span className={`${DAY_LEFT} text-[18px]`}>{dayLeft(next.daysUntil, t)}</span> : null}
+                {next ? <span className={`${DAY_LEFT} text-[16.2px]`}>{dayLeft(next.daysUntil, t)}</span> : null}
               </Link>
             );
           })}
@@ -232,7 +232,7 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
       {/* 기억해 둔 것: 적어 둔 항목을 한 줄씩 미리 보기. 연필(수정)을 누르면 모든 항목을 고치는 화면, 줄을 누르면 그 항목이 펼쳐진 채로. 제목 옆에 나만 보는 메모 */}
       <section aria-labelledby="mine-title" className="card relative mx-4 mt-3 flex flex-col px-3.5 pb-1 pt-1.5">
         <div className="flex h-10 items-center justify-between">
-          <h2 id="mine-title" className="scribble text-[26px] leading-none [--scribble:#5dbb9a]">
+          <h2 id="mine-title" className="scribble text-[21.1px] leading-none [--scribble:#5dbb9a]">
             {t("person.mineList")}
           </h2>
           <span className="flex items-center gap-0.5">
@@ -249,7 +249,7 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
                 close: t("common.close"),
               }}
             />
-            <Link href={`/people/${p.contactId}/edit`} aria-label={t("me.edit")} className="-mr-2.5 flex h-11 w-11 items-center justify-center">
+            <Link href={`/people/${p.contactId}/edit`} aria-label={t("me.edit")} className="-mr-2.5 flex h-11 w-11 relative before:absolute before:-inset-[2.2px] items-center justify-center">
               <Icon name="pencil" size={20} strokeWidth={1.8} />
             </Link>
           </span>
@@ -259,11 +259,11 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
             {shown.map(({ section, line }) => {
               const warn = section === "safety";
               return (
-                <li key={section} className="border-t-[1.5px] border-dashed border-ink/20">
-                  <Link href={`/people/${p.contactId}/edit?open=${section}`} aria-label={`${t(`section.${section}` as "section.safety")}: ${[line!.lead, line!.text].filter(Boolean).join(" · ")}`} className="flex h-[42px] items-center gap-2.5">
+                <li key={section} className="border-t border-dashed border-ink/30">
+                  <Link href={`/people/${p.contactId}/edit?open=${section}`} aria-label={`${t(`section.${section}` as "section.safety")}: ${[line!.lead, line!.text].filter(Boolean).join(" · ")}`} className="flex h-[37.8px] items-center gap-2.5">
                     <SectionIcon section={section} size={30} />
-                    <span className={`w-16 shrink-0 text-[12px] leading-[1.2] ${warn ? "text-red" : "text-muted"}`}>{t(`person.short.${section}` as "person.short.safety")}</span>
-                    <span className="hand-written min-w-0 flex-1 truncate text-[23px] leading-[1.1]">
+                    <span className={`w-16 shrink-0 text-[10.8px] leading-[1.2] ${warn ? "text-red" : "text-muted"}`}>{t(`person.short.${section}` as "person.short.safety")}</span>
+                    <span className="hand-written min-w-0 flex-1 truncate text-[18.6px] leading-[1.1]">
                       {line!.lead ? <span className="text-red">{line!.lead}</span> : null}
                       {line!.lead && line!.text ? " · " : null}
                       {line!.text}
@@ -273,8 +273,8 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
               );
             })}
             {hidden > 0 ? (
-              <li className="border-t-[1.5px] border-dashed border-ink/20">
-                <Link href={`/people/${p.contactId}/edit`} className="flex h-[38px] items-center justify-center gap-0.5 text-[13px] text-muted">
+              <li className="border-t border-dashed border-ink/30">
+                <Link href={`/people/${p.contactId}/edit`} className="flex h-[34.2px] items-center justify-center gap-0.5 text-[11.7px] text-muted">
                   {t("person.moreItems", { n: hidden })}
                   <Icon name="chevron" size={13} strokeWidth={2} />
                 </Link>
@@ -282,7 +282,7 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
             ) : null}
           </ul>
         ) : (
-          <Link href={editDates} className="mt-1 flex min-h-14 items-center justify-center gap-1.5 border-t-[1.5px] border-dashed border-ink/20 text-[16px] text-accent">
+          <Link href={editDates} className="mt-1 flex min-h-14 items-center justify-center gap-1.5 border-t border-dashed border-ink/30 text-[14.4px] text-accent">
             <Icon name="plus" size={16} strokeWidth={2.4} />
             {t("person.write")}
           </Link>

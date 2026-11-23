@@ -17,12 +17,12 @@ export function RequestView({ locale, people, fixed, initialName, defaults, xmas
       <div className="flex h-12 shrink-0 items-center justify-between gap-1.5 pl-1.5 pr-2.5">
         <div className="flex min-w-0 items-center gap-0.5">
           {tour ? null : (
-            <Link href={fixed ? `/people/${fixed.id}` : "/home"} prefetch={false} aria-label={t("common.close")} className="flex h-11 w-11 shrink-0 items-center justify-center">
+            <Link href={fixed ? `/people/${fixed.id}` : "/home"} prefetch={false} aria-label={t("common.close")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] shrink-0 items-center justify-center">
               <Icon name="close" size={22} strokeWidth={1.8} />
             </Link>
           )}
           {tour ? null : (
-            <h1 className="min-w-0 truncate text-[34px] leading-none">
+            <h1 className="min-w-0 truncate text-[27.5px] leading-none">
               <span className="hl">{title}</span>
             </h1>
           )}
@@ -31,15 +31,15 @@ export function RequestView({ locale, people, fixed, initialName, defaults, xmas
           <form action={leaveTour} className="ml-auto">
             <input type="hidden" name="kind" value="skip" />
             <input type="hidden" name="source" value="ask" />
-            <button className="flex min-h-11 items-center px-3 text-[14px] text-muted">{t("common.skip")}</button>
+            <button className="flex min-h-11 items-center px-3 text-[12.6px] text-muted">{t("common.skip")}</button>
           </form>
         ) : null}
       </div>
       {tour ? (
         <TourNote label={fixed ? t("request.titleTo", { name: fixed.label }) : t("tour.ask.title")} className="mt-1">
-          <span className="num rounded-full bg-sky-soft px-2.5 text-[14px] leading-[1.5]">{t("tour.page", { n: tour.n, total: tour.total })}</span>
-          <h1 className="text-[30px] leading-[1.2]">{fixed ? t("request.titleTo", { name: fixed.label }) : t("tour.ask.title")}</h1>
-          <p className="text-[15px] leading-[1.5]">{t("tour.ask.body")}</p>
+          <span className="num rounded-full bg-sky-soft px-2.5 text-[11.9px] leading-[1.5]">{t("tour.page", { n: tour.n, total: tour.total })}</span>
+          <h1 className="text-[24.3px] leading-[1.2]">{fixed ? t("request.titleTo", { name: fixed.label }) : t("tour.ask.title")}</h1>
+          <p className="text-[13.5px] leading-[1.5]">{t("tour.ask.body")}</p>
         </TourNote>
       ) : null}
       <RequestForm locale={locale} people={people} fixed={fixed?.id ?? null} initialName={initialName} defaults={defaults} xmas={xmas} initialMessage={initialMessage} focus={focus} tour={!!tour} />

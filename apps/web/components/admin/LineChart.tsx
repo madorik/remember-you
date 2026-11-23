@@ -21,8 +21,8 @@ export function LineChart({ title, unit, data }: { title: string; unit: string; 
   return (
     <figure className="flex flex-col gap-2 rounded-2xl bg-white p-4 ring-1 ring-rule">
       <figcaption className="flex items-baseline justify-between gap-2">
-        <span className="text-[14.5px] font-bold">{title}</span>
-        <span className="text-[12.5px] text-muted">
+        <span className="text-[13.1px] font-bold">{title}</span>
+        <span className="text-[11.3px] text-muted">
           {h ? (
             <>
               {label(h.day)} · <b className="num text-ink">{h.n.toLocaleString("ko-KR")}</b>
@@ -78,7 +78,7 @@ export function LineChart({ title, unit, data }: { title: string; unit: string; 
           ) : null}
         </svg>
       </div>
-      <details className="text-[12.5px]">
+      <details className="text-[11.3px]">
         <summary className="cursor-pointer text-muted">표로 보기</summary>
         <table className="mt-1.5 w-full">
           <tbody>

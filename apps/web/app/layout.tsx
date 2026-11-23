@@ -15,7 +15,7 @@ import { LAUNCH_BOOT_SCRIPT } from "@/lib/launch-boot";
 import { ogMetadata } from "@/lib/og";
 import { SITE_URL } from "@/lib/site";
 import { WORDMARK_FONT_URL } from "@/lib/wordmark-font";
-// 앱 글꼴(손글씨 개구 + 앱 글 고운돋움)은 조각을 직접 호스팅한다(scripts/fetch-fonts.mjs)
+// 앱 글꼴(손글씨 포어스토리 + 앱 글 눈누 기초고딕)은 조각을 직접 호스팅한다(scripts/fetch-fonts.mjs)
 import "./fonts.css";
 // 로고 글자 손글씨체(Poor Story, scripts/fetch-wordmark-font.mjs): 로고에 쓰는 글자만 담은 3KB짜리 파일
 import "./wordmark.css";

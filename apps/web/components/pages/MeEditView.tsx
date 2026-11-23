@@ -12,13 +12,13 @@ export function MeEditView({ locale, name, avatar, card, open }: MeEditData) {
   return (
     <div className="page-end flex flex-1 flex-col">
       <div className="flex h-12 items-center pl-1.5 pr-2.5">
-        <Link href="/me" prefetch={false} aria-label={t("common.back")} className="flex h-11 w-11 items-center justify-center">
+        <Link href="/me" prefetch={false} aria-label={t("common.back")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] items-center justify-center">
           <Icon name="back" size={26} strokeWidth={2} />
         </Link>
       </div>
       <div className="flex flex-col gap-2 px-5">
         <PersonNameChip avatar={avatar} name={name} />
-        <h1 className="scribble self-start text-[41px] leading-none">{t("me.title")}</h1>
+        <h1 className="scribble self-start text-[33.2px] leading-none">{t("me.title")}</h1>
       </div>
       <MyReadmeList
         rows={SECTIONS_BY_IMPORTANCE.map((section) => ({

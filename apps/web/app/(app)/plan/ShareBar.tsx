@@ -10,8 +10,8 @@ export function ShareBar({ plain, named, label, doneLabel, namesLabel }: { plain
   return (
     <div className="bottom-bar mt-auto flex items-center justify-between gap-3 bg-bg/95 px-4 pt-3 backdrop-blur">
       {named && namesLabel ? (
-        <button type="button" aria-pressed={withNames} onClick={() => setWithNames(!withNames)} className="flex min-h-11 shrink-0 items-center gap-2 text-[13px]">
-          <span aria-hidden="true" className={`flex h-5 w-5 items-center justify-center rounded-[5px] border-[1.5px] border-ink ${withNames ? "bg-sky" : "bg-white"}`}>
+        <button type="button" aria-pressed={withNames} onClick={() => setWithNames(!withNames)} className="flex min-h-11 shrink-0 items-center gap-2 text-[11.7px]">
+          <span aria-hidden="true" className={`flex h-5 w-5 items-center justify-center rounded-[4.5px] border border-edge ${withNames ? "bg-sky" : "bg-white"}`}>
             {withNames ? <Icon name="check" size={12} strokeWidth={2.6} /> : null}
           </span>
           {namesLabel}
@@ -25,7 +25,7 @@ export function ShareBar({ plain, named, label, doneLabel, namesLabel }: { plain
         label={label}
         doneLabel={doneLabel}
         icon={<Icon name="share" size={17} strokeWidth={1.7} />}
-        className="inline-flex h-11 items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-sky pl-3 pr-4 text-[15px]"
+        className="inline-flex h-11 items-center gap-1.5 rounded-full border border-edge bg-sky pl-3 pr-4 text-[13.5px]"
       />
     </div>
   );

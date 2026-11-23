@@ -88,7 +88,7 @@ function AddPeople({
       footer={
         <>
           {failed ? (
-            <p role="alert" className="pb-1 text-[16px] text-red">
+            <p role="alert" className="pb-1 text-[14.4px] text-red">
               {labels.error}
             </p>
           ) : null}
@@ -99,7 +99,7 @@ function AddPeople({
       }
     >
       <div className="relative px-6 pb-2 pt-2">
-        <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="absolute left-[38px] top-[23px] text-muted">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="16.2" height="16.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="absolute left-[34.2px] top-[20.7px] text-muted">
           <circle cx="11" cy="11" r="7" />
           <path d="M20 20l-4-4" />
         </svg>
@@ -109,7 +109,7 @@ function AddPeople({
           onChange={(e) => setQuery(e.target.value)}
           placeholder={labels.search}
           aria-label={labels.search}
-          className="h-12 w-full rounded-[14px] bg-fill pl-[42px] pr-3.5 text-[16px] outline-none placeholder:text-muted"
+          className="h-12 w-full rounded-[12.6px] bg-fill pl-[37.8px] pr-3.5 text-[16px] outline-none placeholder:text-muted"
         />
       </div>
       <ul className="flex flex-col px-6 pb-2">
@@ -117,11 +117,11 @@ function AddPeople({
           const on = picked.includes(p.contactId);
           return (
             <li key={p.contactId} className="border-t border-rule first:border-t-0">
-              <button type="button" aria-pressed={on} onClick={() => toggle(p.contactId)} className="flex min-h-[64px] w-full items-center gap-3.5 text-left">
+              <button type="button" aria-pressed={on} onClick={() => toggle(p.contactId)} className="flex min-h-[57.6px] w-full items-center gap-3.5 text-left">
                 <span aria-hidden="true">
                   <Avatar config={p.avatar} size={44} label={p.name} />
                 </span>
-                <span className="min-w-0 flex-1 truncate text-[19px] tracking-[-0.02em]">{p.name}</span>
+                <span className="min-w-0 flex-1 truncate text-[17.1px] tracking-[-0.02em]">{p.name}</span>
                 <DrawnCheck on={on} />
               </button>
             </li>

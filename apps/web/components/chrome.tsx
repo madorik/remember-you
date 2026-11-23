@@ -10,7 +10,7 @@ export function TopBar({ back, close, label, center, right }: { back?: string; c
   return (
     <div className="flex min-h-11 items-center justify-between px-3">
       {href ? (
-        <Link href={href} prefetch={false} aria-label={label} className="flex h-11 w-11 items-center justify-center">
+        <Link href={href} prefetch={false} aria-label={label} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] items-center justify-center">
           <Icon name={back ? "back" : "close"} size={back ? 24 : 22} />
         </Link>
       ) : (
@@ -28,7 +28,7 @@ const WORD = { ko: "기억해", en: "Remember" } as const;
 export function Wordmark({ size = 26, locale = "ko" }: { size?: number; locale?: Locale }) {
   return (
     // 손글씨체는 같은 크기에서 작게 보여 글자 크기를 조금 키운다
-    <span className="wordmark inline-flex items-center leading-[44px]" style={{ fontSize: Math.round(size * 1.25) }}>
+    <span className="wordmark inline-flex items-center leading-[39.6px]" style={{ fontSize: Math.round(size * 1.25 * 0.9 * 10) / 10 }}>
       <span className="sr-only">{BRAND[locale].name}</span>
       <span aria-hidden="true" className="inline-flex items-center">
         {WORD[locale]}
@@ -89,13 +89,13 @@ export function TabBar({ active, t, fab, voice = false }: { active: "home" | "pe
         // 지금 보고 있는 탭은 받지 않는다: 이미 떠 있는 화면을 서버가 한 번 더 그리는 낭비다(미리 받기 하나가 함수 한 번, 2026-11-21 CPU 한도)
         prefetch={!on}
         aria-current={on ? "page" : undefined}
-        className={`flex flex-col items-center justify-center gap-[3px] whitespace-nowrap text-[12px] leading-[1.2] ${on ? "text-ink" : "text-muted"}`}
+        className={`flex flex-col items-center justify-center gap-[2.7px] whitespace-nowrap text-[10.8px] leading-[1.2] ${on ? "text-ink" : "text-muted"}`}
       >
-        <span className={`flex h-8 w-[52px] items-center justify-center rounded-full ${on ? "bg-sky shadow-[inset_0_0_0_1.5px_var(--color-edge)]" : ""}`}>
+        <span className={`flex h-8 w-[46.8px] items-center justify-center rounded-full ${on ? "bg-sky shadow-[inset_0_0_0_1px_var(--color-edge)]" : ""}`}>
           {item.key === "privacy" ? (
             <Icon name="settings" size={24} strokeWidth={1.8} />
           ) : (
-            <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg aria-hidden="true" width="21.6" height="21.6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               {TAB_ICONS[item.key]}
             </svg>
           )}
@@ -108,11 +108,11 @@ export function TabBar({ active, t, fab, voice = false }: { active: "home" | "pe
     <nav
       aria-label={t("nav.menu")}
       data-tabbar=""
-      className="sticky bottom-0 z-30 mt-auto bg-paper px-3 pt-2 shadow-[inset_0_1.5px_0_rgb(31_35_64/0.12)]"
+      className="sticky bottom-0 z-30 mt-auto bg-paper px-3 pt-2 shadow-[inset_0_1px_0_rgb(31_35_64/0.12)]"
       style={{ paddingBottom: "var(--pb-tab)" }}
     >
       {fab ? <div className="absolute bottom-full right-4">{fab}</div> : null}
-      <div className={`grid h-[70px] ${voice ? "grid-cols-5" : "grid-cols-4"}`}>
+      <div className={`grid h-[63px] ${voice ? "grid-cols-5" : "grid-cols-4"}`}>
         {tabs.slice(0, 2).map(tab)}
         {voice ? (
           <div className="flex items-center justify-center">
@@ -129,7 +129,7 @@ export function TabBar({ active, t, fab, voice = false }: { active: "home" | "pe
 /** 시작·로그인 화면 아래 약관 · 개인정보 처리방침 */
 export function LegalLinks({ locale, t }: { locale: Locale; t: T }) {
   return (
-    <p className="flex justify-center gap-x-3.5 pt-1 text-[14px] text-muted">
+    <p className="flex justify-center gap-x-3.5 pt-1 text-[12.6px] text-muted">
       <a href={`/terms?lang=${locale}`} className="flex min-h-11 items-center underline underline-offset-2">
         {t("legal.terms")}
       </a>
@@ -148,7 +148,7 @@ export function LegalLinks({ locale, t }: { locale: Locale; t: T }) {
 export function Notice({ children, tone = "muted" }: { children: React.ReactNode; tone?: "muted" | "red" | "ok" }) {
   const color = tone === "red" ? "text-red" : tone === "ok" ? "text-ok" : "text-muted";
   return (
-    <p role={tone === "red" ? "alert" : "status"} className={`text-[13.5px] leading-[1.5] ${color}`}>
+    <p role={tone === "red" ? "alert" : "status"} className={`text-[12.2px] leading-[1.5] ${color}`}>
       {children}
     </p>
   );

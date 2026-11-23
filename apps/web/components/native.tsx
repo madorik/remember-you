@@ -280,8 +280,8 @@ export function NativeBridge({
     <div role="dialog" aria-modal="true" aria-label={labels.title} lang={locale} className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-white px-6">
       <Wordmark locale={locale} />
       <Icon name="lock" size={40} />
-      <p className="text-[18px]">{labels.title}</p>
-      <button type="button" onClick={() => void unlock()} className="btn-primary w-full max-w-[320px]">
+      <p className="text-[16.2px]">{labels.title}</p>
+      <button type="button" onClick={() => void unlock()} className="btn-primary w-full max-w-[288px]">
         {labels.unlock}
       </button>
     </div>

@@ -5,13 +5,13 @@ import { useT } from "./shared";
 
 function NumberCell({ label, value, onChange, placeholder, unit, hint }: { label: string; value: string; onChange: (v: string) => void; placeholder: string; unit: string; hint: string | null }) {
   return (
-    <label className="flex flex-col gap-1 border-b-[1.5px] border-dashed border-ink/20 py-3">
-      <span className="text-[12px] text-muted">{label}</span>
+    <label className="flex flex-col gap-1 border-b border-dashed border-ink/30 py-3">
+      <span className="text-[10.8px] text-muted">{label}</span>
       <span className="flex items-baseline gap-1.5">
-        <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} inputMode="text" className="hand-written h-10 w-full min-w-0 bg-transparent text-[28px] outline-none placeholder:font-sans placeholder:text-[14px] placeholder:tracking-[-0.035em] placeholder:text-muted" />
-        <span className="shrink-0 text-[14px]">{unit}</span>
+        <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} inputMode="text" className="hand-written h-10 w-full min-w-0 bg-transparent text-[22.7px] outline-none placeholder:font-sans placeholder:text-[16px] placeholder:text-muted" />
+        <span className="shrink-0 text-[12.6px]">{unit}</span>
       </span>
-      <span className="min-h-[16px] text-[12px] text-muted">{hint ?? ""}</span>
+      <span className="min-h-[14.4px] text-[10.8px] text-muted">{hint ?? ""}</span>
     </label>
   );
 }

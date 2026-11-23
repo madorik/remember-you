@@ -52,20 +52,30 @@ function nativeSpeech(): NativeSpeech | null {
 }
 
 /**
- * 가운데 큰 구슬(시안 P2-Voice): 흰 동그라미 + 남색 점선 테두리 안의 캐릭터. 처음엔 책 읽는 얼굴(7)로 눌러 주길 기다리고,
- * 듣는 동안(active)에는 귀 쫑긋(1, 별 안기·!!)으로 바뀌어 통통 뛰고, 구슬이 숨 쉬듯 커졌다 작아지고, 점선 테두리가 천천히 돌고, 바깥으로 망고빛 물결 고리가 퍼진다.
- * 목소리가 클수록 크고 빠르게 움직인다: 브라우저는 마이크 소리 크기(AnalyserNode)를, 잴 수 없는 곳(앱의 기기 인식)은 듣는 동안 부드럽게 오르내리는 값을 쓴다.
+ * 가운데 물방울. 깨끗하고 투명한 물이 동그라미 안에서 출렁이는 느낌:
+ * 속은 거의 투명하고 가장자리만 빛이 꺾이듯 푸르스름하며, 왼쪽 위에 흰 반짝임과 가장자리를 따라 비친 초승달 빛, 오른쪽 아래에 모인 빛, 바닥에 그림자와 물을 지난 밝은 빛.
+ * 테두리 모양(border-radius)을 조금씩 바꿔 말랑하게 흔들리고, 속물이 출렁인다. 목소리가 클수록 크고 빠르게 흔들린다.
+ * 브라우저는 마이크 소리 크기(AnalyserNode)를, 잴 수 없는 곳(앱의 기기 인식)은 듣는 동안 부드럽게 오르내리는 값을 쓴다.
+ * 듣는 동안에는 물방울에서 물결 고리가 퍼져 나가고(소리가 클수록 진하게), 밑에 음성 막대가 소리 크기에 맞춰 오르내린다.
  * 소리를 잴 수 없는 앱에서는 받아 적은 글자가 들어올 때마다(beat) 출렁인다.
  * 소리 크기는 아래 메뉴 가운데 구슬(lib/orb.ts의 --mic)에도 같이 보낸다(live=마이크가 열려 있는 동안만).
  * 처음 들어와 아직 아무 말도 안 했을 때(cue)는 망고빛 고리가 천천히 퍼져 "여기를 누르세요"를 알린다(움직임 줄이기면 멈춘 고리 하나).
  * 움직임 줄이기를 켠 사람에게는 멈춘다. 값은 그릴 때마다 DOM에 바로 넣는다(화면을 다시 그리지 않게).
- * 듣는 동안(active)에만 프레임 루프를 돌리고, 가만히 있을 때는 한 번 그리고 멈춘다
+ * 듣는 동안(active)에만 프레임 루프를 돌리고, 가만히 있을 때는 한 번 그리고 멈춘다. 음성 막대는 높이 대신 scaleY(합성만)로 오르내린다
  */
-function ListenOrb({ active, live, measure, cue = false, beat = 0, size = 170 }: { active: boolean; live: boolean; measure: boolean; cue?: boolean; beat?: number; size?: number }) {
+const BARS = [0.55, 0.8, 1, 0.8, 0.55];
+const BAR_ROW = 32;
+/** 음성 막대 한 줄의 가장 큰 높이(px). 이보다 작게는 scaleY로 */
+const BAR_MAX = 31;
+const BAR_MIN = 5;
+
+function WaterDrop({ active, live, measure, cue = false, beat = 0, size = 189 }: { active: boolean; live: boolean; measure: boolean; cue?: boolean; beat?: number; size?: number }) {
   const body = useRef<HTMLDivElement>(null);
-  const ring = useRef<HTMLDivElement>(null);
-  const char = useRef<HTMLDivElement>(null);
+  const slosh = useRef<HTMLDivElement>(null);
+  const shine = useRef<HTMLDivElement>(null);
+  const shadow = useRef<HTMLDivElement>(null);
   const ripples = useRef<HTMLDivElement>(null);
+  const bars = useRef<(HTMLSpanElement | null)[]>([]);
   const kick = useRef(0);
   const firstBeat = useRef(true);
   useEffect(() => {
@@ -85,7 +95,6 @@ function ListenOrb({ active, live, measure, cue = false, beat = 0, size = 170 }:
     let data = new Uint8Array(0);
     let level = 0;
     let phase = 0;
-    let spin = 0;
     let last = 0;
     // 한 프레임 그리기(루프는 아래 loop가 돈다)
     const paint = (t: number) => {
@@ -102,24 +111,28 @@ function ListenOrb({ active, live, measure, cue = false, beat = 0, size = 170 }:
       }
       kick.current *= 0.9;
       level += (target - level) * 0.14;
-      if (!still) {
-        phase += dt * (1.6 + 4.2 * level);
-        spin += dt * (active ? 14 + 40 * level : 0);
-      }
       if (live) setOrbLevel(still ? 0 : level);
-      // 구슬: 숨 쉬듯 부풀고(목소리가 크면 더), 눌린 듯 살짝 찌그러졌다 펴진다
-      const squash = still ? 0 : (0.012 + 0.04 * level) * Math.sin(phase * 1.5);
-      const grow = 1 + (still ? 0 : (active ? 0.025 * Math.sin(phase * 0.8) : 0) + 0.07 * level);
-      if (body.current) body.current.style.transform = `scale(${grow * (1 + squash)}, ${grow * (1 - squash)})`;
-      if (ring.current) ring.current.style.transform = `rotate(${spin}deg)`;
-      // 캐릭터: 통통 튀고 갸웃거린다(듣는 동안만, 가만히 있을 때는 제자리)
-      if (char.current) {
-        const hop = still || !active ? 0 : Math.abs(Math.sin(phase * 1.9)) * (size * 0.025 + size * 0.07 * level);
-        const tilt = still || !active ? 0 : Math.sin(phase * 1.2) * (2 + 5 * level);
-        const sq = still || !active ? 0 : 0.035 * Math.cos(phase * 3.8) * (0.4 + level);
-        char.current.style.transform = `translate(-50%, -47%) translateY(${-hop}px) rotate(${tilt}deg) scale(${1 - sq}, ${1 + sq})`;
+      if (!still) phase += dt * (1.1 + 3.2 * level);
+      const a = still ? 0 : 2.2 + 7 * level; // 테두리 출렁임(%)
+      const w = (k: number, o: number) => 50 + a * Math.sin(phase * k + o);
+      const radius = `${w(1.0, 0)}% ${w(1.3, 1.1)}% ${w(0.9, 2.3)}% ${w(1.2, 3.7)}% / ${w(1.1, 0.6)}% ${w(0.8, 2.0)}% ${w(1.4, 2.9)}% ${w(1.0, 4.4)}%`;
+      const squash = still ? 0 : (0.012 + 0.05 * level) * Math.sin(phase * 1.6);
+      const grow = 1 + (still ? 0 : 0.06 * level);
+      if (body.current) {
+        body.current.style.borderRadius = radius;
+        body.current.style.transform = `scale(${grow * (1 + squash)}, ${grow * (1 - squash)})`;
       }
+      if (slosh.current)
+        slosh.current.style.transform = `translate(${Math.sin(phase * 0.9) * (6 + 14 * level)}px, ${Math.cos(phase * 1.2) * (4 + 10 * level)}px) rotate(${Math.sin(phase * 0.7) * 12}deg)`;
+      if (shine.current) shine.current.style.transform = `translate(${-Math.sin(phase * 0.9) * 3}px, ${-Math.cos(phase * 1.2) * 2}px) rotate(-28deg)`;
+      if (shadow.current) shadow.current.style.transform = `translateX(-50%) scale(${grow * (1 + squash * 1.5)}, 1)`;
       if (ripples.current) ripples.current.style.opacity = String(0.6 + 0.4 * level);
+      bars.current.forEach((bar, i) => {
+        if (!bar) return;
+        const wave = still ? 0.8 : 0.55 + 0.45 * Math.abs(Math.sin(phase * 1.9 + i * 1.25));
+        const h = active ? BAR_MIN + (BAR_MAX - BAR_MIN) * Math.min(1, (0.25 + level) * wave) * BARS[i]! : BAR_MIN;
+        bar.style.transform = `scaleY(${h / BAR_MAX})`;
+      });
     };
     const loop = (t: number) => {
       paint(t);
@@ -151,10 +164,10 @@ function ListenOrb({ active, live, measure, cue = false, beat = 0, size = 170 }:
       stream?.getTracks().forEach((tr) => tr.stop());
       void ctx?.close().catch(() => {});
     };
-  }, [active, live, measure, size]);
+  }, [active, live, measure]);
   return (
-    <div aria-hidden="true" className="relative" style={{ width: size, height: size }}>
-      {/* 듣는 동안 구슬에서 퍼져 나가는 물결 고리 */}
+    <div aria-hidden="true" className="relative" style={{ width: size, height: size + 23 + BAR_ROW }}>
+      {/* 듣는 동안 물방울에서 퍼져 나가는 물결 고리 */}
       {active ? (
         <div ref={ripples} className="pointer-events-none absolute left-0 top-0" style={{ width: size, height: size }}>
           {[0, 0.8, 1.6].map((delay) => (
@@ -163,9 +176,9 @@ function ListenOrb({ active, live, measure, cue = false, beat = 0, size = 170 }:
               className="absolute inset-0 rounded-full opacity-0 motion-safe:animate-[drop-ripple_2.4s_cubic-bezier(0.2,0.6,0.35,1)_infinite]"
               style={{
                 animationDelay: `${delay}s`,
-                border: "2.5px solid rgba(224,154,18,0.75)",
-                background: "radial-gradient(circle, rgba(255,194,61,0) 58%, rgba(255,194,61,0.2) 100%)",
-                boxShadow: "0 0 14px rgba(255,194,61,0.45), inset 0 0 16px rgba(255,194,61,0.25)",
+                border: "2.5px solid rgba(80,160,230,0.75)",
+                background: "radial-gradient(circle, rgba(150,210,250,0) 58%, rgba(150,210,250,0.22) 100%)",
+                boxShadow: "0 0 16px rgba(120,195,250,0.4), inset 0 0 20px rgba(140,205,250,0.3)",
               }}
             />
           ))}
@@ -177,14 +190,89 @@ function ListenOrb({ active, live, measure, cue = false, beat = 0, size = 170 }:
           ))}
         </div>
       ) : null}
-      {/* 구슬 몸(흰 동그라미) + 안의 캐릭터 */}
-      <div ref={body} className="absolute inset-0 overflow-hidden rounded-full bg-white will-change-transform">
-        <div ref={char} className="absolute left-1/2 top-1/2 will-change-transform" style={{ transform: "translate(-50%, -47%)" }}>
-          <Mascot pose={active ? 1 : 7} size={size * (active ? 0.587 : 0.5)} />
-        </div>
+      {/* 바닥 그림자와, 물을 지나 모인 밝은 빛 */}
+      <div
+        ref={shadow}
+        className="absolute left-1/2 rounded-[50%]"
+        style={{
+          bottom: BAR_ROW,
+          width: size * 0.72,
+          height: 20,
+          transform: "translateX(-50%)",
+          background: "radial-gradient(ellipse at 50% 50%, rgba(160,230,255,0.85) 0%, rgba(120,190,235,0.35) 28%, rgba(40,90,150,0.22) 55%, rgba(40,90,150,0) 75%)",
+          filter: "blur(5px)",
+        }}
+      />
+      {/* 물방울 몸 */}
+      <div
+        ref={body}
+        className="absolute left-0 top-0 overflow-hidden will-change-transform"
+        style={{
+          width: size,
+          height: size,
+          borderRadius: "50%",
+          background: "radial-gradient(circle at 50% 48%, rgba(255,255,255,0.06) 0%, rgba(214,240,255,0.16) 45%, rgba(140,200,240,0.5) 78%, rgba(70,145,215,0.8) 100%)",
+          boxShadow:
+            "inset 0 0 0 1.5px rgba(255,255,255,0.75), inset 0 14px 26px rgba(40,110,180,0.22), inset 0 -18px 30px rgba(255,255,255,0.75), inset 0 -2px 10px rgba(120,200,255,0.5), 0 22px 40px -22px rgba(30,90,160,0.4)",
+        }}
+      >
+        {/* 속에서 출렁이는 물빛 */}
+        <div
+          ref={slosh}
+          className="absolute will-change-transform"
+          style={{
+            inset: "-15%",
+            background:
+              "radial-gradient(ellipse 55% 40% at 50% 78%, rgba(80,170,235,0.28), rgba(80,170,235,0) 70%), radial-gradient(ellipse 40% 30% at 38% 40%, rgba(255,255,255,0.25), rgba(255,255,255,0) 70%)",
+          }}
+        />
+        {/* 오른쪽 아래에 모인 빛(꺾인 빛) */}
+        <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse 34% 22% at 66% 84%, rgba(255,255,255,0.9), rgba(255,255,255,0) 70%)" }} />
       </div>
-      {/* 남색 점선 테두리(듣는 동안 천천히 돈다) */}
-      <div ref={ring} className="pointer-events-none absolute inset-0 rounded-full" style={{ border: "2px dashed rgba(31,35,64,0.45)" }} />
+      {/* 왼쪽 위 반짝임 */}
+      <div
+        ref={shine}
+        className="absolute"
+        style={{
+          left: size * 0.2,
+          top: size * 0.13,
+          width: size * 0.28,
+          height: size * 0.15,
+          borderRadius: "50%",
+          background: "radial-gradient(ellipse at 50% 50%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.95) 30%, rgba(255,255,255,0) 62%)",
+          transform: "rotate(-28deg)",
+        }}
+      />
+      {/* 가장자리를 따라 비친 가는 초승달 빛 */}
+      <div
+        className="pointer-events-none absolute rounded-full"
+        style={{
+          left: size * 0.07,
+          top: size * 0.07,
+          width: size * 0.86,
+          height: size * 0.86,
+          borderTop: `${Math.round(size * 0.022)}px solid rgba(255,255,255,0.7)`,
+          borderLeft: `${Math.round(size * 0.012)}px solid rgba(255,255,255,0.35)`,
+          borderRight: "0 solid transparent",
+          borderBottom: "0 solid transparent",
+          transform: "rotate(-20deg)",
+          filter: "blur(1.5px)",
+        }}
+      />
+      <div className="absolute rounded-full bg-white/90" style={{ left: size * 0.47, top: size * 0.12, width: size * 0.045, height: size * 0.045, filter: "blur(0.5px)" }} />
+      {/* 음성 막대: 듣는 동안 소리 크기에 맞춰 */}
+      <div className={`absolute bottom-0 left-1/2 flex h-9 -translate-x-1/2 items-center gap-1.5 transition-opacity duration-300 ${active ? "opacity-100" : "opacity-0"}`}>
+        {BARS.map((_, i) => (
+          <span
+            key={i}
+            ref={(el) => {
+              bars.current[i] = el;
+            }}
+            className="w-1.5 rounded-full will-change-transform"
+            style={{ height: BAR_MAX, transform: `scaleY(${BAR_MIN / BAR_MAX})`, background: "linear-gradient(to top, rgba(70,145,215,0.9), rgba(150,210,250,0.95))" }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -302,19 +390,19 @@ function TargetFace({ target, avatar, name }: { target: CaptureTarget; avatar: A
   if (target.kind === "person") return <Avatar config={avatar} size={26} label={name} decorative />;
   if (target.kind === "new")
     return (
-      <span aria-hidden="true" className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-sky-soft text-accent shadow-[0_0_0_1.5px_var(--color-ink)]">
+      <span aria-hidden="true" className="flex h-[23.4px] w-[23.4px] shrink-0 items-center justify-center rounded-full bg-sky-soft text-accent shadow-[0_0_0_1px_var(--color-edge)]">
         <Icon name="personAdd" size={14} strokeWidth={2.2} />
       </span>
     );
   return (
-    <span aria-hidden="true" className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full border-[1.5px] border-dashed border-mango-deep bg-white text-[17px] text-accent">
+    <span aria-hidden="true" className="flex h-[23.4px] w-[23.4px] shrink-0 items-center justify-center rounded-full border border-dashed border-mango-deep bg-white text-[15.3px] text-accent">
       ?
     </span>
   );
 }
 
 /** 말로·글로 적기 아래의 기억해 두기 알약(시안: 높이 48, 망고 + 남색 선). 꺼지면 눌러 앉힌 바탕 */
-const SAVE_PILL = "inline-flex h-12 items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-sky pl-3.5 pr-[18px] text-[17px] disabled:border-ink/[0.22] disabled:bg-[#e8e1cf] disabled:text-[#5a5f78]";
+const SAVE_PILL = "inline-flex h-12 items-center gap-1.5 rounded-full border border-edge bg-sky pl-3.5 pr-[16.2px] text-[15.3px] disabled:border-ink/[0.22] disabled:bg-[#e8e1cf] disabled:text-[#5a5f78]";
 
 /** 첫 문구가 번쩍 사라지지 않게, 나누기가 아무리 빨라도 이 시간(ms)은 정리하는 화면을 보인다 */
 const MIN_SCENE_MS = 600;
@@ -485,10 +573,10 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
               aria-selected={i === activeIndex}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => pick(which === "field" ? field.current : box.current, o)}
-              className={`flex min-h-[52px] w-full items-center gap-3 rounded-[16px] px-2.5 text-left ${i === activeIndex ? "bg-fill" : ""}`}
+              className={`flex min-h-[46.8px] w-full items-center gap-3 rounded-[14.4px] px-2.5 text-left ${i === activeIndex ? "bg-fill" : ""}`}
             >
               <Avatar config={o.avatar} size={34} label={mentionLabel(o)} />
-              <span className="hand-written min-w-0 truncate text-[22px] leading-[1.15]">{o.name}</span>
+              <span className="hand-written min-w-0 truncate text-[17.8px] leading-[1.15]">{o.name}</span>
               {o.tag && o.tag !== o.name ? <TagChip>{o.tag}</TagChip> : null}
             </button>
           </li>
@@ -831,13 +919,13 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
         {/* 별 든 캐릭터가 말풍선으로 알려 준다(시안) */}
         <div className="flex items-center gap-1.5 pl-1.5 pr-4 pt-1">
           <Mascot pose={11} size={62} className="shrink-0" />
-          <p className="hand-written relative min-w-0 flex-1 rounded-[22px] border-[1.5px] border-ink bg-white px-[18px] py-2 text-[26px] leading-[1.3]">
+          <p className="hand-written relative min-w-0 flex-1 rounded-[19.8px] border border-edge bg-white px-[16.2px] py-2 text-[21.1px] leading-[1.3]">
             {labels.saved}!
-            <span aria-hidden="true" className="absolute -left-[7px] top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 border-b-[1.5px] border-l-[1.5px] border-ink bg-white" />
+            <span aria-hidden="true" className="absolute -left-[6.3px] top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 border-b border-l border-edge bg-white" />
           </p>
         </div>
         <section className="card relative mx-4 mt-6 px-3.5 pb-1 pt-2.5" aria-live="polite" aria-relevant="additions text">
-          <h2 className="hand scribble mb-3 text-[24px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
+          <h2 className="hand scribble mb-3 text-[19.4px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
             {labels.saved}
           </h2>
           <ul className="flex flex-col">
@@ -851,9 +939,9 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
               const fieldLabel = memo ? labels.memo : me && spec?.key === "gifts.wishlist" ? labels.wishMe : (spec?.label[locale] ?? r.line.field);
               const pick = r.target.kind === "pick";
               return (
-                <li key={r.key} className="flex items-start gap-1 border-t-[1.5px] border-dashed border-ink/[0.18] py-2 first:border-t-0">
+                <li key={r.key} className="flex items-start gap-1 border-t border-dashed border-ink/30 py-2 first:border-t-0">
                   <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
-                    <span className="flex flex-wrap items-center gap-x-1.5 text-[12px] text-muted">
+                    <span className="flex flex-wrap items-center gap-x-1.5 text-[10.8px] text-muted">
                       {me ? (
                         <span className="py-2.5">{who}</span>
                       ) : (
@@ -866,20 +954,20 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
                           className="flex min-h-11 max-w-full items-center text-ink disabled:opacity-60"
                         >
                           <span
-                            className={`flex h-7 max-w-full items-center gap-1 rounded-full border-[1.5px] pl-0.5 pr-2 text-[12px] ${
+                            className={`flex h-7 max-w-full items-center gap-1 rounded-full border pl-0.5 pr-2 text-[10.8px] ${
                               pick ? "border-mango-deep bg-sky-soft" : "border-ink bg-white"
                             } ${flashKey === r.key ? "chip-flash" : ""}`}
                           >
                             <TargetFace target={r.target} avatar={person?.avatar ?? null} name={who} />
                             <span className="min-w-0 truncate">{who}</span>
-                            {r.target.kind === "new" ? <span className="chip-on shrink-0 rounded-full px-2 pb-px text-[11px]">{labels.isNew}</span> : null}
-                            {pick ? <span className="shrink-0 text-[12px] text-accent">{labels.target.sameName.replace("{n}", String(r.candidates.length))}</span> : null}
+                            {r.target.kind === "new" ? <span className="chip-on shrink-0 rounded-full px-2 pb-px text-[9.9px]">{labels.isNew}</span> : null}
+                            {pick ? <span className="shrink-0 text-[10.8px] text-accent">{labels.target.sameName.replace("{n}", String(r.candidates.length))}</span> : null}
                             <Icon name="chevron" size={12} strokeWidth={2.4} className="shrink-0 rotate-90 text-muted" />
                           </span>
                         </button>
                       )}
                                             {r.line.value ? (
-                        <span className="relative inline-flex h-7 items-center gap-1 rounded-full border-[1.5px] border-ink bg-white px-2.5 text-[12px] text-ink">
+                        <span className="relative inline-flex h-7 items-center gap-1 rounded-full border border-edge bg-white px-2.5 text-[10.8px] text-ink">
                           {fieldLabel}
                           <Icon name="chevron" size={12} strokeWidth={2.4} className="shrink-0 rotate-90 text-muted" />
                           <select
@@ -924,7 +1012,7 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
                           disabled={locked}
                           aria-label={`${who} · ${fieldLabel}`}
                           aria-invalid={r.bad}
-                          className={`hand-written peer block min-h-11 w-full resize-none border-0 bg-transparent py-[7px] pl-0 pr-8 text-[26px] leading-[1.2] outline-none [field-sizing:content] focus:border-solid ${
+                          className={`hand-written peer block min-h-11 w-full resize-none border-0 bg-transparent py-[6.3px] pl-0 pr-8 text-[21.1px] leading-[1.2] outline-none [field-sizing:content] focus:border-solid ${
                             r.bad ? "text-red" : struck(l)
                           }`}
                         />
@@ -949,7 +1037,7 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
         </section>
         <div className="flex min-h-8 items-center justify-center px-4 pt-3">
           {saveError ? (
-            <p role="alert" className="text-center text-[14px] text-red">
+            <p role="alert" className="text-center text-[12.6px] text-red">
               {errorOf(saveError)}
             </p>
           ) : null}
@@ -962,13 +1050,13 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
               aria-label={labels.more}
               disabled={locked || bad}
               onClick={() => confirm(true)}
-              className="inline-flex h-11 items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-sky-soft pl-3 pr-4 text-[15px] disabled:opacity-40"
+              className="inline-flex h-11 items-center gap-1.5 rounded-full border border-edge bg-sky-soft pl-3 pr-4 text-[13.5px] disabled:opacity-40"
             >
               <Icon name="mic" size={17} strokeWidth={1.8} />
               {labels.more}
             </button>
           )}
-          <button type="button" disabled={locked || bad || !rows.length} aria-busy={locked} onClick={() => confirm(false)} className="inline-flex h-11 items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-sky pl-3 pr-4 text-[15px] disabled:border-ink/[0.22] disabled:bg-[#e8e1cf] disabled:text-[#5a5f78]">
+          <button type="button" disabled={locked || bad || !rows.length} aria-busy={locked} onClick={() => confirm(false)} className="inline-flex h-11 items-center gap-1.5 rounded-full border border-edge bg-sky pl-3 pr-4 text-[13.5px] disabled:border-ink/[0.22] disabled:bg-[#e8e1cf] disabled:text-[#5a5f78]">
             <Icon name="check" size={17} strokeWidth={1.8} />
             {labels.confirm}
           </button>
@@ -1001,7 +1089,7 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
   // 스스로 멈춘 뒤 글이 남았다: 기억해 두기를 누를 차례
   const nudgeSave = ready && !!text.trim() && !listening && !settling && !pending;
   const toggle = canListen ? (
-    <div role="radiogroup" aria-label={labels.mode} className="relative z-10 mx-auto mt-6 flex w-fit shrink-0 rounded-xl border-[1.5px] border-ink bg-white p-[3px]">
+    <div role="radiogroup" aria-label={labels.mode} className="relative z-10 mx-auto mt-6 flex w-fit shrink-0 rounded-xl border border-edge bg-white p-[2.7px]">
       {(["voice", "text"] as const).map((m) => (
         <button
           key={m}
@@ -1009,7 +1097,7 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
           role="radio"
           aria-checked={mode === m}
           onClick={() => choose(m)}
-          className={`relative flex h-[34px] w-[89px] items-center justify-center rounded-[9px] text-[14px] transition-colors ${mode === m ? "bg-sky text-ink" : "text-ink"}`}
+          className={`relative flex h-[30.6px] w-[80.1px] items-center justify-center rounded-[8.1px] text-[12.6px] transition-colors ${mode === m ? "bg-sky text-ink" : "text-ink"}`}
         >
           {m === "voice" ? labels.modeVoice : labels.modeText}
         </button>
@@ -1018,20 +1106,20 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
   ) : null;
   // 체험: 마이크면 "이렇게 말해보세요", 글이면 "이렇게 써보세요" + 예시 문장. 키보드가 뜨면 접어 적는 칸이 한 화면에 보이게
   const tourPrompt = tour ? (
-    <TourNote label={mode === "voice" ? tour.say : tour.write} className="mt-[18px]">
-      <span className="num rounded-full bg-sky-soft px-2.5 text-[14px] leading-[1.5]">{tour.page}</span>
-      <h1 className="text-[30px] leading-[1.2]">{mode === "voice" ? tour.say : tour.write}</h1>
-      <p className="hand-written mt-0.5 text-[30px] leading-[1.25]">
+    <TourNote label={mode === "voice" ? tour.say : tour.write} className="mt-[16.2px]">
+      <span className="num rounded-full bg-sky-soft px-2.5 text-[11.9px] leading-[1.5]">{tour.page}</span>
+      <h1 className="text-[24.3px] leading-[1.2]">{mode === "voice" ? tour.say : tour.write}</h1>
+      <p className="hand-written mt-0.5 text-[24.3px] leading-[1.25]">
         <span className="hl">“{tour.example}”</span>
       </p>
     </TourNote>
   ) : null;
   const errorLine = error ? (
-    <p role="alert" className="text-center text-[14px] text-red">
+    <p role="alert" className="text-center text-[12.6px] text-red">
       {error}
     </p>
   ) : flash ? (
-    <p role="status" className="flex items-center justify-center gap-1.5 text-center text-[15px]">
+    <p role="status" className="flex items-center justify-center gap-1.5 text-center text-[13.5px]">
       <Icon name="check" size={18} strokeWidth={2.6} className="text-accent" />
       {labels.savedDone}
     </p>
@@ -1063,7 +1151,7 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
             autoFocus={canListen}
             placeholder={labels.placeholderText}
             aria-label={labels.placeholderText}
-            className="hand-written block min-h-[150px] w-full resize-none border-0 bg-transparent p-0 text-[24px] leading-[30px] outline-none [background-image:repeating-linear-gradient(180deg,transparent_0_29px,#d5e1f3_29px_30px)] placeholder:text-muted/80 [html[data-kb]_&]:h-32 [html[data-kb]_&]:min-h-32"
+            className="hand-written block min-h-[135px] w-full resize-none border-0 bg-transparent p-0 text-[19.4px] leading-[27px] outline-none [background-image:repeating-linear-gradient(180deg,transparent_0_26px,#d5e1f3_26px_27px)] placeholder:text-muted/80 [html[data-kb]_&]:h-32 [html[data-kb]_&]:min-h-32"
           />
           </section>
           <div className="flex min-h-8 items-center justify-center">{errorLine}</div>
@@ -1081,7 +1169,7 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={startMention}
                 aria-label={labels.mention}
-                className="flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full border-[1.5px] border-ink bg-white px-3 text-[18px]"
+                className="flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full border border-edge bg-white px-3 text-[16.2px]"
               >
                 @
               </button>
@@ -1097,7 +1185,7 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
                     aria-pressed={listOpen ? undefined : on}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => (listOpen ? pick(field.current, p) : togglePerson(p))}
-                    className={`flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border-[1.5px] border-ink pl-[5px] pr-3.5 text-[14px] transition-colors ${on ? "bg-sky" : "bg-white"}`}
+                    className={`flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-edge pl-[4.5px] pr-3.5 text-[12.6px] transition-colors ${on ? "bg-sky" : "bg-white"}`}
                   >
                     <Avatar config={p.avatar} size={28} label={mentionLabel(p)} />
                     {mentionLabel(p)}
@@ -1135,13 +1223,13 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
             disabled={pending || settling || !canListen}
             className="shrink-0 rounded-full transition-transform active:scale-95 disabled:active:scale-100"
           >
-            <ListenOrb active={listening || settling} live={listening} measure={!nativeSpeech()} cue={cue} beat={shown.length} />
+            <WaterDrop active={listening || settling} live={listening} measure={!nativeSpeech()} cue={cue} beat={shown.length} />
           </button>
           {/* 아직 아무 말도 안 했을 때: 구슬을 가리키는 화살표(누르면 사라진다) */}
-          {cue ? <PointArrow w={64} className="cue-nudge left-[148px] top-[112px]" /> : null}
+          {cue ? <PointArrow w={76} className="cue-nudge left-[149.4px] top-[149.4px]" /> : null}
         </div>
         {/* 상태 줄: 처음엔 누르라는 한 줄, 듣는 동안 '듣고 있어요', 스스로 멈추면 '다 들었어요'(스크린리더에도 읽힌다) */}
-        <p role="status" aria-live="polite" className="hand-written mt-1 flex h-9 items-center justify-center gap-2 text-[24px] leading-none text-ink">
+        <p role="status" aria-live="polite" className="hand-written mt-1 flex h-9 items-center justify-center gap-2 text-[19.4px] leading-none text-ink">
           {listening ? (
             <>
               <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-mango-deep motion-safe:animate-pulse" />
@@ -1166,7 +1254,7 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
             maxLength={500}
             placeholder={labels.placeholder}
             aria-label={labels.placeholder}
-            className="hand-written block max-h-[30vh] min-h-[60px] w-full resize-none overflow-y-auto border-0 bg-transparent p-0 text-[24px] leading-[30px] outline-none [background-image:repeating-linear-gradient(180deg,transparent_0_29px,#d5e1f3_29px_30px)] placeholder:text-muted/80"
+            className="hand-written block max-h-[30vh] min-h-[54px] w-full resize-none overflow-y-auto border-0 bg-transparent p-0 text-[19.4px] leading-[27px] outline-none [background-image:repeating-linear-gradient(180deg,transparent_0_26px,#d5e1f3_26px_27px)] placeholder:text-muted/80"
           />
         </div>
         {mentionList("box")}
@@ -1174,7 +1262,7 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
           {error || flash ? (
             errorLine
           ) : idle ? (
-            <button type="button" onClick={() => setText("")} className="relative text-[14px] text-muted underline underline-offset-4 before:absolute before:-inset-x-3 before:-inset-y-3.5">
+            <button type="button" onClick={() => setText("")} className="relative text-[12.6px] text-muted underline underline-offset-4 before:absolute before:-inset-x-3 before:-inset-y-3.5">
               {labels.clear}
             </button>
           ) : null}
@@ -1189,7 +1277,7 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
             aria-pressed={listening}
             aria-label={listening ? labels.stop : labels.speak}
             disabled={pending || settling}
-            className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-[1.5px] border-ink transition-colors ${listening ? "bg-ink text-white" : "bg-white text-ink"}`}
+            className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-edge transition-colors ${listening ? "bg-ink text-white" : "bg-white text-ink"}`}
           >
             {/* 듣는 동안 마이크 둘레로 퍼지는 고리. 처음 들어왔을 때는 망고빛 맥박 */}
             {listening || settling ? (

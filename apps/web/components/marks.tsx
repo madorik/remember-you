@@ -1,3 +1,4 @@
+import { u } from "@/lib/ui-scale";
 // 표시들(시안 v3 맹고색). 고른 것·챙길 날은 연한 망고 바탕 + 망고 테두리, 경고(알레르기)만 분홍.
 
 /**
@@ -40,7 +41,7 @@ export function DrawnCheck({ on }: { on: boolean }) {
       className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border-[1.8px] border-ink text-ink transition-colors ${on ? "bg-sky" : "bg-white"}`}
     >
       {on ? (
-        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
           <path d="M5 12.5l4.5 4.5L19 7.5" />
         </svg>
       ) : null}
@@ -51,7 +52,7 @@ export function DrawnCheck({ on }: { on: boolean }) {
 /** 켜고 끄는 스위치의 모양(누르는 건 감싼 button이 한다). 꺼진 바탕은 흰 바탕과 3:1 이상 */
 export function SwitchLook({ on }: { on: boolean }) {
   return (
-    <span className={`flex h-8 w-[54px] items-center rounded-full border-2 border-ink p-0.5 transition-colors ${on ? "justify-end bg-sky" : "justify-start bg-[#ece7d8]"}`}>
+    <span className={`flex h-8 w-[48.6px] items-center rounded-full border-2 border-ink p-0.5 transition-colors ${on ? "justify-end bg-sky" : "justify-start bg-[#ece7d8]"}`}>
       <span className="h-6 w-6 rounded-full border-2 border-ink bg-white" />
     </span>
   );
@@ -60,7 +61,7 @@ export function SwitchLook({ on }: { on: boolean }) {
 /** 작은 체크 표시(칩 안) */
 export function CheckGlyph({ size = 14 }: { size?: number }) {
   return (
-    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <svg aria-hidden="true" width={u(size)} height={u(size)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
       <path d="M5 12.5l4.5 4.5L19 7.5" />
     </svg>
   );
@@ -182,7 +183,7 @@ const ICONS: Record<IconName, React.ReactNode> = {
 
 export function Icon({ name, size = 22, strokeWidth = 1.7, className = "" }: { name: IconName; size?: number; strokeWidth?: number; className?: string }) {
   return (
-    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <svg aria-hidden="true" width={u(size)} height={u(size)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
       {ICONS[name]}
     </svg>
   );

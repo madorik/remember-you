@@ -10,7 +10,7 @@ export default async function AppAuthStart({ searchParams }: { searchParams: Pro
   return (
     <main className="screen items-center justify-center gap-5 px-6">
       <Wordmark locale={locale} />
-      <p className="text-[15px] text-muted">{t("login.title")}</p>
+      <p className="text-[13.5px] text-muted">{t("login.title")}</p>
       <StartSocial provider={provider === "apple" ? "apple" : "google"} />
     </main>
   );

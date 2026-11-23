@@ -24,7 +24,7 @@ import { makeT } from "@/lib/t";
 // 연말(크리스마스 45일 전~당일)엔 더 가까운 사람 기념일이 없으면(사람이 하나도 없을 때 포함) 크리스마스 카드(트리 + 감성 문구 + 상태를 따라가는 단추)가 큰 카드 자리를 채운다.
 // 캐릭터는 한 화면에 하나: 질문 카드가 있으면 큰 카드 위에 빼꼼(2), 질문이 없으면 목록 카드 위에 누움(12), 다 했으면 체크 카드 위에 별(11).
 
-const STUB_NOTE = "rgb(31 35 64 / 0.16)";
+const STUB_NOTE = "rgb(31 35 64 / 0.3)";
 
 /** 사람 기록에서 '기억해 둔 것': 꽃·마실 것·간식·좋아하는 음식·향·갖고 싶은 것(앞의 둘을 줄노트에 적고, 전체 개수를 띠에 적는다) */
 function rememberedOf(p: Person | null, locale: "ko" | "en"): { label: string; value: string }[] {
@@ -60,8 +60,9 @@ function lunarShort(e: UpcomingEvent, locale: "ko" | "en"): string {
 
 /** 큰 카드 제목 크기: 시안은 '엄마 칠순' 36px. 길면 줄인다 */
 function heroTitleSize(len: number, many: boolean): number {
-  if (many) return 24;
-  return len <= 5 ? 36 : len <= 7 ? 30 : len <= 10 ? 25 : 21;
+  // 손글씨(포어스토리) 크기: 예전 값(36·30·25·21, 여럿이면 24)의 0.81배
+  if (many) return 19.4;
+  return len <= 5 ? 29.2 : len <= 7 ? 24.3 : len <= 10 ? 20.3 : 17;
 }
 
 /** 칸막이 점선(카드 안 줄): 시안은 남색 16% */
@@ -70,7 +71,7 @@ const dashedRule = { borderColor: STUB_NOTE };
 /** 큰 카드 안의 동그란 그림(명절 그림·새 친구 자리) */
 function RoundArt({ children, dashed = false, tint = "#E3F4EC" }: { children: React.ReactNode; dashed?: boolean; tint?: string }) {
   return (
-    <span aria-hidden="true" className={`flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full border-[1.5px] ${dashed ? "border-dashed" : ""} border-ink`} style={{ background: tint }}>
+    <span aria-hidden="true" className={`flex h-[41.4px] w-[41.4px] shrink-0 items-center justify-center rounded-full border ${dashed ? "border-dashed" : ""} border-edge`} style={{ background: tint }}>
       {children}
     </span>
   );
@@ -142,7 +143,7 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
   const showTags = (showQuestion || showDone) && followUps.length > 0;
   const peek = !showDone && !showList;
   // 큰 카드와 그 아래 카드 사이 틈(시안의 늘어나는 빈칸)
-  const slotGap = showDone || showList ? "min-h-[42px] flex-[1.2_1_0]" : showQuestion || showEmptyPeople ? (answered || muted ? "min-h-7 flex-1" : "min-h-[18px] flex-1") : "min-h-2 flex-1";
+  const slotGap = showDone || showList ? "min-h-[37.8px] flex-[1.2_1_0]" : showQuestion || showEmptyPeople ? (answered || muted ? "min-h-7 flex-1" : "min-h-[16.2px] flex-1") : "min-h-2 flex-1";
 
   // 이번 주(월~일): 오늘은 망고 동그라미, 챙길 날은 분홍 점선 동그라미 + 얼굴
   const names = weekdayNames(locale);
@@ -155,10 +156,10 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
 
   const stub = (s: StubLink) => (
     <TicketStub>
-      <Link href={s.href} className="flex h-[50px] items-center gap-2 rounded-b-[16.5px] px-[18px]">
+      <Link href={s.href} className="flex h-[45px] items-center gap-2 rounded-b-[14.9px] px-[16.2px]">
         {s.icon === "gift" ? <GiftBox /> : <Icon name="personAdd" size={22} strokeWidth={1.7} className="shrink-0" />}
-        <span className="hand flex-1 text-[25px] leading-none">{s.label}</span>
-        {s.note ? <span className="text-[12px] opacity-70">{s.note}</span> : null}
+        <span className="hand flex-1 text-[20.3px] leading-none">{s.label}</span>
+        {s.note ? <span className="text-[10.8px] opacity-70">{s.note}</span> : null}
         <Chev size={15} color="#1F2340" strokeWidth={2.2} />
       </Link>
     </TicketStub>
@@ -169,7 +170,7 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
     <section aria-label={t("home.upcoming")} className="card relative mx-4 flex shrink-0 flex-col px-4 pt-4">
       <TornTape color="pink" w={78} h={24} rotate={-6} className="-top-3 left-5" />
       {peek ? (
-        <span className="pointer-events-none absolute right-[22px] -top-[40.5px]">
+        <span className="pointer-events-none absolute right-[19.8px] -top-[36.5px]">
           <Mascot pose={2} size={48.3} />
         </span>
       ) : null}
@@ -177,7 +178,7 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
         {opts.face}
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           {opts.title}
-          {opts.sub ? <span className="text-[12.5px] text-muted">{opts.sub}</span> : null}
+          {opts.sub ? <span className="text-[11.3px] text-muted">{opts.sub}</span> : null}
         </div>
         {stampDays !== null ? (
           <span className="-mr-0.5 -mt-1">
@@ -218,7 +219,7 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
               {x.text}
             </h2>
           ))}
-          {nextGroup.length > 2 ? <span className="text-[13px] text-ink-2">{t("home.others", { n: nextGroup.length - 1 })}</span> : null}
+          {nextGroup.length > 2 ? <span className="text-[11.7px] text-ink-2">{t("home.others", { n: nextGroup.length - 1 })}</span> : null}
         </>
       ),
       // 양력 날짜를 먼저, 음력이면 옆에
@@ -231,9 +232,9 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
       inner: lines.length ? (
         <ul className="mt-2.5 px-0.5">
           {lines.map((l) => (
-            <li key={`${l.label}-${l.value}`} className="hand-written flex h-[30px] items-center gap-2 overflow-hidden whitespace-nowrap border-b-[1.5px] border-dashed text-[23px] leading-none" style={dashedRule}>
+            <li key={`${l.label}-${l.value}`} className="hand-written flex h-[27px] items-center gap-2 overflow-hidden whitespace-nowrap border-b border-dashed text-[18.6px] leading-none" style={dashedRule}>
               <HeartBullet />
-              <span className="font-sans -tracking-[0.035em] text-[11px] leading-none text-muted">{l.label}</span>
+              <span className="font-sans text-[9.9px] leading-none text-muted">{l.label}</span>
               <span className="min-w-0 truncate">{l.value}</span>
             </li>
           ))}
@@ -243,11 +244,11 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
         nextFaces.length > 1 ? (
           <TicketStub>
             {nextFaces.map((e, i) => (
-              <Link key={e.contactId} href={hintHref(e)} className={`flex h-[46px] items-center gap-2.5 px-[18px] ${i ? "border-t-[1.5px] border-dashed" : "rounded-t-none"} ${i === nextFaces.length - 1 ? "rounded-b-[16.5px]" : ""}`} style={i ? { borderTopColor: "rgba(31,35,64,.28)" } : undefined}>
+              <Link key={e.contactId} href={hintHref(e)} className={`flex h-[41.4px] items-center gap-2.5 px-[16.2px] ${i ? "border-t border-dashed" : "rounded-t-none"} ${i === nextFaces.length - 1 ? "rounded-b-[14.9px]" : ""}`} style={i ? { borderTopColor: "rgba(31,35,64,.30)" } : undefined}>
                 <span aria-hidden="true">
                   <Avatar config={personOf(e.contactId)?.avatar ?? null} size={26} label={e.name} />
                 </span>
-                <span className="hand min-w-0 flex-1 truncate text-[22px] leading-none">{t("home.hintsFor", { name: e.name })}</span>
+                <span className="hand min-w-0 flex-1 truncate text-[17.8px] leading-none">{t("home.hintsFor", { name: e.name })}</span>
                 <Chev size={15} color="#1F2340" strokeWidth={2.2} />
               </Link>
             ))}
@@ -265,13 +266,13 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
         </RoundArt>
       ),
       title: (
-        <h2 className="hand leading-none" style={{ fontSize: 25 }}>
+        <h2 className="hand leading-none" style={{ fontSize: 20.3 }}>
           {t("home.yearEnd")}
         </h2>
       ),
       // 답이 온 사람이 있으면 그 소식이 곧 문구(누가 답했는지), 아니면 감성 문구
       sub: (
-        <span className="block whitespace-pre-line text-[12.5px] leading-[1.4]">
+        <span className="block whitespace-pre-line text-[11.3px] leading-[1.4]">
           {answeredFirst
             ? answeredIds.length > 1
               ? t("home.yearEndAnswered", { name: displayName(answeredFirst), n: answeredIds.length - 1 })
@@ -312,14 +313,14 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
         </RoundArt>
       ),
       title: (
-        <h2 className="hand leading-none" style={{ fontSize: 25 }}>
+        <h2 className="hand leading-none" style={{ fontSize: 20.3 }}>
           {t("home.newFriend")}
         </h2>
       ),
       // 사람은 있는데 날짜를 아는 사람이 없으면 생일·기념일을 물어볼 수도 있다
       inner:
         people.length && !events.length ? (
-          <Link href="/request" className="mt-2 flex min-h-11 items-center justify-between border-t-[1.5px] border-dashed text-[15px]" style={dashedRule}>
+          <Link href="/request" className="mt-2 flex min-h-11 items-center justify-between border-t border-dashed text-[13.5px]" style={dashedRule}>
             {t("home.askDates")}
             <Chev size={16} />
           </Link>
@@ -343,16 +344,16 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
 
       {/* 이번 주 띠: 누르면 월별 달력(카드 전체가 눌린다) */}
       <section aria-label={t("home.thisWeek")} className="shrink-0">
-        <div className="mb-2 ml-5 mr-4 flex h-[30px] items-center justify-between">
-          <h1 className="hand scribble text-[26px] leading-none">{weekTitle}</h1>
-          <Link href="/calendar" aria-label={t("home.openCalendar")} className="relative z-20 flex h-10 items-center gap-1 px-1 text-[13px] text-muted">
+        <div className="mb-2 ml-5 mr-4 flex h-[27px] items-center justify-between">
+          <h1 className="hand scribble text-[21.1px] leading-none">{weekTitle}</h1>
+          <Link href="/calendar" aria-label={t("home.openCalendar")} className="relative z-20 flex h-10 items-center gap-1 px-1 text-[11.7px] text-muted">
             <Icon name="calendar" size={16} strokeWidth={1.8} className="shrink-0" />
             {t("home.calendar")}
             <Chev size={12} />
           </Link>
         </div>
         <div className="relative mx-4 transition-transform active:scale-[0.995]">
-          <Link href="/calendar" tabIndex={-1} aria-hidden="true" className="absolute inset-0 z-10 rounded-[18px]" />
+          <Link href="/calendar" tabIndex={-1} aria-hidden="true" className="absolute inset-0 z-10 rounded-[16.2px]" />
           <ol className="card grid grid-cols-7 px-1 py-2">
             {week.map((day, i) => {
               const wd = weekday(day);
@@ -360,10 +361,10 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
               const isToday = sameYmd(day, today);
               const has = dayEvents.length > 0;
               return (
-                <li key={i} aria-current={isToday ? "date" : undefined} className={`flex flex-col items-center gap-[3px] py-0.5 ${i ? "border-l-[1.5px] border-dashed" : ""}`} style={i ? { borderColor: "rgba(31,35,64,.10)" } : undefined}>
-                  <span className={`text-[11px] ${isToday ? "font-bold text-ink" : wd === 0 ? "text-red" : "text-muted"}`}>{isToday ? t("start.today") : names[wd]}</span>
+                <li key={i} aria-current={isToday ? "date" : undefined} className={`flex flex-col items-center gap-[2.7px] py-0.5 ${i ? "border-l border-dashed" : ""}`} style={i ? { borderColor: "rgba(31,35,64,.30)" } : undefined}>
+                  <span className={`text-[9.9px] ${isToday ? "font-bold text-ink" : wd === 0 ? "text-red" : "text-muted"}`}>{isToday ? t("start.today") : names[wd]}</span>
                   <span
-                    className={`hand flex h-[34px] w-[34px] items-center justify-center rounded-full text-[24px] leading-none ${isToday ? "box-border border-[1.5px] border-ink bg-sky shadow-[2px_2px_0_var(--color-ink)]" : has ? "box-border border-[1.5px] border-dashed bg-[#FDE6EB]" : ""} ${!isToday && wd === 0 ? "text-red" : ""}`}
+                    className={`hand flex h-[30.6px] w-[30.6px] items-center justify-center rounded-full text-[19.4px] leading-none ${isToday ? "box-border border border-edge bg-sky shadow-[1.5px_1.5px_0_rgb(31_35_64/0.22)]" : has ? "box-border border border-dashed bg-[#FDE6EB]" : ""} ${!isToday && wd === 0 ? "text-red" : ""}`}
                     style={has && !isToday ? { borderColor: "#A8481A" } : undefined}
                   >
                     {day.d}
@@ -384,7 +385,7 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
       {/* 큰 카드 아래 틈: 방금 답했거나 그만 묻기로 했으면 그 말을 이 틈에 적는다(레이아웃을 더 밀지 않게) */}
       <div className={`flex items-center ${slotGap}`}>
         {answered || muted ? (
-          <p role="status" className="mx-5 flex items-center gap-2 text-[14px] text-muted">
+          <p role="status" className="mx-5 flex items-center gap-2 text-[12.6px] text-muted">
             <Icon name="check" size={16} className="text-accent" />
             {t(muted ? "home.muted" : "home.answered")}
           </p>
@@ -411,14 +412,14 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
       {showDone ? (
         <>
           <section aria-label={t("home.questionDone", { n: questionsUsed })} className="card relative mx-4 flex shrink-0 flex-col px-3.5 pb-1.5 pt-2.5">
-            <span className="pointer-events-none absolute right-3.5 -top-[34px]">
+            <span className="pointer-events-none absolute right-3.5 -top-[30.6px]">
               <Mascot pose={11} size={44.7} />
             </span>
-            <div className="flex h-[34px] items-center gap-2">
-              <h2 className="hand scribble whitespace-nowrap text-[24px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
+            <div className="flex h-[30.6px] items-center gap-2">
+              <h2 className="hand scribble whitespace-nowrap text-[19.4px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
                 {t("home.question")}
               </h2>
-              <span className="text-[12px] text-muted">{t("home.questionDone", { n: questionsUsed })}</span>
+              <span className="text-[10.8px] text-muted">{t("home.questionDone", { n: questionsUsed })}</span>
             </div>
             <ul className="mt-2">
               {questionLog.map((e, i) => {
@@ -427,14 +428,14 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
                 if (!who || !topic) return null;
                 const box = e.o === "a" ? "#CDEBDD" : e.o === "w" ? "#FFF4D6" : "#FFFFFF";
                 return (
-                  <li key={`${e.c}-${e.q}-${i}`} className="flex h-[38px] items-center gap-2 border-t-[1.5px] border-dashed" style={dashedRule}>
-                    <span aria-hidden="true" className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[6px] border-[1.5px] border-ink ${e.o === "k" || e.o === "m" ? "border-dashed" : ""}`} style={{ background: box }}>
+                  <li key={`${e.c}-${e.q}-${i}`} className="flex h-[34.2px] items-center gap-2 border-t border-dashed" style={dashedRule}>
+                    <span aria-hidden="true" className={`flex h-[19.8px] w-[19.8px] shrink-0 items-center justify-center rounded-[5.4px] border border-edge ${e.o === "k" || e.o === "m" ? "border-dashed" : ""}`} style={{ background: box }}>
                       {e.o === "a" ? (
-                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#1F2340" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <svg viewBox="0 0 24 24" width="13.5" height="13.5" fill="none" stroke="#1F2340" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M5 12.5l4.5 4.5L19 7.5" />
                         </svg>
                       ) : e.o === "w" ? (
-                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#1F2340" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                        <svg viewBox="0 0 24 24" width="13.5" height="13.5" fill="none" stroke="#1F2340" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                           <rect x="3" y="6" width="18" height="13" rx="2" fill="#F9CBD5" />
                           <path d="M3.8 7l8.2 6.2L20.2 7" />
                         </svg>
@@ -443,13 +444,13 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
                     <span aria-hidden="true">
                       <Avatar config={who.avatar} size={22} label={displayName(who)} decorative />
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-[13px] text-muted">
+                    <span className="min-w-0 flex-1 truncate text-[11.7px] text-muted">
                       {displayName(who)} · {topic[locale]}
                     </span>
                     {e.o === "a" && e.v ? (
-                      <span className="hand-written max-w-[45%] truncate text-[24px] leading-none">{e.v}</span>
+                      <span className="hand-written max-w-[45%] truncate text-[19.4px] leading-none">{e.v}</span>
                     ) : (
-                      <span className="shrink-0 text-[12px] text-muted">{t(e.o === "w" ? "home.questionWaiting" : e.o === "k" ? "home.questionSkipped" : "home.questionMuted")}</span>
+                      <span className="shrink-0 text-[10.8px] text-muted">{t(e.o === "w" ? "home.questionWaiting" : e.o === "k" ? "home.questionSkipped" : "home.questionMuted")}</span>
                     )}
                   </li>
                 );
@@ -467,7 +468,7 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
               <Mascot pose={12} size={40.7} />
             </span>
             <div className="flex h-9 items-center">
-              <h2 id="home-next" className="hand scribble whitespace-nowrap text-[24px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
+              <h2 id="home-next" className="hand scribble whitespace-nowrap text-[19.4px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
                 {t("home.followUpDates")}
               </h2>
             </div>
@@ -476,15 +477,15 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
                 const who = personOf(e.contactId);
                 const name = eventName(e, t, locale);
                 return (
-                  <li key={`${e.contactId}-${e.kind}-${e.label ?? ""}`} className="border-t-[1.5px] border-dashed" style={dashedRule}>
-                    <Link href={`/people/${e.contactId}`} className="flex h-[46px] items-center gap-2.5">
+                  <li key={`${e.contactId}-${e.kind}-${e.label ?? ""}`} className="border-t border-dashed" style={dashedRule}>
+                    <Link href={`/people/${e.contactId}`} className="flex h-[41.4px] items-center gap-2.5">
                       <span className="flex w-10 flex-col items-center leading-none">
-                        <span className="hand text-[23px]">{formatDotted(e.date)}</span>
-                        <span className="mt-0.5 text-[10px] text-muted">{names[weekday(e.date)]}</span>
+                        <span className="hand text-[18.6px]">{formatDotted(e.date)}</span>
+                        <span className="mt-0.5 text-[9px] text-muted">{names[weekday(e.date)]}</span>
                       </span>
                       <Avatar config={who?.avatar ?? null} size={30} label={name} decorative />
-                      <span className="hand-written min-w-0 flex-1 truncate text-[24px] leading-none">{name}</span>
-                      <span className="hand text-[20px] leading-none" style={{ color: "#A8481A" }}>
+                      <span className="hand-written min-w-0 flex-1 truncate text-[19.4px] leading-none">{name}</span>
+                      <span className="hand text-[16.2px] leading-none" style={{ color: "#A8481A" }}>
                         D-{e.daysUntil}
                       </span>
                       <Chev size={14} />
@@ -501,10 +502,10 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
       {showEmptyPeople ? (
         <>
           <section aria-label={t("home.people")} className="card relative mx-4 flex shrink-0 flex-col gap-3 px-4 pb-4 pt-3">
-            <h2 className="hand scribble self-start text-[24px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
+            <h2 className="hand scribble self-start text-[19.4px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
               {t("home.people")}
             </h2>
-            <p className="text-[15px] leading-[1.5] text-muted">{t("home.empty")}</p>
+            <p className="text-[13.5px] leading-[1.5] text-muted">{t("home.empty")}</p>
             <div className="grid grid-cols-2 gap-2.5">
               <Link href="/people/new" className="btn-outline">
                 {t("people.add")}
@@ -521,14 +522,14 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
       {showTags ? (
         <>
           <div className="min-h-3 flex-[0.6_1_0]" />
-          <section aria-label={t("home.followUpDates")} className="flex h-[46px] shrink-0 items-center gap-1.5 overflow-x-auto pl-5 [-webkit-mask-image:linear-gradient(90deg,#000_86%,transparent)] [mask-image:linear-gradient(90deg,#000_86%,transparent)] [scrollbar-width:none]">
-            <span className="hand shrink-0 text-[24px]">{t("home.followUp")}</span>
-            <svg viewBox="0 0 28 20" width="28" height="20" fill="none" stroke="#1F2340" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
+          <section aria-label={t("home.followUpDates")} className="flex h-[41.4px] shrink-0 items-center gap-1.5 overflow-x-auto pl-5 [-webkit-mask-image:linear-gradient(90deg,#000_86%,transparent)] [mask-image:linear-gradient(90deg,#000_86%,transparent)] [scrollbar-width:none]">
+            <span className="hand shrink-0 text-[19.4px]">{t("home.followUp")}</span>
+            <svg viewBox="0 0 28 20" width="25.2" height="18" fill="none" stroke="#1F2340" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
               <path d="M2 5 C8 16 15 17 22 11" strokeDasharray="3 3" />
               <path d="M18 9.6 L22.6 10.4 L21.4 15" />
             </svg>
             {followUps.slice(0, 8).map((e) => (
-              <Link key={`${e.contactId}-${e.kind}-${e.label ?? ""}`} href={`/people/${e.contactId}`} className="hand flex h-[42px] shrink-0 items-center whitespace-nowrap rounded-[10px] border-[1.5px] border-ink bg-white px-3 text-[23px]">
+              <Link key={`${e.contactId}-${e.kind}-${e.label ?? ""}`} href={`/people/${e.contactId}`} className="hand flex h-[37.8px] shrink-0 items-center whitespace-nowrap rounded-[9px] border border-edge bg-white px-3 text-[18.6px]">
                 #{eventName(e, t, locale)}
                 <span className="ml-1.5" style={{ color: "#A8481A" }}>
                   D-{e.daysUntil}

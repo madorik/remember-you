@@ -32,13 +32,13 @@ const OS_LABEL: Record<string, string> = { ios: "iOS", android: "Android", windo
 
 function Delta({ cur, prev, invert = false }: { cur: number; prev: number | undefined; invert?: boolean }) {
   if (prev == null) return null;
-  if (!prev) return cur ? <span className="text-[12px] font-semibold text-muted">이전 0 → 새로</span> : null;
+  if (!prev) return cur ? <span className="text-[10.8px] font-semibold text-muted">이전 0 → 새로</span> : null;
   const d = (cur - prev) / prev;
-  if (Math.abs(d) < 0.005) return <span className="text-[12px] text-muted">이전과 같음</span>;
+  if (Math.abs(d) < 0.005) return <span className="text-[10.8px] text-muted">이전과 같음</span>;
   const up = d > 0;
   const good = invert ? !up : up;
   return (
-    <span className={`text-[12px] font-bold ${good ? "text-ok" : "text-red"}`}>
+    <span className={`text-[10.8px] font-bold ${good ? "text-ok" : "text-red"}`}>
       {up ? "▲" : "▼"} {Math.abs(Math.round(d * 1000) / 10)}% <span className="font-medium text-muted">이전 {fmt(prev)}</span>
     </span>
   );
@@ -47,10 +47,10 @@ function Delta({ cur, prev, invert = false }: { cur: number; prev: number | unde
 function Kpi({ label, value, cur, prev, hint }: { label: string; value: string; cur?: number; prev?: number; hint?: string }) {
   return (
     <div className="flex flex-col gap-1 rounded-2xl bg-white px-4 py-3.5 ring-1 ring-rule">
-      <span className="text-[12.5px] font-semibold text-muted">{label}</span>
-      <span className="num text-[28px] !font-bold leading-none tracking-[-0.02em]">{value}</span>
+      <span className="text-[11.3px] font-semibold text-muted">{label}</span>
+      <span className="num text-[23.8px] leading-none tracking-[-0.02em]">{value}</span>
       {cur != null ? <Delta cur={cur} prev={prev} /> : null}
-      {hint ? <span className="text-[11.5px] leading-[1.4] text-muted">{hint}</span> : null}
+      {hint ? <span className="text-[10.4px] leading-[1.4] text-muted">{hint}</span> : null}
     </div>
   );
 }
@@ -59,15 +59,15 @@ function Section({ id, title, desc, show = true, children }: { id: string; title
   if (!show) return null;
   return (
     <section id={id} className="scroll-mt-28 pt-10">
-      <h2 className="text-[20px] font-bold tracking-[-0.02em]">{title}</h2>
-      {desc ? <p className="pt-1 text-[13px] leading-[1.5] text-muted">{desc}</p> : null}
+      <h2 className="text-[16.2px] font-bold tracking-[-0.02em]">{title}</h2>
+      {desc ? <p className="pt-1 text-[11.7px] leading-[1.5] text-muted">{desc}</p> : null}
       <div className="flex flex-col gap-3 pt-4">{children}</div>
     </section>
   );
 }
 
 function Empty({ text = "아직 기록이 없어요" }: { text?: string }) {
-  return <p className="rounded-2xl bg-white px-4 py-6 text-center text-[13.5px] text-muted ring-1 ring-rule">{text}</p>;
+  return <p className="rounded-2xl bg-white px-4 py-6 text-center text-[12.2px] text-muted ring-1 ring-rule">{text}</p>;
 }
 
 /** 이름·막대·숫자 줄(가로 막대) */
@@ -78,14 +78,14 @@ function Bars({ rows, total, unit = "" }: { rows: { label: string; n: number; su
     <ul className="flex flex-col rounded-2xl bg-white px-4 py-1.5 ring-1 ring-rule">
       {rows.map((r) => (
         <li key={r.label} className="grid grid-cols-[minmax(0,38%)_1fr_auto] items-center gap-3 border-t border-rule py-2.5 first:border-t-0">
-          <span className="min-w-0 truncate text-[13.5px] font-medium" title={r.label}>
+          <span className="min-w-0 truncate text-[12.2px] font-medium" title={r.label}>
             {r.label}
             {r.sub ? <span className="text-muted"> · {r.sub}</span> : null}
           </span>
           <span className="flex h-2.5 overflow-hidden rounded-full bg-fill">
             <span className="h-full rounded-full bg-accent" style={{ width: `${(r.n / max) * 100}%` }} />
           </span>
-          <span className="num text-right text-[13px]">
+          <span className="num text-right text-[11px]">
             {fmt(r.n)}
             {unit}
             {total ? <span className="pl-1 text-muted">{pct(r.n, total)}</span> : null}
@@ -100,9 +100,9 @@ function Table({ head, rows, align }: { head: string[]; rows: (string | number)[
   if (!rows.length) return <Empty />;
   return (
     <div className="overflow-x-auto rounded-2xl bg-white ring-1 ring-rule">
-      <table className="w-full min-w-[560px] text-[13.5px]">
+      <table className="w-full min-w-[504px] text-[12.2px]">
         <thead>
-          <tr className="border-b border-rule text-[12px] text-muted">
+          <tr className="border-b border-rule text-[10.8px] text-muted">
             {head.map((h, i) => (
               <th key={h} className={`px-4 py-2.5 font-semibold ${(align?.[i] ?? (i ? "r" : "l")) === "r" ? "text-right" : "text-left"}`}>
                 {h}
@@ -135,16 +135,16 @@ function Funnel({ steps }: { steps: FunnelStep[] }) {
         const prev = i ? steps[i - 1]!.n : s.n;
         return (
           <li key={s.key} className="grid grid-cols-[minmax(0,34%)_1fr_auto] items-center gap-3 border-t border-rule py-3 first:border-t-0">
-            <span className="text-[13.5px] font-semibold">
+            <span className="text-[12.2px] font-semibold">
               <span className="num pr-1.5 text-muted">{i + 1}</span>
               {s.label}
             </span>
             <span className="flex h-3 overflow-hidden rounded-full bg-fill">
               <span className="h-full rounded-full bg-accent" style={{ width: `${(s.n / first) * 100}%` }} />
             </span>
-            <span className="num w-[150px] text-right text-[13px]">
+            <span className="num w-[135px] text-right text-[11px]">
               <b>{fmt(s.n)}</b> <span className="text-muted">{pct(s.n, first, 0)}</span>
-              {i ? <span className={`block text-[11.5px] ${prev && s.n < prev ? "text-red" : "text-muted"}`}>{prev ? `앞 단계에서 ${pct(prev - s.n, prev, 0)} 이탈` : "—"}</span> : null}
+              {i ? <span className={`block text-[10.4px] ${prev && s.n < prev ? "text-red" : "text-muted"}`}>{prev ? `앞 단계에서 ${pct(prev - s.n, prev, 0)} 이탈` : "—"}</span> : null}
             </span>
           </li>
         );
@@ -162,12 +162,12 @@ function heat(v: number) {
 
 function Login({ wrong }: { wrong: boolean }) {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-[420px] flex-col px-6 pt-[max(calc(var(--sat)+16px),40px)]">
+    <main className="mx-auto flex min-h-dvh max-w-[378px] flex-col px-6 pt-[max(calc(var(--sat)+16px),40px)]">
       <Wordmark size={24} />
       <form action={adminLogin} className="flex flex-col gap-3 pt-10">
-        <h1 className="headline text-[24px]">통계</h1>
+        <h1 className="headline text-[19.4px]">통계</h1>
         <input name="key" type="password" autoComplete="current-password" aria-label="관리자 키" placeholder="관리자 키" className="field" />
-        {wrong ? <p className="text-[13.5px] text-red">키가 맞지 않아요</p> : null}
+        {wrong ? <p className="text-[12.2px] text-red">키가 맞지 않아요</p> : null}
         <button className="btn-primary">들어가기</button>
       </form>
     </main>
@@ -201,10 +201,10 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
     <main className="min-h-dvh bg-bg pb-20">
       {/* 위: 기간 고르기 + 바로가기(붙어 있다). 앱(웹뷰)에서는 상태 표시줄 높이(--sat)만큼 위를 가림 띠가 덮으니 그 아래에서 시작한다 */}
       <header className="sticky top-0 z-20 border-b border-rule bg-bg/95 backdrop-blur" style={{ paddingTop: "var(--sat)" }}>
-        <div className="mx-auto flex max-w-[1120px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 md:px-8">
+        <div className="mx-auto flex max-w-[1008px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 md:px-8">
           <div className="flex items-center gap-2">
             <Wordmark size={20} />
-            <span className="text-[15px] font-bold text-muted">통계</span>
+            <span className="text-[13.5px] font-bold text-muted">통계</span>
           </div>
           <nav aria-label="기간" className="flex items-center gap-1">
             {[
@@ -213,12 +213,12 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
               [30, "30일"],
               [90, "90일"],
             ].map(([n, l]) => (
-              <Link key={n} href={range(n as number)} className={`flex h-9 items-center rounded-full px-3.5 text-[13.5px] font-bold ${isRange(n as number) ? "chip-on" : "bg-white text-ink-2 shadow-[inset_0_0_0_1.5px_var(--color-edge)]"}`}>
+              <Link key={n} href={range(n as number)} className={`flex h-9 items-center rounded-full px-3.5 text-[12.2px] font-bold ${isRange(n as number) ? "chip-on" : "bg-white text-ink-2 shadow-[inset_0_0_0_1px_var(--color-edge)]"}`}>
                 {l}
               </Link>
             ))}
           </nav>
-          <form key={`${period.from}~${period.to}`} action="/admin" className="flex items-center gap-1.5 text-[13px]">
+          <form key={`${period.from}~${period.to}`} action="/admin" className="flex items-center gap-1.5 text-[11.7px]">
             <input type="hidden" name="tab" value={tab} />
             <input type="date" name="from" defaultValue={period.from} aria-label="시작일" className="h-9 rounded-lg bg-white px-2 ring-1 ring-edge" />
             <span className="text-muted">~</span>
@@ -226,25 +226,25 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
             <button className="h-9 rounded-full bg-ink px-3.5 font-bold text-white">보기</button>
           </form>
           <div className="ml-auto flex items-center gap-1">
-            <Link href="/home" className="flex h-9 items-center rounded-full bg-white px-3.5 text-[13px] font-bold text-accent shadow-[inset_0_0_0_1.5px_var(--color-edge)]">
+            <Link href="/home" className="flex h-9 items-center rounded-full bg-white px-3.5 text-[11.7px] font-bold text-accent shadow-[inset_0_0_0_1px_var(--color-edge)]">
               앱으로 이동하기
             </Link>
             <form action={adminLogout}>
-              <button className="flex h-9 items-center px-2 text-[13px] font-semibold text-muted">나가기</button>
+              <button className="flex h-9 items-center px-2 text-[11.7px] font-semibold text-muted">나가기</button>
             </form>
           </div>
         </div>
-        <nav aria-label="탭" className="mx-auto flex max-w-[1120px] gap-1 overflow-x-auto px-4 pb-2 [scrollbar-width:none] md:px-8">
+        <nav aria-label="탭" className="mx-auto flex max-w-[1008px] gap-1 overflow-x-auto px-4 pb-2 [scrollbar-width:none] md:px-8">
           {TABS.map(([id, l]) => (
-            <Link key={id} href={tabHref(id)} aria-current={id === tab ? "page" : undefined} className={`flex h-8 shrink-0 items-center rounded-full px-3 text-[13px] font-semibold ${id === tab ? "chip-on" : "text-ink-2 hover:bg-white"}`}>
+            <Link key={id} href={tabHref(id)} aria-current={id === tab ? "page" : undefined} className={`flex h-8 shrink-0 items-center rounded-full px-3 text-[11.7px] font-semibold ${id === tab ? "chip-on" : "text-ink-2 hover:bg-white"}`}>
               {l}
             </Link>
           ))}
         </nav>
       </header>
 
-      <div className="mx-auto max-w-[1120px] px-4 md:px-8">
-        <p className="pt-5 text-[13px] text-muted">
+      <div className="mx-auto max-w-[1008px] px-4 md:px-8">
+        <p className="pt-5 text-[11.7px] text-muted">
           {period.from} ~ {period.to} ({period.days}일) · 이전 기간 {period.prevFrom} ~ {period.prevTo}와 견줌 · 데모 계정 제외 · 한국 시간
           {tab === "summary" || tab === "acquisition" || tab === "pages" ? (st.trackingSince ? ` · 화면·유입 기록은 ${st.trackingSince}부터` : " · 화면·유입 기록은 아직 없음") : ""}
         </p>
@@ -286,15 +286,15 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
           />
           <div className="grid gap-3 lg:grid-cols-3">
             <div className="flex flex-col gap-2">
-              <h3 className="text-[14.5px] font-bold">들어온 사이트</h3>
+              <h3 className="text-[11.7px] font-bold">들어온 사이트</h3>
               <Bars rows={(st.acquisition?.refs ?? []).map((r) => ({ label: r.key, n: r.n }))} />
             </div>
             <div className="flex flex-col gap-2">
-              <h3 className="text-[14.5px] font-bold">캠페인(utm_campaign)</h3>
+              <h3 className="text-[11.7px] font-bold">캠페인(utm_campaign)</h3>
               <Bars rows={(st.acquisition?.campaigns ?? []).map((r) => ({ label: r.key, n: r.n }))} />
             </div>
             <div className="flex flex-col gap-2">
-              <h3 className="text-[14.5px] font-bold">처음 들어온 화면</h3>
+              <h3 className="text-[11.7px] font-bold">처음 들어온 화면</h3>
               <Bars rows={(st.acquisition?.landings ?? []).map((r) => ({ label: pageLabel(r.key), n: r.n }))} />
             </div>
           </div>
@@ -305,10 +305,10 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
             <div className="grid gap-3 lg:grid-cols-[3fr_2fr]">
               <Funnel steps={st.funnel.steps} />
               <div className="flex flex-col gap-2">
-                <h3 className="text-[14.5px] font-bold">온보딩 단계별</h3>
+                <h3 className="text-[11.7px] font-bold">온보딩 단계별</h3>
                 <Funnel steps={st.funnel.onboarding} />
-                <h3 className="pt-2 text-[14.5px] font-bold">체험(말로·글로 적기 → 물어보기)에서 한 것</h3>
-                <p className="text-[12.5px] text-muted">이 기간에 가입한 사람 중 해당하는 사람 수. 마침 = 링크를 만들고 시작하기를 누른 사람</p>
+                <h3 className="pt-2 text-[11.7px] font-bold">체험(말로·글로 적기 → 물어보기)에서 한 것</h3>
+                <p className="text-[11.3px] text-muted">이 기간에 가입한 사람 중 해당하는 사람 수. 마침 = 링크를 만들고 시작하기를 누른 사람</p>
                 <Bars
                   rows={[
                     { label: "말로 적음", n: st.funnel.tour.byVoice },
@@ -325,15 +325,15 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
           )}
           <div className="grid gap-3 lg:grid-cols-2">
             <div className="flex flex-col gap-2">
-              <h3 className="text-[14.5px] font-bold">이탈한 사람이 마지막으로 본 화면</h3>
-              <p className="text-[12.5px] text-muted">
+              <h3 className="text-[11.7px] font-bold">이탈한 사람이 마지막으로 본 화면</h3>
+              <p className="text-[11.3px] text-muted">
                 기간 끝 기준 7일 넘게 안 온 사람 {fmt(st.churn?.churned ?? 0)}명 / 기록된 {fmt(st.churn?.tracked ?? 0)}명
               </p>
               <Bars rows={(st.churn?.lastPages ?? []).map((r) => ({ label: pageLabel(r.path), n: r.n }))} total={st.churn?.lastPages.reduce((a, r) => a + r.n, 0)} />
             </div>
             <div className="flex flex-col gap-2">
-              <h3 className="text-[14.5px] font-bold">방문을 끝낸 화면(이 기간)</h3>
-              <p className="text-[12.5px] text-muted">세션의 마지막 화면. 나간 비율 = 그 화면에서 끝난 세션 ÷ 그 화면 조회</p>
+              <h3 className="text-[11.7px] font-bold">방문을 끝낸 화면(이 기간)</h3>
+              <p className="text-[11.3px] text-muted">세션의 마지막 화면. 나간 비율 = 그 화면에서 끝난 세션 ÷ 그 화면 조회</p>
               <Bars rows={(st.pages ?? []).filter((r) => r.exits).sort((a, b) => b.exits - a.exits).slice(0, 10).map((r) => ({ label: pageLabel(r.path), n: r.exits, sub: `나간 비율 ${pct(r.exits, r.views, 0)}` }))} />
             </div>
           </div>
@@ -347,9 +347,9 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
           </div>
           {st.retention?.cohorts.length ? (
             <div className="overflow-x-auto rounded-2xl bg-white ring-1 ring-rule">
-              <table className="w-full min-w-[640px] text-[13px]">
+              <table className="w-full min-w-[576px] text-[11.7px]">
                 <thead>
-                  <tr className="text-[12px] text-muted">
+                  <tr className="text-[10.8px] text-muted">
                     <th className="px-3 py-2.5 text-left font-semibold">가입 주</th>
                     <th className="px-3 py-2.5 text-right font-semibold">가입</th>
                     {Array.from({ length: 7 }, (_, i) => (
@@ -369,7 +369,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
                           {v == null ? (
                             <span className="block h-8" />
                           ) : (
-                            <span className="num flex h-8 items-center justify-center rounded-md text-[12.5px] font-semibold" style={heat(v)} title={`${c.week} 가입, ${i + 1}주 뒤 ${pct(v, 1)}`}>
+                            <span className="num flex h-8 items-center justify-center rounded-md text-[10.6px] font-semibold" style={heat(v)} title={`${c.week} 가입, ${i + 1}주 뒤 ${pct(v, 1)}`}>
                               {pct(v, 1, 0)}
                             </span>
                           )}
@@ -391,7 +391,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
             rows={(st.pages ?? []).map((r) => [pageLabel(r.path), r.views, r.users, dur(r.views ? r.totalMs / r.views : 0), dur(r.totalMs), pct(r.exits, r.views, 0)])}
           />
           <div className="flex flex-col gap-2">
-            <h3 className="text-[14.5px] font-bold">가장 오래 머문 화면(평균, 조회 3번 넘은 것)</h3>
+            <h3 className="text-[11.7px] font-bold">가장 오래 머문 화면(평균, 조회 3번 넘은 것)</h3>
             <Bars
               rows={(st.pages ?? [])
                 .filter((r) => r.views >= 3 && r.totalMs)
@@ -413,15 +413,15 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
         <Section id="devices" show={tab === "devices"} title="기기" desc="활성 사용자가 쓴 곳(앱·웹)과 방문 기기 OS·브라우저(카카오톡·인스타 같은 앱 안 브라우저 포함).">
           <div className="grid gap-3 lg:grid-cols-3">
             <div className="flex flex-col gap-2">
-              <h3 className="text-[14.5px] font-bold">앱 · 웹(활성 사용자)</h3>
+              <h3 className="text-[11.7px] font-bold">앱 · 웹(활성 사용자)</h3>
               <Bars rows={(st.devices?.platforms ?? []).map((r: CountRow) => ({ label: PLATFORM_LABEL[r.key] ?? r.key, n: r.users }))} total={(st.devices?.platforms ?? []).reduce((a, r) => a + r.users, 0)} unit="명" />
             </div>
             <div className="flex flex-col gap-2">
-              <h3 className="text-[14.5px] font-bold">OS(방문자)</h3>
+              <h3 className="text-[11.7px] font-bold">OS(방문자)</h3>
               <Bars rows={(st.devices?.os ?? []).map((r) => ({ label: OS_LABEL[r.key] ?? r.key, n: r.users }))} total={(st.devices?.os ?? []).reduce((a, r) => a + r.users, 0)} unit="명" />
             </div>
             <div className="flex flex-col gap-2">
-              <h3 className="text-[14.5px] font-bold">브라우저(방문자)</h3>
+              <h3 className="text-[11.7px] font-bold">브라우저(방문자)</h3>
               <Bars rows={(st.devices?.browsers ?? []).map((r) => ({ label: BROWSER_LABEL[r.key] ?? r.key, n: r.users }))} total={(st.devices?.browsers ?? []).reduce((a, r) => a + r.users, 0)} unit="명" />
             </div>
           </div>
@@ -438,15 +438,15 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
           </div>
           <div className="grid gap-3 lg:grid-cols-3">
             <div className="flex flex-col gap-2">
-              <h3 className="text-[14.5px] font-bold">많이 누른 선물</h3>
+              <h3 className="text-[11.7px] font-bold">많이 누른 선물</h3>
               <Bars rows={(st.gifts?.topItems ?? []).map((r) => ({ label: CATALOG_BY_ID.get(r.key)?.q ?? r.key, n: r.n, sub: BAND_LABEL[CATALOG_BY_ID.get(r.key)?.band ?? ""] }))} />
             </div>
             <div className="flex flex-col gap-2">
-              <h3 className="text-[14.5px] font-bold">가격대별 누름</h3>
+              <h3 className="text-[11.7px] font-bold">가격대별 누름</h3>
               <Bars rows={["1", "3", "5", "10"].map((b) => ({ label: BAND_LABEL[b]!, n: st.gifts?.byBand.find((r) => r.key === b)?.n ?? 0 })).filter((r) => r.n)} total={giftN("gift_click")} />
             </div>
             <div className="flex flex-col gap-2">
-              <h3 className="text-[14.5px] font-bold">어디서 눌렀나</h3>
+              <h3 className="text-[11.7px] font-bold">어디서 눌렀나</h3>
               <Bars rows={(st.gifts?.bySource ?? []).map((r) => ({ label: SOURCE_LABEL[r.key] ?? r.key, n: r.n }))} total={giftN("gift_click")} />
             </div>
           </div>
@@ -465,7 +465,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
           ) : (
             <Empty />
           )}
-          <ul className="grid gap-2 pt-2 text-[13.5px] font-semibold md:grid-cols-3">
+          <ul className="grid gap-2 pt-2 text-[12.2px] font-semibold md:grid-cols-3">
             {[
               ["https://partners.coupang.com/#affiliate/ws/report/trend/daily", "쿠팡 파트너스 리포트(구매·수수료)"],
               ["https://vercel.com/madoriks-projects/readme/analytics", "Vercel 웹 분석(방문·국가·페이지)"],

@@ -30,17 +30,17 @@ export function MeView({ locale, name, avatar, card, today }: MeData) {
       </div>
 
       <div className="relative flex items-center gap-4 px-5 pt-1">
-        <Link href="/me/avatar" className="relative block shrink-0 -rotate-3 border-[1.5px] border-ink bg-white px-1.5 pb-[18px] pt-1.5">
-          <span className="flex h-[86px] w-[86px] items-center justify-center overflow-hidden bg-[#f1ecfd]">
+        <Link href="/me/avatar" className="relative block shrink-0 -rotate-3 border border-edge bg-white px-1.5 pb-[16.2px] pt-1.5">
+          <span className="flex h-[77.4px] w-[77.4px] items-center justify-center overflow-hidden bg-[#f1ecfd]">
             <Avatar config={avatar} size={80} label={t("avatar.of", { name })} />
           </span>
-          <TornTape color="pink" w={56} h={17} rotate={-8} className="-top-3 left-[18px]" />
+          <TornTape color="pink" w={56} h={17} rotate={-8} className="-top-3 left-[16.2px]" />
         </Link>
         <div className="flex min-w-0 flex-1 items-center gap-0.5">
-          <h1 className="min-w-0 truncate text-[48px] leading-none">
+          <h1 className="min-w-0 truncate text-[38.9px] leading-none">
             <span className="hl">{name}</span>
           </h1>
-          <Link href="/me/avatar" aria-label={t("me.face")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full active:bg-fill">
+          <Link href="/me/avatar" aria-label={t("me.face")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] shrink-0 items-center justify-center rounded-full active:bg-fill">
             <Icon name="pencil" size={19} strokeWidth={1.8} />
           </Link>
         </div>
@@ -49,29 +49,29 @@ export function MeView({ locale, name, avatar, card, today }: MeData) {
       <section aria-labelledby="me-title" className="relative mx-4 mt-8 flex flex-col">
         <div className="card relative flex flex-col px-3.5 pb-3 pt-2.5">
           <TornTape color="mint" w={68} h={21} rotate={6} className="-top-3 right-6" />
-          <div className="flex min-h-[34px] items-center justify-between gap-2">
-            <h2 id="me-title" className="scribble text-[24px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
+          <div className="flex min-h-[30.6px] items-center justify-between gap-2">
+            <h2 id="me-title" className="scribble text-[19.4px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
               {t("me.title")}
             </h2>
-            <Link href="/me/edit" aria-label={t("me.edit")} className="flex h-11 w-11 items-center justify-center rounded-full active:bg-fill">
+            <Link href="/me/edit" aria-label={t("me.edit")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] items-center justify-center rounded-full active:bg-fill">
               <Icon name="pencil" size={19} strokeWidth={1.8} />
             </Link>
           </div>
           {filled.length ? (
             <ul className="mt-1.5 flex flex-col">
               {filled.map(({ section, body }) => (
-                <li key={section} className="border-t-[1.5px] border-dashed border-ink/[0.18] first:border-t-0">
+                <li key={section} className="border-t border-dashed border-ink/30 first:border-t-0">
                   <Link href={`/me/edit?open=${section}`} className="flex min-h-10 items-center gap-2.5">
                     <SectionIcon section={section} size={34} outline />
-                    <span className={`hand min-w-0 flex-1 text-[23px] leading-[1.1] ${section === "safety" ? "text-red" : ""}`}>{t(`section.${section}`)}</span>
+                    <span className={`hand min-w-0 flex-1 text-[18.6px] leading-[1.1] ${section === "safety" ? "text-red" : ""}`}>{t(`section.${section}`)}</span>
                     <Icon name="chevron" size={15} strokeWidth={2} className="shrink-0 text-muted" />
                   </Link>
-                  <div className="pb-2.5 pl-[44px]">{body}</div>
+                  <div className="pb-2.5 pl-[39.6px]">{body}</div>
                 </li>
               ))}
             </ul>
           ) : (
-            <Link href="/me/edit" className="hand mt-1 flex min-h-[72px] items-center justify-center gap-1.5 text-[24px]">
+            <Link href="/me/edit" className="hand mt-1 flex min-h-[64.8px] items-center justify-center gap-1.5 text-[19.4px]">
               <Icon name="plus" size={17} strokeWidth={2.4} />
               {t("person.write")}
             </Link>

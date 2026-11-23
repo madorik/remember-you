@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { RemovePersonSheet, type RemoveLabels } from "@/components/RemovePersonSheet";
 
 const ICON = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", strokeWidth: 1.7, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true, className: "shrink-0" } as const;
-const ITEM = "flex h-[46px] w-full items-center gap-2.5 px-3.5 text-left text-[15px]";
+const ITEM = "flex h-[41.4px] w-full items-center gap-2.5 px-3.5 text-left text-[13.5px]";
 
 /**
  * 사람 화면 오른쪽 위 ···: 누르면 단추 밑에 작은 메뉴(물어보기 · 선물 고르기 · 구분선 · 지우기(빨강))가 열린다.
@@ -56,16 +56,16 @@ export function PersonMenu({ contactId, labels }: { contactId: string; labels: {
           aria-haspopup="menu"
           aria-expanded={open}
           onClick={() => setOpen(!open)}
-          className={`flex h-11 w-11 items-center justify-center rounded-full ${open ? "bg-sky-soft" : ""}`}
+          className={`flex h-11 w-11 relative before:absolute before:-inset-[2.2px] items-center justify-center rounded-full ${open ? "bg-sky-soft" : ""}`}
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+          <svg width="19.8" height="19.8" viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="5" cy="12" r="1.7" fill="#1F2340" />
             <circle cx="12" cy="12" r="1.7" fill="#1F2340" />
             <circle cx="19" cy="12" r="1.7" fill="#1F2340" />
           </svg>
         </button>
         {open ? (
-          <div role="menu" aria-label={labels.more} onKeyDown={arrows} className="absolute right-1 top-full z-40 -mt-[3px] w-[196px] rounded-[14px] border-[1.5px] border-ink bg-white py-1.5 shadow-[0_14px_28px_-12px_rgb(31_35_64/0.45)]">
+          <div role="menu" aria-label={labels.more} onKeyDown={arrows} className="absolute right-1 top-full z-40 -mt-[2.7px] w-[176.4px] rounded-[12.6px] border border-edge bg-white py-1.5 shadow-[0_14px_28px_-12px_rgb(31_35_64/0.45)]">
             <Link role="menuitem" href={`/request?to=${encodeURIComponent(contactId)}`} className={ITEM}>
               <svg {...ICON} stroke="#1F2340">
                 <rect x="3" y="6" width="18" height="13" rx="2" fill="#F9CBD5" />

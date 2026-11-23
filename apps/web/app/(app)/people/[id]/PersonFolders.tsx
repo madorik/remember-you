@@ -104,9 +104,9 @@ export function PersonFolders({ contactId, name, folders, mine, labels }: { cont
       <div className="flex flex-wrap gap-1.5">
         {inFolders.map((f) => (
           // 보이는 칩은 34px, 누르는 자리는 위아래 5px씩 넓혀 44px(before). 오른쪽 ×는 가로도 5px씩 넓혀 44×44
-          <span key={f.id} className="flex h-[34px] min-w-0 max-w-full items-center rounded-[10px] border-[1.5px] border-ink bg-white">
-            <Link href={`/people/folder/${f.id}`} className="hand relative flex h-full min-w-0 items-center gap-[5px] pl-2 pr-1.5 text-[22px] leading-none before:absolute before:-inset-y-[5px] before:inset-x-0">
-              <svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#1F2340" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+          <span key={f.id} className="flex h-[30.6px] min-w-0 max-w-full items-center rounded-[9px] border border-edge bg-white">
+            <Link href={`/people/folder/${f.id}`} className="hand relative flex h-full min-w-0 items-center gap-[4.5px] pl-2 pr-1.5 text-[17.8px] leading-none before:absolute before:-inset-y-[5px] before:inset-x-0">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="15.3" height="15.3" fill="none" stroke="#1F2340" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                 <path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z" fill="#FFF4D6" />
               </svg>
               <span className="truncate">{f.name}</span>
@@ -126,13 +126,13 @@ export function PersonFolders({ contactId, name, folders, mine, labels }: { cont
           aria-label={labels.put}
           onClick={openSheet}
           // 보이는 네모는 34px, 누르는 자리는 44px(before)
-          className="relative flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border-[1.5px] border-dashed border-ink text-ink before:absolute before:-inset-[5px]"
+          className="relative flex h-[30.6px] w-[30.6px] items-center justify-center rounded-[9px] border border-dashed border-edge text-ink before:absolute before:-inset-[5px]"
         >
           <Icon name="plus" size={16} strokeWidth={2.2} />
         </button>
       </div>
       {moveFailed ? (
-        <p role="alert" className="pt-1 text-[16px] text-red">
+        <p role="alert" className="pt-1 text-[14.4px] text-red">
           {labels.error}
         </p>
       ) : null}
@@ -147,7 +147,7 @@ export function PersonFolders({ contactId, name, folders, mine, labels }: { cont
           footer={
             <>
               {failed ? (
-                <p role="alert" className="pb-1 text-[16px] text-red">
+                <p role="alert" className="pb-1 text-[14.4px] text-red">
                   {labels.error}
                 </p>
               ) : null}
@@ -162,10 +162,10 @@ export function PersonFolders({ contactId, name, folders, mine, labels }: { cont
               const on = picked.includes(f.id);
               return (
                 <li key={f.id} className="border-t border-rule first:border-t-0">
-                  <button type="button" aria-pressed={on} onClick={() => toggle(f.id)} className="flex min-h-[62px] w-full items-center gap-3.5 text-left">
+                  <button type="button" aria-pressed={on} onClick={() => toggle(f.id)} className="flex min-h-[55.8px] w-full items-center gap-3.5 text-left">
                     <FolderArt icon={f.icon} color={f.color} size={44} />
-                    <span className="hand min-w-0 flex-1 truncate text-[22px]">{f.name}</span>
-                    <span className="text-[13px] text-muted">{labels.count.replace("{n}", String(f.memberIds.length))}</span>
+                    <span className="hand min-w-0 flex-1 truncate text-[17.8px]">{f.name}</span>
+                    <span className="text-[11.7px] text-muted">{labels.count.replace("{n}", String(f.memberIds.length))}</span>
                     <DrawnCheck on={on} />
                   </button>
                 </li>
@@ -194,11 +194,11 @@ export function PersonFolders({ contactId, name, folders, mine, labels }: { cont
                   </button>
                 </form>
               ) : (
-                <button type="button" onClick={() => setMaking(true)} className="flex min-h-[62px] w-full items-center gap-3.5 text-left text-accent">
-                  <span className="flex h-[31px] w-10 items-center justify-center rounded-[9px] shadow-[inset_0_0_0_2px_var(--color-mango-edge)]">
+                <button type="button" onClick={() => setMaking(true)} className="flex min-h-[55.8px] w-full items-center gap-3.5 text-left text-accent">
+                  <span className="flex h-[27.9px] w-10 items-center justify-center rounded-[8.1px] shadow-[inset_0_0_0_2px_var(--color-mango-edge)]">
                     <Icon name="plus" size={18} strokeWidth={2.4} />
                   </span>
-                  <span className="text-[19px]">{labels.newFolder}</span>
+                  <span className="text-[17.1px]">{labels.newFolder}</span>
                 </button>
               )}
             </li>

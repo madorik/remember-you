@@ -79,7 +79,7 @@ export default async function Start({ searchParams }: { searchParams: Promise<{ 
         <form action={setLocale}>
           <input type="hidden" name="locale" value={locale === "ko" ? "en" : "ko"} />
           <input type="hidden" name="back" value={rawNext ? `/?next=${encodeURIComponent(next)}` : "/"} />
-          <button className="flex min-h-11 items-center px-2.5 text-[13px] underline underline-offset-4">{t("lang.other")}</button>
+          <button className="flex min-h-11 items-center px-2.5 text-[11.7px] underline underline-offset-4">{t("lang.other")}</button>
         </form>
       </div>
 
@@ -90,7 +90,7 @@ export default async function Start({ searchParams }: { searchParams: Promise<{ 
 
       <section className="relative flex flex-col gap-3 px-6">
         <HeroHeadline text={t("start.headline")} />
-        <p className="hero-rise whitespace-pre-line text-[15px] leading-[1.6]" style={{ animationDelay: "0.3s" }}>
+        <p className="hero-rise whitespace-pre-line text-[13.5px] leading-[1.6]" style={{ animationDelay: "0.3s" }}>
           {t("start.body")}
         </p>
       </section>
@@ -105,8 +105,8 @@ export default async function Start({ searchParams }: { searchParams: Promise<{ 
           <FaqList id="start-faq" title={locale === "ko" ? "자주 묻는 질문" : "FAQ"} items={faq} lang={locale} />
           {/* 선물 가이드는 한국어 글이라 한국어 화면에서만 */}
           {locale === "ko" ? (
-            <nav aria-label="선물 가이드" className="flex flex-col gap-3 px-4 pt-[38px]">
-              <h2 className="ml-1 text-[25px]">선물 가이드</h2>
+            <nav aria-label="선물 가이드" className="flex flex-col gap-3 px-4 pt-[34.2px]">
+              <h2 className="ml-1 text-[20.3px]">선물 가이드</h2>
               <div className="flex flex-wrap gap-2">
                 {GUIDES.map((g) => (
                   <Link key={g.slug} href={`/gifts/${g.slug}`} className="chip">

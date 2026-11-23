@@ -313,7 +313,7 @@ export function PeopleBoard({
           ["recent", labels.sortRecent],
         ] as const
       ).map(([key, label]) => (
-        <button key={key} type="button" aria-pressed={sort === key} onClick={() => setSort(sort === key ? null : key)} className="chip !min-h-9 !px-3.5 !text-[14px]">
+        <button key={key} type="button" aria-pressed={sort === key} onClick={() => setSort(sort === key ? null : key)} className="chip !min-h-9 !px-3.5 !text-[12.6px]">
           {label}
         </button>
       ))}
@@ -329,35 +329,35 @@ export function PeopleBoard({
             type="button"
             aria-label={labels.cancel}
             onClick={() => setPicking(false)}
-            className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-[1.5px] border-ink bg-white transition-transform active:scale-95"
+            className="relative flex h-11 w-11 before:absolute before:-inset-[2.2px] shrink-0 items-center justify-center rounded-full border border-edge bg-white transition-transform active:scale-95"
           >
             <Icon name="close" size={22} strokeWidth={2} />
           </button>
-          <h1 aria-live="polite" className="min-w-0 flex-1 truncate text-[32px] leading-[1.1]">
+          <h1 aria-live="polite" className="min-w-0 flex-1 truncate text-[25.9px] leading-[1.1]">
             <span className="hl">{pickedHead}</span>
             {pickedRest ? ` ${pickedRest}` : ""}
           </h1>
-          <button type="button" onClick={toggleAll} className="pill relative shrink-0 !h-10 !bg-sky-soft !px-3.5 !text-[15px]">
+          <button type="button" onClick={toggleAll} className="pill relative shrink-0 !h-10 !bg-sky-soft !px-3.5 !text-[13.5px]">
             {allOn ? labels.selectNone : labels.selectAll}
           </button>
         </div>
       ) : (
         <div className="relative flex items-end justify-between gap-2 pl-5 pr-4 pt-4">
           <div className="flex min-w-0 flex-col">
-            <h1 className="scribble self-start text-[38px] leading-none">{labels.title}</h1>
-            {rows.length ? <span className="mt-3.5 text-[14px] text-muted">{labels.summary.replace("{n}", String(rows.length)).replace("{f}", String(favCount))}</span> : null}
+            <h1 className="scribble self-start text-[30.8px] leading-none">{labels.title}</h1>
+            {rows.length ? <span className="mt-3.5 text-[12.6px] text-muted">{labels.summary.replace("{n}", String(rows.length)).replace("{f}", String(favCount))}</span> : null}
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {/* 직접 적기: 사람 아이콘 + */}
             <Link
               href="/people/new"
               aria-label={labels.add}
-              className="relative flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] border-ink bg-white transition-transform active:scale-95"
+              className="relative flex h-11 w-11 before:absolute before:-inset-[2.2px] items-center justify-center rounded-full border border-edge bg-white transition-transform active:scale-95"
             >
               <Icon name="personAdd" size={22} strokeWidth={1.8} />
             </Link>
             {canPick ? (
-              <button type="button" onClick={() => setPicking(true)} className="pill relative shrink-0 !h-10 !gap-[5px] !bg-sky-soft !pl-2.5 !pr-3.5 !text-[15px]">
+              <button type="button" onClick={() => setPicking(true)} className="pill relative shrink-0 !h-10 !gap-[4.5px] !bg-sky-soft !pl-2.5 !pr-3.5 !text-[13.5px]">
                 <Icon name="check" size={17} strokeWidth={1.7} />
                 {labels.pick}
               </button>
@@ -368,7 +368,7 @@ export function PeopleBoard({
 
       {rows.length ? (
         <div className="relative px-4 pt-5">
-          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="pointer-events-none absolute left-[31px] top-[34px] text-muted">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="16.2" height="16.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="pointer-events-none absolute left-[27.9px] top-[30.6px] text-muted">
             <circle cx="11" cy="11" r="7" />
             <path d="M20 20l-4-4" />
           </svg>
@@ -379,10 +379,10 @@ export function PeopleBoard({
             placeholder={labels.search}
             aria-label={labels.search}
             enterKeyHint="search"
-            className="h-[46px] w-full rounded-[14px] border-[1.5px] border-ink bg-white pl-[44px] pr-12 text-[15px] outline-none placeholder:text-muted focus:border-mango-deep [&::-webkit-search-cancel-button]:appearance-none"
+            className="h-[41.4px] w-full rounded-[12.6px] border border-edge bg-white pl-[39.6px] pr-12 text-[16px] outline-none placeholder:text-muted focus:border-mango-deep [&::-webkit-search-cancel-button]:appearance-none"
           />
           {find ? (
-            <button type="button" aria-label={labels.clear} onClick={() => setFind("")} className="absolute right-5 top-[21px] flex h-11 w-11 items-center justify-center text-muted">
+            <button type="button" aria-label={labels.clear} onClick={() => setFind("")} className="absolute right-5 top-[18.9px] flex h-11 w-11 before:absolute before:-inset-[2.2px] items-center justify-center text-muted">
               <Icon name="close" size={18} strokeWidth={2} />
             </button>
           ) : null}
@@ -393,15 +393,15 @@ export function PeopleBoard({
       {picking || searching || !rows.length ? null : (
         <Link
           href="/request"
-          className="relative mx-4 mt-5 flex items-center gap-2.5 rounded-2xl border-[1.5px] border-dashed border-ink/40 bg-white py-1.5 pl-2 pr-3 transition-transform active:scale-[0.99]"
+          className="relative mx-4 mt-5 flex items-center gap-2.5 rounded-2xl border border-dashed border-ink/30 bg-white py-1.5 pl-2 pr-3 transition-transform active:scale-[0.99]"
         >
-          <TornTape color="mint" w={60} h={18} rotate={5} className="-top-2.5 right-[26px]" />
-          <span className="flex h-[52px] w-[52px] shrink-0 items-end justify-center">
+          <TornTape color="mint" w={60} h={18} rotate={5} className="-top-2.5 right-[23.4px]" />
+          <span className="flex h-[46.8px] w-[46.8px] shrink-0 items-end justify-center">
             <Mascot pose={6} size={42} />
           </span>
-          <span className="hand-written min-w-0 flex-1 text-balance text-[23px] leading-[1.15]">{labels.bannerTitle}</span>
-          <span className="flex h-[34px] shrink-0 items-center gap-[5px] whitespace-nowrap rounded-full border-[1.5px] border-ink bg-sky-soft pl-2.5 pr-3.5 text-[14px]">
-            <svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#1F2340" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+          <span className="hand-written min-w-0 flex-1 text-balance text-[18.6px] leading-[1.15]">{labels.bannerTitle}</span>
+          <span className="flex h-[30.6px] shrink-0 items-center gap-[4.5px] whitespace-nowrap rounded-full border border-edge bg-sky-soft pl-2.5 pr-3.5 text-[12.6px]">
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="15.3" height="15.3" fill="none" stroke="#1F2340" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
               <rect x="3" y="6" width="18" height="13" rx="2" fill="#F9CBD5" />
               <path d="M3.8 7l8.2 6.2L20.2 7" />
             </svg>
@@ -413,12 +413,12 @@ export function PeopleBoard({
       {picking ? (
         <div className="flex flex-col px-4">
           {/* 빠른 고르기 칩 한 줄: 나도 같이(켜고 끈다) + 폴더 모두 선택. 정렬 칩은 고르는 동안 뺀다 */}
-          <div role="group" aria-label={labels.folders} className="-mx-4 -mb-[3px] flex gap-2 overflow-x-auto px-4 pb-[3px] pt-3 [scrollbar-width:none]">
+          <div role="group" aria-label={labels.folders} className="-mx-4 -mb-[2.7px] flex gap-2 overflow-x-auto px-4 pb-[2.7px] pt-3 [scrollbar-width:none]">
             <button
               type="button"
               aria-pressed={withMe}
               onClick={() => setWithMe(!withMe)}
-              className={`relative flex h-[38px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full pl-2 pr-3.5 text-[17px] before:absolute before:-inset-y-[3px] before:inset-x-0 before:content-[''] ${withMe ? "chip-on" : "bg-white shadow-[inset_0_0_0_1.5px_var(--color-edge)]"}`}
+              className={`relative flex h-[34.2px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full pl-2 pr-3.5 text-[15.3px] before:absolute before:-inset-y-[3px] before:inset-x-0 before:content-[''] ${withMe ? "chip-on" : "bg-white shadow-[inset_0_0_0_1px_var(--color-edge)]"}`}
             >
               <Avatar config={meAvatar} size={24} label={labels.meName} decorative />
               {labels.withMe}
@@ -433,35 +433,35 @@ export function PeopleBoard({
                   aria-pressed={all}
                   aria-label={labels.pickFolder.replace("{name}", f.name)}
                   onClick={() => toggleMany(ids, !all)}
-                  className={`relative flex h-[38px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full pl-3 pr-3.5 text-[17px] before:absolute before:-inset-y-[3px] before:inset-x-0 before:content-[''] ${all ? "chip-on" : "bg-white shadow-[inset_0_0_0_1.5px_var(--color-edge)]"}`}
+                  className={`relative flex h-[34.2px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full pl-3 pr-3.5 text-[15.3px] before:absolute before:-inset-y-[3px] before:inset-x-0 before:content-[''] ${all ? "chip-on" : "bg-white shadow-[inset_0_0_0_1px_var(--color-edge)]"}`}
                 >
                   <FolderMini color={f.color} size={18} />
                   {f.name}
-                  <span className="num text-[15px] text-muted">{ids.length}</span>
+                  <span className="num text-[12.8px] text-muted">{ids.length}</span>
                 </button>
               );
             })}
           </div>
           {searching && !found.length ? (
             <div className="flex flex-col gap-3 px-2 pt-5">
-              <p className="text-[16px] text-muted">{labels.searchEmpty}</p>
+              <p className="text-[14.4px] text-muted">{labels.searchEmpty}</p>
               {newName ? <NewNamed href={`/people/new?name=${encodeURIComponent(newName)}`} label={labels.addNamed.replace("{name}", newName)} /> : null}
             </div>
           ) : null}
           {/* 체크는 왼쪽, 줄 어디를 눌러도 고른다. 고른 줄은 연한 망고 */}
           <div className={`card relative mt-5 ${found.length ? "" : "hidden"}`}>
-            <TornTape color="pink" w={50} h={15} rotate={-30} className="-left-1.5 -top-[9px]" />
+            <TornTape color="pink" w={50} h={15} rotate={-30} className="-left-1.5 -top-[8.1px]" />
             <ul className="flex flex-col">
               {found.map((r) => {
                 const on = picked.includes(r.contactId);
                 return (
-                  <li key={r.contactId} className={`border-t-[1.5px] border-dashed border-rule first:rounded-t-[16px] first:border-t-0 last:rounded-b-[16px] ${on ? "bg-sky-soft" : ""} ${lazyRow}`}>
+                  <li key={r.contactId} className={`border-t border-dashed border-ink/30 first:rounded-t-[14.4px] first:border-t-0 last:rounded-b-[14.4px] ${on ? "bg-sky-soft" : ""} ${lazyRow}`}>
                     <button
                       type="button"
                       aria-pressed={on}
                       aria-label={labels.pickOne.replace("{name}", r.tag ? `${r.name} ${r.tag}` : r.name)}
                       onClick={() => toggle(r.contactId)}
-                      className="flex min-h-[56px] w-full items-center gap-2.5 px-3.5 text-left"
+                      className="flex min-h-[50.4px] w-full items-center gap-2.5 px-3.5 text-left"
                     >
                       <DrawnCheck on={on} />
                       <RowBody row={r} avatarLabel={labels.avatarOf.replace("{name}", r.name)} />
@@ -476,8 +476,8 @@ export function PeopleBoard({
         found.length ? (
           <ul className="card mx-4 mt-3.5 flex flex-col px-3.5">
             {found.map((r) => (
-              <li key={r.contactId} className={`border-t-[1.5px] border-dashed border-rule first:border-t-0 ${lazyRow}`}>
-                <Link href={`/people/${r.contactId}`} className="flex min-h-[56px] items-center gap-2.5">
+              <li key={r.contactId} className={`border-t border-dashed border-ink/30 first:border-t-0 ${lazyRow}`}>
+                <Link href={`/people/${r.contactId}`} className="flex min-h-[50.4px] items-center gap-2.5">
                   <RowBody row={r} avatarLabel={labels.avatarOf.replace("{name}", r.name)} />
                 </Link>
               </li>
@@ -485,7 +485,7 @@ export function PeopleBoard({
           </ul>
         ) : (
           <div className="flex flex-col gap-3 px-6 pt-6">
-            <p className="text-[16px] text-muted">{labels.searchEmpty}</p>
+            <p className="text-[14.4px] text-muted">{labels.searchEmpty}</p>
             {newName ? <NewNamed href={`/people/new?name=${encodeURIComponent(newName)}`} label={labels.addNamed.replace("{name}", newName)} /> : null}
           </div>
         )
@@ -494,7 +494,7 @@ export function PeopleBoard({
           {/* 아직 아무도 없으면 홈 빈 화면과 같은 두 가지로 시작한다 */}
           {rows.length ? null : (
             <section className="card mx-4 mt-4 flex flex-col gap-3 px-4 pb-4 pt-5">
-              <p className="px-1.5 text-[17px] leading-[1.5] text-muted">{labels.empty}</p>
+              <p className="px-1.5 text-[15.3px] leading-[1.5] text-muted">{labels.empty}</p>
               <div className="grid grid-cols-2 gap-2.5">
                 <Link href="/people/new" className="btn-outline">
                   {labels.add}
@@ -510,8 +510,8 @@ export function PeopleBoard({
             <section aria-label={labels.favorites} className="relative">
               <h2 className="px-6 pt-5">
                 <button type="button" aria-expanded={favOpen} aria-controls="people-fav" onClick={() => setFavOpen(!favOpen)} className="flex min-h-11 w-full items-baseline gap-1.5 text-left">
-                  <span className="text-[26px] leading-none">{labels.favorites}</span>
-                  <span className="font-sans text-[14px] font-normal tracking-[-0.035em] text-muted">{favRows.length}</span>
+                  <span className="text-[23.4px] leading-none">{labels.favorites}</span>
+                  <span className="font-sans text-[12.6px] font-normal text-muted">{favRows.length}</span>
                   <Icon name="chevron" size={18} strokeWidth={2} className={`ml-auto self-center text-muted transition-transform ${favOpen ? "rotate-90" : ""}`} />
                 </button>
               </h2>
@@ -519,8 +519,8 @@ export function PeopleBoard({
                 <div id="people-fav" className="card relative mx-4 px-3.5">
                   <ul className="flex flex-col">
                     {favRows.map((r) => (
-                      <li key={r.contactId} className={`border-t-[1.5px] border-dashed border-rule first:border-t-0 ${lazyRow}`}>
-                        <Link href={`/people/${r.contactId}`} className="flex min-h-[56px] items-center gap-2.5">
+                      <li key={r.contactId} className={`border-t border-dashed border-ink/30 first:border-t-0 ${lazyRow}`}>
+                        <Link href={`/people/${r.contactId}`} className="flex min-h-[50.4px] items-center gap-2.5">
                           <RowBody row={r} avatarLabel={labels.avatarOf.replace("{name}", r.name)} />
                         </Link>
                       </li>
@@ -532,8 +532,8 @@ export function PeopleBoard({
           ) : null}
           <section aria-label={labels.folders} className="relative">
           <h2 className="flex items-baseline gap-1.5 px-6 pb-2 pt-5">
-            <span className="text-[26px] leading-none">{labels.folders}</span>
-            <span className="font-sans text-[14px] font-normal tracking-[-0.035em] text-muted">{folders.length}</span>
+            <span className="text-[23.4px] leading-none">{labels.folders}</span>
+            <span className="font-sans text-[12.6px] font-normal text-muted">{folders.length}</span>
           </h2>
           <div className="flex items-start gap-2 px-4">
           <div className="grid min-w-0 flex-1 grid-cols-3 gap-2">
@@ -545,13 +545,13 @@ export function PeopleBoard({
                   key={f.id}
                   href={`/people/folder/${f.id}`}
                   data-drop={f.id}
-                  className={`card flex min-w-0 flex-col items-center gap-[3px] px-1 pb-2.5 pt-3 transition-[transform,background-color,box-shadow] active:scale-[0.97] ${FOLDER_TILT[i % FOLDER_TILT.length]} ${
+                  className={`card flex min-w-0 flex-col items-center gap-[2.7px] px-1 pb-2.5 pt-3 transition-[transform,background-color,box-shadow] active:scale-[0.97] ${FOLDER_TILT[i % FOLDER_TILT.length]} ${
                     target ? "scale-[1.04] !bg-sky-soft !shadow-[inset_0_0_0_2px_var(--color-sky)]" : ""
                   }`}
                 >
                   <FolderArt icon={f.icon} color={f.color} size={66} faces={facesOf(f)} />
-                  <span className="hand mt-1 w-full truncate text-center text-[23px] leading-none">{f.name}</span>
-                  <span className="text-[12px] leading-[1.3] text-muted">{labels.count.replace("{n}", String(membersOf(f).length))}</span>
+                  <span className="hand mt-1 w-full truncate text-center text-[18.6px] leading-none">{f.name}</span>
+                  <span className="text-[10.8px] leading-[1.3] text-muted">{labels.count.replace("{n}", String(membersOf(f).length))}</span>
                 </Link>
               );
             })}
@@ -562,7 +562,7 @@ export function PeopleBoard({
             aria-label={labels.newFolder}
             aria-haspopup="dialog"
             onClick={() => setMaking(true)}
-            className="mt-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-[1.5px] border-dashed border-ink text-ink transition-transform active:scale-95"
+            className="mt-10 flex h-10 w-10 relative before:absolute before:-inset-[3.6px] shrink-0 items-center justify-center rounded-full border border-dashed border-edge text-ink transition-transform active:scale-95"
           >
             <Icon name="plus" size={18} strokeWidth={1.8} />
           </button>
@@ -574,12 +574,12 @@ export function PeopleBoard({
             <>
               <section aria-label={labels.unfiled} className="relative">
               <h2 className="flex items-baseline gap-1.5 px-6 pb-2 pt-5">
-                <span className="text-[26px] leading-none">{labels.unfiled}</span>
-                <span className="font-sans text-[14px] font-normal tracking-[-0.035em] text-muted">{unfiled.length}</span>
+                <span className="text-[23.4px] leading-none">{labels.unfiled}</span>
+                <span className="font-sans text-[12.6px] font-normal text-muted">{unfiled.length}</span>
               </h2>
               {unfiled.length > 1 ? <div className="px-4">{sortChips}</div> : null}
               <div className="card relative mx-4 px-3.5">
-                <TornTape color="pink" w={50} h={15} rotate={-30} className="-left-1.5 -top-[9px]" />
+                <TornTape color="pink" w={50} h={15} rotate={-30} className="-left-1.5 -top-[8.1px]" />
                 <ul className="flex flex-col">
                 {unfiled.map((r) => (
                   <li
@@ -587,9 +587,9 @@ export function PeopleBoard({
                    
                     onPointerDown={(e) => drag.onPointerDown(e, r.contactId, r.name, "list")}
                     onContextMenu={(e) => e.preventDefault()}
-                    className={`select-none border-t-[1.5px] border-dashed border-rule first:border-t-0 [-webkit-touch-callout:none] ${lazyRow} ${drag.dragging?.id === r.contactId ? "opacity-40" : ""}`}
+                    className={`select-none border-t border-dashed border-ink/30 first:border-t-0 [-webkit-touch-callout:none] ${lazyRow} ${drag.dragging?.id === r.contactId ? "opacity-40" : ""}`}
                   >
-                    <Link href={`/people/${r.contactId}`} draggable={false} className="flex min-h-[56px] items-center gap-2.5">
+                    <Link href={`/people/${r.contactId}`} draggable={false} className="flex min-h-[50.4px] items-center gap-2.5">
                       <RowBody row={r} avatarLabel={labels.avatarOf.replace("{name}", r.name)} />
                     </Link>
                   </li>
@@ -605,7 +605,7 @@ export function PeopleBoard({
       {/* 고른 사람을 폴더에 넣은 결과·오류(막대 위에 잠깐, 다음에 사람을 누르면 사라진다) */}
       {picking && putMsg ? (
         <div className="sticky z-20 flex justify-center px-5 py-2" style={{ bottom: "calc(var(--tab-h) + var(--pb-tab))" }}>
-          <span role="status" className={`card px-4 py-2 text-[16px] ${putMsg.error ? "text-red" : ""}`}>
+          <span role="status" className={`card px-4 py-2 text-[14.4px] ${putMsg.error ? "text-red" : ""}`}>
             {putMsg.text}
           </span>
         </div>
@@ -617,16 +617,16 @@ export function PeopleBoard({
           role="toolbar"
           aria-label={labels.pick}
           data-tabbar=""
-          className="sticky bottom-0 z-30 mt-auto bg-paper px-4 pt-2 shadow-[inset_0_1.5px_0_rgb(31_35_64/0.12)]"
+          className="sticky bottom-0 z-30 mt-auto bg-paper px-4 pt-2 shadow-[inset_0_1px_0_rgb(31_35_64/0.12)]"
           style={{ paddingBottom: "var(--pb-tab)" }}
         >
-          <div className="flex h-[70px] items-center gap-2.5">
+          <div className="flex h-[63px] items-center gap-2.5">
             <button
               type="button"
               aria-label={labels.remove}
               aria-haspopup="dialog"
               onClick={() => setRemoveOpen(true)}
-              className="flex h-[52px] w-14 shrink-0 items-center justify-center rounded-2xl bg-red-soft text-red shadow-[inset_0_0_0_1.5px_var(--color-red),0_4px_0_rgb(200_40_58/0.3)] transition-transform active:translate-y-0.5"
+              className="flex h-[46.8px] w-14 shrink-0 items-center justify-center rounded-2xl bg-red-soft text-red shadow-[inset_0_0_0_1px_var(--color-red),0_4px_0_rgb(200_40_58/0.3)] transition-transform active:translate-y-0.5"
             >
               <Icon name="trash" size={24} strokeWidth={1.9} />
             </button>
@@ -659,18 +659,18 @@ export function PeopleBoard({
             </div>
           }
         >
-          <p className="px-6 pb-3 pt-1 text-[17px] leading-[1.5]">{labels.removeBody.replace("{n}", String(picked.length))}</p>
+          <p className="px-6 pb-3 pt-1 text-[15.3px] leading-[1.5]">{labels.removeBody.replace("{n}", String(picked.length))}</p>
         </Sheet>
       ) : null}
       {putOpen ? (
         <Sheet id="people-put-title" title={labels.put} closeLabel={labels.clear} onClose={() => setPutOpen(false)}>
           <ul className="flex flex-col px-6" style={{ paddingBottom: "max(var(--pb), 16px)" }}>
             {folders.map((f) => (
-              <li key={f.id} className="border-t border-dashed border-rule first:border-t-0">
+              <li key={f.id} className="border-t border-dashed border-ink/30 first:border-t-0">
                 <button type="button" onClick={() => putIn(f)} className="flex min-h-14 w-full items-center gap-3 text-left">
                   <FolderMini color={f.color} size={22} />
-                  <span className="min-w-0 flex-1 truncate text-[19px]">{f.name}</span>
-                  <span className="num text-[15px] text-muted">{membersOf(f).length}</span>
+                  <span className="min-w-0 flex-1 truncate text-[17.1px]">{f.name}</span>
+                  <span className="num text-[12.8px] text-muted">{membersOf(f).length}</span>
                 </button>
               </li>
             ))}

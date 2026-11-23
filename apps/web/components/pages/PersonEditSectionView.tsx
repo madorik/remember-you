@@ -31,14 +31,14 @@ export function PersonEditSectionView({ locale, contactId, name, avatar, section
         header={
           <>
             <div className="flex h-12 items-center justify-between pl-1.5 pr-2.5">
-              <Link href={`/people/${contactId}`} prefetch={false} aria-label={t("common.back")} className="flex h-11 w-11 items-center justify-center">
+              <Link href={`/people/${contactId}`} prefetch={false} aria-label={t("common.back")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] items-center justify-center">
                 <Icon name="back" size={26} strokeWidth={2} />
               </Link>
               <SaveButton label={t("common.save")} />
             </div>
             <div className="flex flex-col gap-3 px-5">
               <PersonNameChip avatar={avatar} name={name} />
-              <h1 className="scribble self-start text-[36px] leading-[1.05]">
+              <h1 className="scribble self-start text-[29.2px] leading-[1.05]">
                 {first}
                 {second ? (
                   <>

@@ -53,10 +53,10 @@ export function PlanGiftView({ locale, today, people, back, picksOn, picks }: Pl
   return (
     <div className="page-end flex flex-1 flex-col">
       <div className="flex h-12 shrink-0 items-center gap-0.5 pl-1.5 pr-4">
-        <Link href={back} prefetch={false} aria-label={t("common.back")} className="flex h-11 w-11 shrink-0 items-center justify-center">
+        <Link href={back} prefetch={false} aria-label={t("common.back")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] shrink-0 items-center justify-center">
           <Icon name="back" size={24} />
         </Link>
-        <h1 className="min-w-0 truncate text-[34px] leading-none">{t("plan.giftTitle")}</h1>
+        <h1 className="min-w-0 truncate text-[27.5px] leading-none">{t("plan.giftTitle")}</h1>
       </div>
       <div className="flex flex-col gap-6 px-4 pt-6">
         {people.map((p, idx) => {
@@ -65,14 +65,14 @@ export function PlanGiftView({ locale, today, people, back, picksOn, picks }: Pl
           const rows = hints(p);
           return (
             <section key={p.contactId} className={`card relative flex flex-col px-3.5 pb-1.5 pt-3.5 ${idx % 2 ? "rotate-[0.4deg]" : "-rotate-[0.4deg]"}`}>
-              <TornTape color={idx % 2 ? "mint" : "pink"} w={66} h={21} rotate={-6} className="-top-3 left-[22px]" />
-              <div className="flex min-h-[52px] items-center gap-3">
+              <TornTape color={idx % 2 ? "mint" : "pink"} w={66} h={21} rotate={-6} className="-top-3 left-[19.8px]" />
+              <div className="flex min-h-[46.8px] items-center gap-3">
                 <Avatar config={p.avatar} size={49} label={t("avatar.of", { name })} />
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="hand-written truncate text-[29px] leading-[1.15]">{name}</span>
-                  {next ? <span className={`text-[12px] ${next.daysUntil <= 30 ? "text-accent" : "text-muted"}`}>{t("plan.nextDate", { event: eventName(next, t, locale), n: next.daysUntil })}</span> : null}
+                  <span className="hand-written truncate text-[23.5px] leading-[1.15]">{name}</span>
+                  {next ? <span className={`text-[10.8px] ${next.daysUntil <= 30 ? "text-accent" : "text-muted"}`}>{t("plan.nextDate", { event: eventName(next, t, locale), n: next.daysUntil })}</span> : null}
                 </div>
-                <Link href={`/people/${p.contactId}/reminder`} className="flex min-h-11 items-center gap-px pl-2 text-[13px] text-muted">
+                <Link href={`/people/${p.contactId}/reminder`} className="flex min-h-11 items-center gap-px pl-2 text-[11.7px] text-muted">
                   {t("plan.seeHints")}
                   <Icon name="chevron" size={13} strokeWidth={2} />
                 </Link>
@@ -80,16 +80,16 @@ export function PlanGiftView({ locale, today, people, back, picksOn, picks }: Pl
               <div className="mt-1">
                 {rows.length ? (
                   rows.map((r) => (
-                    <div key={r.label} className="flex items-center gap-2.5 border-t-[1.5px] border-dashed border-ink/[0.18] py-2.5">
-                      <span className="w-[96px] shrink-0 text-[12px] leading-[1.3] text-muted">{r.label}</span>
-                      <span className={`hand-written min-w-0 flex-1 text-[22px] leading-[1.2] ${r.strike ? "text-red line-through decoration-2" : ""}`}>{r.value}</span>
+                    <div key={r.label} className="flex items-center gap-2.5 border-t border-dashed border-ink/30 py-2.5">
+                      <span className="w-[86.4px] shrink-0 text-[10.8px] leading-[1.3] text-muted">{r.label}</span>
+                      <span className={`hand-written min-w-0 flex-1 text-[17.8px] leading-[1.2] ${r.strike ? "text-red line-through decoration-2" : ""}`}>{r.value}</span>
                     </div>
                   ))
                 ) : (
-                  <p className="border-t-[1.5px] border-dashed border-ink/[0.18] py-3 text-[14px] text-muted">{t("plan.giftNone")}</p>
+                  <p className="border-t border-dashed border-ink/30 py-3 text-[12.6px] text-muted">{t("plan.giftNone")}</p>
                 )}
               </div>
-              {picksOn && picks ? <div className="-mx-3.5 border-t-[1.5px] border-dashed border-ink/[0.18] pb-2">{picks.row(p, name, next)}</div> : null}
+              {picksOn && picks ? <div className="-mx-3.5 border-t border-dashed border-ink/30 pb-2">{picks.row(p, name, next)}</div> : null}
             </section>
           );
         })}

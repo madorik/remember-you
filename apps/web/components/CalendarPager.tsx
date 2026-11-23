@@ -215,32 +215,32 @@ export function CalendarPager({ locale, today, cur: initial, people }: CalendarD
   return (
     <>
       {/* 머리 한 줄: 뒤로 · ‹ 2026년 11월 › · 오늘 */}
-      <header className="grid h-[52px] shrink-0 grid-cols-[64px_1fr_64px] items-center pl-1.5 pr-3">
-        <Link href="/home" aria-label={t("common.back")} className="flex h-11 w-11 items-center justify-center">
-          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
+      <header className="grid h-[46.8px] shrink-0 grid-cols-[57.6px_1fr_57.6px] items-center pl-1.5 pr-3">
+        <Link href="/home" aria-label={t("common.back")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] items-center justify-center">
+          <svg viewBox="0 0 24 24" width="23.4" height="23.4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
             <path d="M15 5l-7 7 7 7" />
           </svg>
         </Link>
         <div className="flex items-center justify-center gap-0.5">
           <button type="button" onClick={() => go(-1)} disabled={!inRange(shift(cur, -1))} aria-label={t("cal.prev")} className="flex h-11 w-9 items-center justify-center disabled:opacity-40">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5B5F78" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16.2" height="16.2" fill="none" stroke="#5B5F78" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M15 5l-7 7 7 7" />
             </svg>
           </button>
-          <h1 aria-live="polite" aria-label={title} className="hand scribble mx-1 whitespace-nowrap text-[34px] leading-none">
-            <span aria-hidden="true" className="mr-[5px] text-[13px] tracking-normal text-muted" style={{ fontFamily: "var(--font-sans)", fontWeight: 400 }}>
+          <h1 aria-live="polite" aria-label={title} className="hand scribble mx-1 whitespace-nowrap text-[27.5px] leading-none">
+            <span aria-hidden="true" className="mr-[4.5px] text-[11.7px] tracking-normal text-muted" style={{ fontFamily: "var(--font-sans)", fontWeight: 400 }}>
               {locale === "ko" ? `${cur.y}년` : cur.y}
             </span>
             <span aria-hidden="true">{locale === "ko" ? `${cur.m}월` : monthName(cur.m, locale, true)}</span>
           </h1>
           <button type="button" onClick={() => go(1)} disabled={!inRange(shift(cur, 1))} aria-label={t("cal.next")} className="flex h-11 w-9 items-center justify-center disabled:opacity-40">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5B5F78" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16.2" height="16.2" fill="none" stroke="#5B5F78" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M9 6l6 6-6 6" />
             </svg>
           </button>
         </div>
         <div className="flex justify-end">
-          <button type="button" onClick={() => jumpTo({ y: today.y, m: today.m })} aria-label={t("cal.thisMonth")} className="relative h-[30px] rounded-full border-[1.5px] border-ink bg-white px-[11px] text-[13px] before:absolute before:-inset-y-2 before:inset-x-0">
+          <button type="button" onClick={() => jumpTo({ y: today.y, m: today.m })} aria-label={t("cal.thisMonth")} className="relative h-[27px] rounded-full border border-edge bg-white px-[9.9px] text-[11.7px] before:absolute before:-inset-y-2 before:inset-x-0">
             {t("start.today")}
           </button>
         </div>
@@ -266,8 +266,8 @@ export function CalendarPager({ locale, today, cur: initial, people }: CalendarD
   );
 }
 
-const DASH = { borderColor: "rgba(31,35,64,.10)" } as const;
-const DASH_ROW = { borderColor: "rgba(31,35,64,.16)" } as const;
+const DASH = { borderColor: "rgba(31,35,64,.30)" } as const;
+const DASH_ROW = { borderColor: "rgba(31,35,64,.30)" } as const;
 
 /** 한 줄: 다가오는 날(사람 기념일 또는 공휴일·챙기는 날) */
 interface UpRow {
@@ -339,15 +339,15 @@ const MonthPane = memo(function MonthPane({ y, m, locale, today, people, t }: { 
   return (
     <>
       <div className="min-h-4 flex-[0.6_1_0]" />
-      <section aria-label={title} className="card relative mx-4 shrink-0 px-1.5 pb-1 pt-[22px]">
+      <section aria-label={title} className="card relative mx-4 shrink-0 px-1.5 pb-1 pt-[19.8px]">
         {/* 위에서 묶은 고리 일곱 개(구멍 + 남색 고리) */}
         {[10, 23.3, 36.6, 50, 63.3, 76.6, 90].map((left) => (
           <span key={left} aria-hidden="true">
-            <span className="absolute -top-2.5 -ml-[3.5px] h-5 w-[7px] rounded-[4px] bg-ink" style={{ left: `${left}%` }} />
-            <span className="absolute top-[5px] -ml-[4.5px] box-border h-[9px] w-[9px] rounded-full border-[1.5px] border-ink bg-paper" style={{ left: `${left}%` }} />
+            <span className="absolute -top-2.5 -ml-[3.2px] h-5 w-[6.3px] rounded-[3.6px] bg-ink" style={{ left: `${left}%` }} />
+            <span className="absolute top-[4.5px] -ml-[4.1px] box-border h-[8.1px] w-[8.1px] rounded-full border border-edge bg-paper" style={{ left: `${left}%` }} />
           </span>
         ))}
-        <div className="grid h-[22px] grid-cols-[repeat(7,minmax(0,1fr))] items-center text-center text-[11px] font-bold">
+        <div className="grid h-[19.8px] grid-cols-[repeat(7,minmax(0,1fr))] items-center text-center text-[9.9px] font-bold">
           {names.map((n, i) => (
             <span key={n} className={i === 0 ? "text-red" : i === 6 ? "text-sat" : "text-muted"}>
               {n}
@@ -370,27 +370,27 @@ const MonthPane = memo(function MonthPane({ y, m, locale, today, people, t }: { 
             // 스티커 글: '엄마 칠순' → '칠순'(이름 뒤의 말만)
             const short = ev ? (ev.name && evName.startsWith(ev.name) ? evName.slice(ev.name.length).trim() || evName : evName) : "";
             return (
-              <li key={`${day.m}-${day.d}`} aria-current={isToday ? "date" : undefined} className={`box-border flex h-[52px] flex-col items-center gap-px border-t-[1.5px] border-dashed pt-[3px] ${wd ? "border-l-[1.5px]" : ""} ${inMonth ? "" : "opacity-40"}`} style={DASH}>
+              <li key={`${day.m}-${day.d}`} aria-current={isToday ? "date" : undefined} className={`box-border flex h-[46.8px] flex-col items-center gap-px border-t border-dashed pt-[2.7px] ${wd ? "border-l" : ""} ${inMonth ? "" : "opacity-40"}`} style={DASH}>
                 <span
-                  className={`hand flex h-[26px] w-[26px] items-center justify-center leading-none ${isToday ? "box-border rounded-full border-[1.5px] border-ink bg-sky text-[20px]" : "text-[22px]"} ${isToday ? "" : wd === 0 || off ? "text-red" : wd === 6 ? "text-sat" : ""}`}
+                  className={`hand flex h-[23.4px] w-[23.4px] items-center justify-center leading-none ${isToday ? "box-border rounded-full border border-edge bg-sky text-[16.2px]" : "text-[17.8px]"} ${isToday ? "" : wd === 0 || off ? "text-red" : wd === 6 ? "text-sat" : ""}`}
                 >
                   {day.d}
                 </span>
                 {ev ? (
-                  <span className="flex max-w-full items-center gap-0.5 rounded-[3px] bg-[#F9CBD5] py-px pl-px pr-[3px]" style={{ transform: "rotate(-3deg)" }}>
+                  <span className="flex max-w-full items-center gap-0.5 rounded-[2.7px] bg-[#F9CBD5] py-px pl-px pr-[2.7px]" style={{ transform: "rotate(-3deg)" }}>
                     <span aria-hidden="true" className="shrink-0">
                       <Avatar config={who(ev)?.avatar ?? null} size={14} label={evName} decorative />
                     </span>
                     <span className="sr-only">{evName}</span>
-                    <span aria-hidden="true" className="truncate text-[10px] font-bold leading-[1.2]">
+                    <span aria-hidden="true" className="truncate text-[9px] font-bold leading-[1.2]">
                       {short}
                       {dayEvents.length > 1 ? ` +${dayEvents.length - 1}` : ""}
                     </span>
                   </span>
                 ) : mark ? (
-                  <span className={`max-w-full truncate whitespace-nowrap px-px text-[9.5px] leading-[1.2] ${mark.off ? "text-red" : "text-muted"}`}>{mark.short[locale]}</span>
+                  <span className={`max-w-full truncate whitespace-nowrap px-px text-[8.6px] leading-[1.2] ${mark.off ? "text-red" : "text-muted"}`}>{mark.short[locale]}</span>
                 ) : isToday && lunar ? (
-                  <span className="whitespace-nowrap text-[9.5px] leading-[1.2] text-muted">{locale === "ko" ? `음 ${lunar.leap ? "윤" : ""}${lunar.m}.${lunar.d}` : `L ${lunar.m}.${lunar.d}`}</span>
+                  <span className="whitespace-nowrap text-[8.6px] leading-[1.2] text-muted">{locale === "ko" ? `음 ${lunar.leap ? "윤" : ""}${lunar.m}.${lunar.d}` : `L ${lunar.m}.${lunar.d}`}</span>
                 ) : null}
               </li>
             );
@@ -398,13 +398,13 @@ const MonthPane = memo(function MonthPane({ y, m, locale, today, people, t }: { 
         </ol>
       </section>
 
-      <div className="min-h-[38px] flex-[1.2_1_0]" />
+      <div className="min-h-[34.2px] flex-[1.2_1_0]" />
       <section aria-labelledby={`up-${y}-${m}`} className="card relative mx-4 flex shrink-0 flex-col px-3.5 pb-0.5 pt-2">
-        <span className="pointer-events-none absolute right-[18px] -top-[33px]">
+        <span className="pointer-events-none absolute right-[16.2px] -top-[29.7px]">
           <Mascot pose={12} size={40.7} />
         </span>
-        <div className="flex h-[34px] items-center">
-          <h2 id={`up-${y}-${m}`} className="hand scribble whitespace-nowrap text-[24px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
+        <div className="flex h-[30.6px] items-center">
+          <h2 id={`up-${y}-${m}`} className="hand scribble whitespace-nowrap text-[19.4px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
             {t("home.upcoming")}
           </h2>
         </div>
@@ -416,29 +416,29 @@ const MonthPane = memo(function MonthPane({ y, m, locale, today, people, t }: { 
               const lead = i === firstUp;
               const body = (
                 <>
-                  <span className={`flex w-[38px] shrink-0 flex-col items-center leading-none ${left < 0 ? "opacity-55" : ""}`}>
-                    <span className="hand text-[22px]">{formatDotted(r.date)}</span>
-                    <span className={`mt-0.5 text-[10px] ${weekday(r.date) === 0 || r.off ? "text-red" : "text-muted"}`}>{names[weekday(r.date)]}</span>
+                  <span className={`flex w-[34.2px] shrink-0 flex-col items-center leading-none ${left < 0 ? "opacity-55" : ""}`}>
+                    <span className="hand text-[17.8px]">{formatDotted(r.date)}</span>
+                    <span className={`mt-0.5 text-[9px] ${weekday(r.date) === 0 || r.off ? "text-red" : "text-muted"}`}>{names[weekday(r.date)]}</span>
                   </span>
                   {"avatar" in r.face ? (
                     <span className={`flex shrink-0 ${left < 0 ? "opacity-55" : ""}`}>
                       <Avatar config={r.face.avatar} size={30} label={r.face.label} decorative />
                     </span>
                   ) : (
-                    <span aria-hidden="true" className={`flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full border-[1.5px] border-ink bg-[#E3F4EC] ${left < 0 ? "opacity-55" : ""}`}>
+                    <span aria-hidden="true" className={`flex h-[27px] w-[27px] shrink-0 items-center justify-center rounded-full border border-edge bg-[#E3F4EC] ${left < 0 ? "opacity-55" : ""}`}>
                       {r.face.art ? <HolidayArt id={r.face.art as HolidayId} size={22} /> : <Icon name="calendar" size={16} strokeWidth={1.8} />}
                     </span>
                   )}
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className={`hand-written truncate text-[24px] leading-none ${left < 0 ? "text-muted" : ""}`}>{r.name}</span>
-                    {r.sub ? <span className="truncate text-[11px] text-muted">{r.sub}</span> : null}
+                    <span className={`hand-written truncate text-[19.4px] leading-none ${left < 0 ? "text-muted" : ""}`}>{r.name}</span>
+                    {r.sub ? <span className="truncate text-[9.9px] text-muted">{r.sub}</span> : null}
                   </span>
-                  <span className={`hand inline-flex h-[26px] shrink-0 items-center rounded-full border-[1.5px] border-ink px-[9px] leading-none ${left < 0 ? "bg-[#ece7d8] text-[16px] text-muted" : lead ? "bg-sky text-[20px]" : "bg-white text-[18px]"}`}>{badge}</span>
+                  <span className={`hand inline-flex h-[23.4px] shrink-0 items-center rounded-full border border-edge px-[8.1px] leading-none ${left < 0 ? "bg-[#ece7d8] text-[13px] text-muted" : lead ? "bg-sky text-[16.2px]" : "bg-white text-[14.6px]"}`}>{badge}</span>
                 </>
               );
-              const row = "flex h-[46px] items-center gap-2.5";
+              const row = "flex h-[41.4px] items-center gap-2.5";
               return (
-                <li key={r.key} className={i ? "border-t-[1.5px] border-dashed" : ""} style={i ? DASH_ROW : undefined}>
+                <li key={r.key} className={i ? "border-t border-dashed" : ""} style={i ? DASH_ROW : undefined}>
                   {r.href ? (
                     <Link href={r.href} className={row}>
                       {body}
@@ -452,8 +452,8 @@ const MonthPane = memo(function MonthPane({ y, m, locale, today, people, t }: { 
           </ul>
         ) : (
           <div className="flex flex-col gap-0.5 pb-2 pt-1">
-            <span className="text-[15px]">{t("cal.upcomingEmpty")}</span>
-            <Link href="/request" className="flex min-h-11 items-center gap-0.5 self-start text-[15px] text-accent">
+            <span className="text-[13.5px]">{t("cal.upcomingEmpty")}</span>
+            <Link href="/request" className="flex min-h-11 items-center gap-0.5 self-start text-[13.5px] text-accent">
               {t("home.askDates")}
               <Chev size={14} color="currentColor" />
             </Link>

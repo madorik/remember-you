@@ -13,7 +13,7 @@ export function SpicyScale({ value, onChange, locale, large = false }: { value: 
     <div className="flex flex-col gap-1.5">
       <SectionHeading>{t("taste.spicy")}</SectionHeading>
       <div className="flex flex-col items-center">
-        <div role="radiogroup" aria-label={t("taste.spicy")} className="relative flex shrink-0 items-center pb-[22px]">
+        <div role="radiogroup" aria-label={t("taste.spicy")} className="relative flex shrink-0 items-center pb-[19.8px]">
           {SPICY_LEVELS.map((label, i) => (
             <button
               key={i}
@@ -22,19 +22,19 @@ export function SpicyScale({ value, onChange, locale, large = false }: { value: 
               aria-checked={value === i}
               aria-label={label[locale]}
               onClick={() => onChange(value === i ? null : i)}
-              className={`flex items-center justify-center rounded-full transition-transform active:scale-90 ${large ? "h-14 w-14" : "h-11 w-11"}`}
+              className={`flex items-center justify-center rounded-full transition-transform active:scale-90 ${large ? "h-14 w-14" : "h-11 w-11 relative before:absolute before:-inset-[2.2px]"}`}
             >
               <ChiliIcon on={value != null && i <= value} size={size} />
             </button>
           ))}
           {/* 가운데(보통)가 어느 정도인지 기준 하나: 신라면. 고르면 옆 이름에 같은 말이 나오니 그때는 뺀다 */}
           {value !== 2 ? (
-            <span aria-hidden="true" className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 whitespace-nowrap text-[13px] leading-none text-muted">
+            <span aria-hidden="true" className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 whitespace-nowrap text-[11.7px] leading-none text-muted">
               {t("taste.spicyAnchor")}
             </span>
           ) : null}
         </div>
-        {value != null ? <span className="min-w-0 text-center text-[13px] leading-[1.3]">{SPICY_LEVELS[value]?.[locale]}</span> : null}
+        {value != null ? <span className="min-w-0 text-center text-[11.7px] leading-[1.3]">{SPICY_LEVELS[value]?.[locale]}</span> : null}
       </div>
     </div>
   );
@@ -60,7 +60,7 @@ export function AlcoholPicker({ value, onChange, locale }: { value: AlcoholData;
       </div>
       {value.level && value.level !== "none" ? (
         <>
-          <span className="pt-2 text-[13px] text-muted">{t("taste.alcoholKinds")}</span>
+          <span className="pt-2 text-[11.7px] text-muted">{t("taste.alcoholKinds")}</span>
           <div className="flex flex-wrap gap-2">
             {ALCOHOL_KINDS.map((k) => (
               <CircleOption

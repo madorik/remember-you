@@ -88,21 +88,21 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
   if (state.url) {
     return (
       <div className="flex flex-1 flex-col">
-        <section className="card relative mx-4 mt-9 px-3 py-[18px]">
-          <div className="flex items-center gap-[18px]">
+        <section className="card relative mx-4 mt-9 px-3 py-[16.2px]">
+          <div className="flex items-center gap-[16.2px]">
             {/* 폴라로이드(시안): 남색 선 + 흰 바탕, 안에 얼굴(없으면 편지 든 캐릭터), 위에 분홍 테이프 */}
-            <figure className="relative m-0 flex shrink-0 -rotate-[4deg] flex-col items-center border-[1.5px] border-ink bg-white px-[6px] pb-[18px] pt-[6px]">
-              <TornTape color="pink" w={58} h={20} rotate={-6} className="-top-[13px] left-[18px]" />
-              <span className="flex h-[98px] w-[98px] items-center justify-center overflow-hidden bg-white">
+            <figure className="relative m-0 flex shrink-0 -rotate-[4deg] flex-col items-center border border-edge bg-white px-[5.4px] pb-[16.2px] pt-[5.4px]">
+              <TornTape color="pink" w={58} h={20} rotate={-6} className="-top-[11.7px] left-[16.2px]" />
+              <span className="flex h-[88.2px] w-[88.2px] items-center justify-center overflow-hidden bg-white">
                 {who?.kind === "person" ? <Avatar config={who.person.avatar} size={92} label={who.person.label} decorative /> : <Mascot pose={6} size={84} />}
               </span>
               <figcaption className="sr-only">{name.trim()}</figcaption>
             </figure>
             <div className="min-w-0 flex-1">
-              <h2 className="hand-written !font-normal text-[26px] leading-[1.15]">{t("request.ready", { name: name.trim() })}</h2>
+              <h2 className="hand-written !font-normal text-[21.1px] leading-[1.15]">{t("request.ready", { name: name.trim() })}</h2>
               <ul className="mt-2.5 flex flex-wrap gap-x-2 gap-y-1.5">
                 {SECTIONS_BY_IMPORTANCE.filter((x) => topics.includes(x)).map((x) => (
-                  <li key={x} className="hand flex h-[30px] items-center rounded-full border-[1.5px] border-ink bg-[#e4ecfa] px-2.5 text-[16px] leading-none">
+                  <li key={x} className="hand flex h-[27px] items-center rounded-full border border-edge bg-[#e4ecfa] px-2.5 text-[13px] leading-none">
                     {topicLabel(x)}
                   </li>
                 ))}
@@ -111,17 +111,17 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
           </div>
         </section>
         <section className="card relative mx-4 mt-9 flex flex-col px-3.5 pb-3.5 pt-2.5">
-          <div className="flex min-h-[34px] items-center">
-            <h3 className="scribble text-[24px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
+          <div className="flex min-h-[30.6px] items-center">
+            <h3 className="scribble text-[19.4px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
               {t("request.message")}
             </h3>
           </div>
-          <p className="mt-3 whitespace-pre-line rounded-[20px] border-[1.5px] border-ink bg-[#e4ecfa] px-3.5 py-3 text-[14px] leading-[1.55]">
+          <p className="mt-3 whitespace-pre-line rounded-[18px] border border-edge bg-[#e4ecfa] px-3.5 py-3 text-[12.6px] leading-[1.55]">
             {state.text}
             {message.trim() ? (
               <>
                 {"\n"}
-                <span className="hand-written text-[22px] leading-[1.3]">{message.trim()}</span>
+                <span className="hand-written text-[17.8px] leading-[1.3]">{message.trim()}</span>
               </>
             ) : null}
           </p>
@@ -144,8 +144,8 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
     );
   }
 
-  const chip = "flex h-9 items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-white pl-[5px] pr-3.5 text-[14px]";
-  const h2 = "hand scribble text-[24px] leading-none";
+  const chip = "flex h-9 items-center gap-1.5 rounded-full border border-edge bg-white pl-[4.5px] pr-3.5 text-[12.6px]";
+  const h2 = "hand scribble text-[19.4px] leading-none";
   const mint = { "--scribble": "#5dbb9a" } as React.CSSProperties;
 
   return (
@@ -157,18 +157,18 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
       {fixed ? null : (
         <section className="card relative mx-4 mt-5 flex flex-col px-3.5 pb-3.5 pt-2.5">
           <TornTape color="pink" w={66} h={21} rotate={6} className="-top-3 right-6" />
-          <div className="flex min-h-[34px] items-center">
+          <div className="flex min-h-[30.6px] items-center">
             <label htmlFor="request-who" className={h2} style={mint}>
               {t("request.who")}
             </label>
           </div>
           {who ? (
             <div className="mt-2.5 flex items-center">
-              <span className="flex h-9 min-w-0 items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-sky pl-[5px] pr-1 text-[14px]">
+              <span className="flex h-9 min-w-0 items-center gap-1.5 rounded-full border border-edge bg-sky pl-[4.5px] pr-1 text-[12.6px]">
                 {who.kind === "person" ? (
                   <Avatar config={who.person.avatar} size={26} label={who.person.label} />
                 ) : (
-                  <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-white">
+                  <span className="flex h-[23.4px] w-[23.4px] shrink-0 items-center justify-center rounded-full bg-white">
                     <Icon name="personAdd" size={15} strokeWidth={2} />
                   </span>
                 )}
@@ -191,7 +191,7 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
           ) : (
             <>
               <div className="relative mt-2.5">
-                <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" className="pointer-events-none absolute left-[15px] top-[17px] text-muted">
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="16.2" height="16.2" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" className="pointer-events-none absolute left-[13.5px] top-[15.3px] text-muted">
                   <circle cx="11" cy="11" r="7" />
                   <path d="M20 20l-4-4" />
                 </svg>
@@ -204,7 +204,7 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
                   maxLength={40}
                   enterKeyHint="go"
                   placeholder={t("people.search")}
-                  className="field !pl-[42px] [&::-webkit-search-cancel-button]:appearance-none"
+                  className="field !pl-[37.8px] [&::-webkit-search-cancel-button]:appearance-none"
                 />
               </div>
               {matches.length || (q && !exact) ? (
@@ -216,7 +216,7 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
                     </button>
                   ))}
                   {q && !exact ? (
-                    <button type="button" onClick={chooseNew} className="flex h-9 items-center gap-1.5 rounded-full border-[1.5px] border-dashed border-ink pl-3 pr-3.5 text-[14px] text-accent">
+                    <button type="button" onClick={chooseNew} className="flex h-9 items-center gap-1.5 rounded-full border border-dashed border-edge pl-3 pr-3.5 text-[12.6px] text-accent">
                       <Icon name="personAdd" size={15} strokeWidth={2} />
                       {q}
                       <TagChip>{t("voice.newPerson")}</TagChip>
@@ -230,11 +230,11 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
       )}
 
       <section className={`card relative mx-4 px-3.5 pb-3.5 pt-2.5 ${fixed ? "mt-5" : "mt-3.5"}`}>
-        <div className="flex min-h-[34px] items-center justify-between">
+        <div className="flex min-h-[30.6px] items-center justify-between">
           <h2 className={h2} style={mint}>
             {t("request.topics")}
           </h2>
-          <span className="hand inline-flex h-[30px] items-center rounded-[10px] border-[1.5px] border-ink bg-sky-soft px-2.5 text-[17px] leading-none">{topics.length}</span>
+          <span className="hand inline-flex h-[27px] items-center rounded-[9px] border border-edge bg-sky-soft px-2.5 text-[13.8px] leading-none">{topics.length}</span>
         </div>
         <div className="mt-2 grid grid-cols-3 gap-2">
           {SECTIONS_BY_IMPORTANCE.map((x) => {
@@ -245,12 +245,12 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
                 type="button"
                 aria-pressed={on}
                 onClick={() => setTopics(on ? topics.filter((y) => y !== x) : SECTIONS.filter((y) => y === x || topics.includes(y)))}
-                className={`relative flex h-[58px] flex-col items-center justify-center gap-[3px] rounded-xl text-[12px] leading-none ${on ? "border-[2.5px] border-ink bg-[#e4ecfa]" : "border-[1.5px] border-ink bg-white"}`}
+                className={`relative flex h-[52.2px] flex-col items-center justify-center gap-[2.7px] rounded-xl text-[10.8px] leading-none ${on ? "border-[2.5px] border-ink bg-[#e4ecfa]" : "border border-edge bg-white"}`}
               >
                 <SectionIcon section={x} size={30} outline />
                 {topicLabel(x)}
                 {on ? (
-                  <span aria-hidden="true" className="absolute -right-[5px] -top-[7px] flex h-5 w-5 items-center justify-center rounded-full border-[1.5px] border-ink bg-sky text-ink">
+                  <span aria-hidden="true" className="absolute -right-[4.5px] -top-[6.3px] flex h-5 w-5 items-center justify-center rounded-full border border-edge bg-sky text-ink">
                     <CheckGlyph size={12} />
                   </span>
                 ) : null}
@@ -261,7 +261,7 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
       </section>
 
       <section className="card relative mx-4 mt-3.5 flex flex-col px-3.5 pb-3 pt-2.5">
-        <div className="flex min-h-[34px] items-center">
+        <div className="flex min-h-[30.6px] items-center">
           <label htmlFor="request-message" className={h2} style={mint}>
             {t("request.message")}
           </label>
@@ -273,17 +273,17 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
           onChange={(e) => setMessage(e.target.value)}
           rows={2}
           maxLength={300}
-          className="hand-written mt-1 h-[60px] w-full resize-none border-0 bg-transparent p-0 text-[22px] leading-[30px] outline-none [background-image:repeating-linear-gradient(180deg,transparent_0_29px,#d5e1f3_29px_30px)]"
+          className="hand-written mt-1 h-[54px] w-full resize-none border-0 bg-transparent p-0 text-[17.8px] leading-[27px] outline-none [background-image:repeating-linear-gradient(180deg,transparent_0_26px,#d5e1f3_26px_27px)]"
         />
       </section>
 
       <div className="bottom-bar mt-auto flex flex-col items-end gap-2 bg-bg px-4 pt-4">
         {state.error ? (
-          <p role="alert" className="w-full px-1 text-[14px] text-red">
+          <p role="alert" className="w-full px-1 text-[12.6px] text-red">
             {t(state.error === "pickOne" ? "request.pickOne" : name.trim() ? "common.error" : "request.needName")}
           </p>
         ) : null}
-        <button disabled={pending || !topics.length || !name.trim()} className="inline-flex h-11 items-center gap-[5px] rounded-full border-[1.5px] border-ink bg-sky pl-2.5 pr-3.5 text-[16px] disabled:border-ink/[0.22] disabled:bg-[#e8e1cf] disabled:text-[#5a5f78]">
+        <button disabled={pending || !topics.length || !name.trim()} className="inline-flex h-11 items-center gap-[4.5px] rounded-full border border-edge bg-sky pl-2.5 pr-3.5 text-[14.4px] disabled:border-ink/[0.22] disabled:bg-[#e8e1cf] disabled:text-[#5a5f78]">
           <Icon name="link" size={17} strokeWidth={1.7} />
           {t("request.make")}
         </button>

@@ -37,7 +37,7 @@ export default async function ReceiveSharePage({ params }: { params: Promise<{ t
       </div>
       <section className="card relative mx-4 mt-10 px-5 pb-6 pt-8">
         <TornTape color="pink" w={66} h={21} rotate={6} className="-top-3 right-6" />
-        <p className="hand text-[28px] leading-[1.3]">{text}</p>
+        <p className="hand text-[22.7px] leading-[1.3]">{text}</p>
         {extra}
       </section>
     </main>
@@ -78,7 +78,7 @@ export default async function ReceiveSharePage({ params }: { params: Promise<{ t
   );
 
   // 내가 보낸 링크는 내가 받을 수 없다
-  if (view.fromId === session.user.id) return shell(<p className="hand px-6 pt-6 text-[26px] leading-[1.35]">{t("share.in.mine")}</p>);
+  if (view.fromId === session.user.id) return shell(<p className="hand px-6 pt-6 text-[21.1px] leading-[1.35]">{t("share.in.mine")}</p>);
 
   const { record } = view;
   const from = record.name || t("share.in.someone");

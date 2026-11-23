@@ -390,7 +390,7 @@ export function ImportMemo({
       <div className="flex flex-1 flex-col">
         <section className="card relative mx-4 mt-8 px-3.5 pb-3.5 pt-2.5" aria-live="polite">
           <TornTape color="mint" w={68} h={21} rotate={6} className="-top-3 right-6" />
-          <h2 className="hand scribble mb-4 flex items-center gap-2 text-[24px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
+          <h2 className="hand scribble mb-4 flex items-center gap-2 text-[19.4px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
             <Icon name="check" size={20} strokeWidth={2.4} className="text-accent" />
             {undone ? labels.undone : labels.savedN.replace("{n}", String(saved.lines.length))}
           </h2>
@@ -398,7 +398,7 @@ export function ImportMemo({
             <ul className="flex flex-col gap-1.5">
               {[...touched].map(([href, who]) => (
                 <li key={href}>
-                  <Link href={href} className="hand-written inline-flex min-h-11 items-center gap-1 text-[22px] text-accent underline underline-offset-4">
+                  <Link href={href} className="hand-written inline-flex min-h-11 items-center gap-1 text-[17.8px] text-accent underline underline-offset-4">
                     {who}
                     <Icon name="chevron" size={16} />
                   </Link>
@@ -409,12 +409,12 @@ export function ImportMemo({
         </section>
         <div className="bottom-bar mt-auto flex flex-col gap-2 bg-bg px-4 pt-4">
           {error ? (
-            <p role="alert" className="px-1 text-[14px] text-red">
+            <p role="alert" className="px-1 text-[12.6px] text-red">
               {error}
             </p>
           ) : null}
           {undone ? null : (
-            <button type="button" onClick={undo} disabled={undoing} className="btn-outline btn-outline-lift !min-h-[52px] w-full !text-[24px] disabled:opacity-60">
+            <button type="button" onClick={undo} disabled={undoing} className="btn-outline btn-outline-lift !min-h-[46.8px] w-full !text-[19.4px] disabled:opacity-60">
               {labels.undo}
             </button>
           )}
@@ -439,12 +439,12 @@ export function ImportMemo({
     const locked = step === "saving";
     return (
       <div className="flex flex-1 flex-col">
-        <h2 className="px-6 pb-1 pt-3 text-[24px] leading-[1.2] [html[data-kb]_&]:hidden">{labels.review}</h2>
-        {skipped > 0 ? <p className="px-6 text-[13px] text-muted">{labels.skipped.replace("{n}", String(skipped))}</p> : null}
+        <h2 className="px-6 pb-1 pt-3 text-[19.4px] leading-[1.2] [html[data-kb]_&]:hidden">{labels.review}</h2>
+        {skipped > 0 ? <p className="px-6 text-[11.7px] text-muted">{labels.skipped.replace("{n}", String(skipped))}</p> : null}
         {scope.kind === "new" ? (
           <label className="mx-4 mt-2 flex flex-col gap-2 px-2">
-            <span className="text-[15px]">{labels.name}</span>
-            <input value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={40} autoComplete="off" className="field hand-written !text-[24px]" aria-invalid={!nameOk || undefined} />
+            <span className="text-[13.5px]">{labels.name}</span>
+            <input value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={40} autoComplete="off" className="field hand-written !text-[19.4px]" aria-invalid={!nameOk || undefined} />
           </label>
         ) : null}
         <div className="mx-4 mt-3 flex flex-col gap-4">
@@ -459,10 +459,10 @@ export function ImportMemo({
               <section key={key} className="card relative px-3.5 pb-1 pt-2.5">
                 <div className="flex min-h-11 items-center gap-2.5">
                   {person ? <Avatar config={person.avatar} size={36} label={labels.avatarOf.replace("{name}", person.name)} decorative /> : null}
-                  <h3 className="min-w-0 flex-1 truncate text-[24px] leading-[1.1]">{t.kind === "me" ? labels.me : header}</h3>
-                  {first.line.isNew || t.kind === "new" ? <span className="chip-on shrink-0 rounded-full px-2.5 pb-px text-[11px]">{labels.newPerson}</span> : null}
+                  <h3 className="min-w-0 flex-1 truncate text-[19.4px] leading-[1.1]">{t.kind === "me" ? labels.me : header}</h3>
+                  {first.line.isNew || t.kind === "new" ? <span className="chip-on shrink-0 rounded-full px-2.5 pb-px text-[9.9px]">{labels.newPerson}</span> : null}
                   {editable.length > 1 ? (
-                    <button type="button" disabled={locked} aria-pressed={allOn} onClick={() => toggleGroup(key, !allOn)} className="flex h-11 w-11 shrink-0 items-center justify-center">
+                    <button type="button" disabled={locked} aria-pressed={allOn} onClick={() => toggleGroup(key, !allOn)} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] shrink-0 items-center justify-center">
                       <DrawnCheck on={allOn} />
                     </button>
                   ) : null}
@@ -470,7 +470,7 @@ export function ImportMemo({
                 {/* 같은 이름이 여럿이면 누구인지 고른다(고르기 전에는 저장할 수 없다) */}
                 {t.kind === "pick" ? (
                   <label className="mb-2 flex flex-col gap-1.5">
-                    <span className="text-[13px] text-red">{labels.sameName.replace("{n}", String(first.candidates.length))}</span>
+                    <span className="text-[11.7px] text-red">{labels.sameName.replace("{n}", String(first.candidates.length))}</span>
                     <select
                       aria-label={labels.pickTitle}
                       defaultValue=""
@@ -497,19 +497,19 @@ export function ImportMemo({
                   {list.map((r) => {
                     const dim = r.line.same || !r.on;
                     return (
-                      <li key={r.key} className="border-t-[1.5px] border-dashed border-ink/[0.18] first:border-t-0">
+                      <li key={r.key} className="border-t border-dashed border-ink/30 first:border-t-0">
                         <button
                           type="button"
                           role="checkbox"
                           aria-checked={r.on}
                           disabled={locked || r.line.same || r.target.kind === "pick"}
                           onClick={() => toggle(r.key)}
-                          className={`flex min-h-[52px] w-full items-center gap-3 py-2 text-left ${dim ? "opacity-60" : ""}`}
+                          className={`flex min-h-[46.8px] w-full items-center gap-3 py-2 text-left ${dim ? "opacity-60" : ""}`}
                         >
                           <DrawnCheck on={r.on} />
                           <span className="flex min-w-0 flex-1 flex-col">
-                            <span className="text-[12px] text-muted">{r.line.field}</span>
-                            <span className="hand-written break-words text-[24px] leading-[1.15]">{r.line.value}</span>
+                            <span className="text-[10.8px] text-muted">{r.line.field}</span>
+                            <span className="hand-written break-words text-[19.4px] leading-[1.15]">{r.line.value}</span>
                           </span>
                           <CaptureBadge line={{ ...r.line, op: "add", same: r.line.same }} labels={{ same: labels.same, gone: labels.same, changed: "", removed: "" }} />
                         </button>
@@ -521,10 +521,10 @@ export function ImportMemo({
             );
           })}
         </div>
-        {allSame ? <p className="px-6 pt-4 text-[15px] text-muted">{labels.allSame}</p> : null}
+        {allSame ? <p className="px-6 pt-4 text-[13.5px] text-muted">{labels.allSame}</p> : null}
         <div className="bottom-bar mt-auto flex flex-col gap-2 bg-bg px-4 pt-4">
           {error ? (
-            <p role="alert" className="px-1 text-[14px] text-red">
+            <p role="alert" className="px-1 text-[12.6px] text-red">
               {error}
             </p>
           ) : null}
@@ -538,7 +538,7 @@ export function ImportMemo({
               setStep("input");
               setError("");
             }}
-            className="min-h-11 text-[14px] text-muted"
+            className="min-h-11 text-[12.6px] text-muted"
           >
             {labels.again}
           </button>
@@ -557,7 +557,7 @@ export function ImportMemo({
   const canRead = method === "image" ? images.length > 0 && !preparing : text.trim().length > 0;
   return (
     <div className="flex flex-1 flex-col">
-      <div role="tablist" aria-label={labels.method} className="mx-4 mt-3 flex rounded-xl border-[1.5px] border-ink bg-white p-[3px]">
+      <div role="tablist" aria-label={labels.method} className="mx-4 mt-3 flex rounded-xl border border-edge bg-white p-[2.7px]">
         {methods.map((m) => (
           <button
             key={m.id}
@@ -569,7 +569,7 @@ export function ImportMemo({
               setMicError("");
               setMethod(m.id);
             }}
-            className={`flex h-[34px] flex-1 items-center justify-center rounded-[9px] text-[14px] ${method === m.id ? "bg-sky" : ""}`}
+            className={`flex h-[30.6px] flex-1 items-center justify-center rounded-[8.1px] text-[12.6px] ${method === m.id ? "bg-sky" : ""}`}
           >
             {m.label}
           </button>
@@ -584,7 +584,7 @@ export function ImportMemo({
               {images.map((im, n) => (
                 <li key={im.id} className="relative">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={im.url} alt="" className="h-[104px] w-[104px] rounded-[12px] border-[1.5px] border-ink bg-white object-cover" />
+                  <img src={im.url} alt="" className="h-[93.6px] w-[93.6px] rounded-[10.8px] border border-edge bg-white object-cover" />
                   <button
                     type="button"
                     aria-label={`${labels.removeImage} ${n + 1}`}
@@ -592,7 +592,7 @@ export function ImportMemo({
                       URL.revokeObjectURL(im.url);
                       setImages((cur) => cur.filter((x) => x.id !== im.id));
                     }}
-                    className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full border-[1.5px] border-ink bg-white"
+                    className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full border border-edge bg-white"
                   >
                     <Icon name="close" size={16} strokeWidth={2.2} />
                   </button>
@@ -605,18 +605,18 @@ export function ImportMemo({
               type="button"
               disabled={preparing}
               onClick={() => picker.current?.click()}
-              className="card relative flex min-h-[96px] w-full items-center justify-center gap-2 border-dashed text-[16px] disabled:opacity-60"
+              className="card relative flex min-h-[86.4px] w-full items-center justify-center gap-2 border-dashed text-[14.4px] disabled:opacity-60"
             >
               <PhotoGlyph />
               {preparing ? labels.preparing : labels.pickImage}
             </button>
           ) : null}
           {imgError ? (
-            <p role="alert" className="px-1 text-[14px] text-red">
+            <p role="alert" className="px-1 text-[12.6px] text-red">
               {imgError}
             </p>
           ) : null}
-          <p className="px-1 text-[13px] leading-[1.4] text-muted">{labels.imageNotice}</p>
+          <p className="px-1 text-[11.7px] leading-[1.4] text-muted">{labels.imageNotice}</p>
         </div>
       ) : (
         <>
@@ -627,13 +627,13 @@ export function ImportMemo({
                 type="button"
                 onClick={() => void listen()}
                 aria-pressed={listening}
-                className={`relative flex h-[84px] w-[84px] items-center justify-center rounded-full border-[1.8px] border-ink ${listening ? "bg-sky" : "bg-white"}`}
+                className={`relative flex h-[75.6px] w-[75.6px] items-center justify-center rounded-full border-[1.8px] border-ink ${listening ? "bg-sky" : "bg-white"}`}
               >
                 {listening ? <span aria-hidden="true" className="absolute inset-0 animate-ping rounded-full border-2 border-ink/30" /> : null}
                 {listening ? <Icon name="stop" size={30} strokeWidth={2} /> : <MicGlyph />}
                 <span className="sr-only">{listening ? labels.listening : labels.listen}</span>
               </button>
-              <p className="text-[14px] text-muted" aria-live="polite">
+              <p className="text-[12.6px] text-muted" aria-live="polite">
                 {listening ? labels.listening : labels.listen}
               </p>
             </div>
@@ -647,20 +647,20 @@ export function ImportMemo({
               rows={method === "speak" ? 6 : 7}
               placeholder={labels.placeholder}
               aria-label={labels.placeholder}
-              className="hand-written block w-full resize-none border-0 bg-transparent p-0 text-[24px] leading-[30px] outline-none [background-image:repeating-linear-gradient(180deg,transparent_0_29px,#d5e1f3_29px_30px)] placeholder:text-muted"
+              className="hand-written block w-full resize-none border-0 bg-transparent p-0 text-[19.4px] leading-[27px] outline-none [background-image:repeating-linear-gradient(180deg,transparent_0_26px,#d5e1f3_26px_27px)] placeholder:text-muted"
             />
-            <p className="pt-1 text-right text-[12px] text-muted">{labels.count.replace("{n}", String(text.length))}</p>
+            <p className="pt-1 text-right text-[10.8px] text-muted">{labels.count.replace("{n}", String(text.length))}</p>
           </div>
         </>
       )}
       <div className="bottom-bar mt-auto flex flex-col items-end gap-2 bg-bg px-4 pt-4">
         {err ? (
-          <p role="alert" className="px-1 text-[14px] text-red">
+          <p role="alert" className="px-1 text-[12.6px] text-red">
             {err}
           </p>
         ) : null}
-        <button type="button" onClick={analyze} disabled={!canRead} className="inline-flex h-[46px] items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-sky pl-3 pr-3.5 text-[16px] disabled:border-ink/[0.22] disabled:bg-[#e8e1cf] disabled:text-[#5a5f78]">
-          <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <button type="button" onClick={analyze} disabled={!canRead} className="inline-flex h-[41.4px] items-center gap-1.5 rounded-full border border-edge bg-sky pl-3 pr-3.5 text-[14.4px] disabled:border-ink/[0.22] disabled:bg-[#e8e1cf] disabled:text-[#5a5f78]">
+          <svg aria-hidden="true" width="15.3" height="15.3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 3.5c.6 4.2 2.3 5.9 6.5 6.5-4.2.6-5.9 2.3-6.5 6.5-.6-4.2-2.3-5.9-6.5-6.5 4.2-.6 5.9-2.3 6.5-6.5z" />
           </svg>
           {labels.analyze}
@@ -673,7 +673,7 @@ export function ImportMemo({
 /** 사진 그림(사진 고르기 단추) */
 function PhotoGlyph() {
   return (
-    <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg aria-hidden="true" width="23.4" height="23.4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3.5" y="5" width="17" height="14" rx="3" />
       <circle cx="9" cy="10" r="1.6" />
       <path d="M4.5 17l4.5-4.5 3.5 3.5 2.5-2.5 4.5 4" />
@@ -684,7 +684,7 @@ function PhotoGlyph() {
 /** 마이크 그림(말하기 단추) */
 function MicGlyph() {
   return (
-    <svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg aria-hidden="true" width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <rect x="9" y="3" width="6" height="11" rx="3" />
       <path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3" />
     </svg>

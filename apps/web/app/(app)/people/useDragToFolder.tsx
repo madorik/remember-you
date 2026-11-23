@@ -158,7 +158,7 @@ export function useDragToFolder({ enabled, onDrop }: { enabled: boolean; onDrop:
     <div
       ref={ghost}
       aria-hidden="true"
-      className="pointer-events-none fixed left-0 top-0 z-50 max-w-[60vw] truncate rounded-xl bg-white px-3.5 py-2.5 text-[17px] shadow-[0_0_0_2px_var(--color-sky),0_10px_28px_rgba(31,35,64,0.2)]"
+      className="pointer-events-none fixed left-0 top-0 z-50 max-w-[60vw] truncate rounded-xl bg-white px-3.5 py-2.5 text-[15.3px] shadow-[0_0_0_2px_var(--color-sky),0_10px_28px_rgba(31,35,64,0.2)]"
       style={{ transform: `translate(${dragging.x - 28}px, ${dragging.y - 34}px)` }}
     >
       {dragging.name}

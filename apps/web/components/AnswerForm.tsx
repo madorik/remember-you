@@ -42,7 +42,7 @@ function GiftsLite({ value, onChange, locale }: { value: GiftsData; onChange: (v
         placeholder={t("gift.wishPlaceholder")}
       />
       <div className="flex flex-col gap-1">
-        <span className="text-[15px]">{t("gift.giftCard")}</span>
+        <span className="text-[13.5px]">{t("gift.giftCard")}</span>
         <div className="flex flex-wrap gap-2">
           <CircleOption large label={t("gift.giftCardYes")} on={value.giftCard === "yes"} onToggle={() => onChange({ ...value, giftCard: value.giftCard === "yes" ? null : "yes" })} />
           <CircleOption large color="ink" label={t("gift.giftCardNo")} on={value.giftCard === "no"} onToggle={() => onChange({ ...value, giftCard: value.giftCard === "no" ? null : "no" })} />
@@ -64,7 +64,7 @@ function GiftsLite({ value, onChange, locale }: { value: GiftsData; onChange: (v
 /** 편지 봉투(나도 물어보기 단추) */
 function Envelope() {
   return (
-    <svg aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+    <svg aria-hidden="true" width="18.9" height="18.9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
       <rect x="3.5" y="5.5" width="17" height="13" rx="2.5" />
       <path d="M4.5 7.5l7.5 5.5 7.5-5.5" />
     </svg>
@@ -178,18 +178,18 @@ export function AnswerForm({
         }
       >
         {inApp ? (
-          <Link href={here} className="btn-primary w-full !text-[26px]">
+          <Link href={here} className="btn-primary w-full !text-[21.1px]">
             <Envelope />
             {t("answer.askBack")}
           </Link>
         ) : (
-          <GetAppLink href={`/get?from=answer&next=${encodeURIComponent(here)}`} appPath={askBack} className="btn-primary w-full !text-[26px]">
+          <GetAppLink href={`/get?from=answer&next=${encodeURIComponent(here)}`} appPath={askBack} className="btn-primary w-full !text-[21.1px]">
             <Envelope />
             {t("answer.askBack")}
           </GetAppLink>
         )}
         {state.savedMine ? (
-          <Link href="/me" className="flex min-h-11 items-center justify-center text-[14px] text-muted">
+          <Link href="/me" className="flex min-h-11 items-center justify-center text-[12.6px] text-muted">
             {t("answer.openApp")}
           </Link>
         ) : null}
@@ -220,16 +220,16 @@ export function AnswerForm({
       {signedIn ? (
         <button type="button" aria-pressed={saveMine} onClick={() => setSaveMine(!saveMine)} className="flex min-h-11 items-start gap-3 text-left">
           <DrawnCheck on={saveMine} />
-          <span className="text-[14px] leading-[1.45]">{t("answer.saveMine")}</span>
+          <span className="text-[12.6px] leading-[1.45]">{t("answer.saveMine")}</span>
         </button>
       ) : null}
       {needsConsent ? (
         <button type="button" aria-pressed={consent} onClick={() => setConsent(!consent)} className="flex min-h-11 items-start gap-3 text-left">
           <DrawnCheck on={consent} />
-          <span className="text-[14px] leading-[1.45]">{t("answer.consent", { from })}</span>
+          <span className="text-[12.6px] leading-[1.45]">{t("answer.consent", { from })}</span>
         </button>
       ) : null}
-      <span className="text-[12px] leading-[1.45] text-muted">{t("answer.footer", { from })}</span>
+      <span className="text-[10.8px] leading-[1.45] text-muted">{t("answer.footer", { from })}</span>
     </>
   );
 
@@ -253,15 +253,15 @@ export function AnswerForm({
         <div className="h-3" />
       ) : (
         <div className="sticky top-0 z-20 flex items-center gap-2 bg-bg pb-1.5 pl-1 pr-4 pt-1.5" style={{ top: "var(--sat)" }}>
-          <button type="button" onClick={() => go(step - 1)} disabled={step === 0} aria-label={t("common.back")} className="flex h-11 w-11 shrink-0 items-center justify-center disabled:opacity-0">
+          <button type="button" onClick={() => go(step - 1)} disabled={step === 0} aria-label={t("common.back")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] shrink-0 items-center justify-center disabled:opacity-0">
             <Icon name="back" size={24} strokeWidth={2} />
           </button>
           <div className="flex flex-1 gap-2" aria-hidden="true">
             {Array.from({ length: total }, (_, i) => (
-              <span key={i} className={`h-2 flex-1 rounded-full border-[1.5px] border-ink ${i <= step ? "bg-sky" : "bg-white"}`} />
+              <span key={i} className={`h-2 flex-1 rounded-full border border-edge ${i <= step ? "bg-sky" : "bg-white"}`} />
             ))}
           </div>
-          <span className="w-8 shrink-0 text-right text-[12px] text-muted">
+          <span className="w-8 shrink-0 text-right text-[10.8px] text-muted">
             {step + 1}/{total}
           </span>
         </div>
@@ -270,17 +270,17 @@ export function AnswerForm({
       {step === 0 ? (
         <section className="relative flex flex-col gap-5 px-5 pt-5">
           <div className="flex items-center gap-4">
-            <figure className="m-0 shrink-0 -rotate-[4deg] border-[1.5px] border-ink bg-white px-[6px] pb-[18px] pt-[6px]">
-              <span className="flex h-[81px] w-[81px] items-center justify-center overflow-hidden bg-white">
+            <figure className="m-0 shrink-0 -rotate-[4deg] border border-edge bg-white px-[5.4px] pb-[16.2px] pt-[5.4px]">
+              <span className="flex h-[72.9px] w-[72.9px] items-center justify-center overflow-hidden bg-white">
                 <Mascot pose={6} size={70} />
               </span>
             </figure>
-            <h1 className="hand-written !font-normal min-w-0 flex-1 text-[29px] leading-[1.2]">{highlightCount(t("answer.title", { from, n: sections.length }))}</h1>
+            <h1 className="hand-written !font-normal min-w-0 flex-1 text-[23.5px] leading-[1.2]">{highlightCount(t("answer.title", { from, n: sections.length }))}</h1>
           </div>
-          {message ? <p className="-rotate-[0.6deg] whitespace-pre-line rounded-[4px_4px_16px_4px] border-[1.5px] border-ink bg-[#fff3b0] px-3.5 py-2.5 hand-written text-[23px] leading-[1.3]">{message}</p> : null}
+          {message ? <p className="-rotate-[0.6deg] whitespace-pre-line rounded-[3.2px_3.2px_13px_3.2px] border border-edge bg-[#fff3b0] px-3.5 py-2.5 hand-written text-[18.6px] leading-[1.3]">{message}</p> : null}
           {signedIn ? null : (
             // 앱을 쓰는 사람이 로그인 안 된 브라우저에서 열었으면: 로그인하고 답하면 내 리드미 값이 미리 채워지고, 물어본 사람 목록에 내 얼굴로 보인다
-            <Link href={`/?next=${encodeURIComponent(`/r/${token}`)}`} className="flex min-h-11 items-center gap-1 self-start text-[14px] text-accent underline decoration-[1.5px] underline-offset-4">
+            <Link href={`/?next=${encodeURIComponent(`/r/${token}`)}`} className="flex min-h-11 items-center gap-1 self-start text-[12.6px] text-accent underline decoration-[1.5px] underline-offset-4">
               {t("answer.signInFirst")}
               <Icon name="chevron" size={15} strokeWidth={2} />
             </Link>
@@ -293,13 +293,13 @@ export function AnswerForm({
           <TornTape color={step % 2 ? "pink" : "mint"} w={66} h={21} rotate={6} className="-top-3 right-6" />
           <div className="flex items-center gap-2.5">
             <SectionIcon section={s} size={44} outline />
-            <h2 className="flex-1 text-[26px] leading-[1.15]">{t(`request.topic.${s}` as "request.topic.dates")}</h2>
+            <h2 className="flex-1 text-[21.1px] leading-[1.15]">{t(`request.topic.${s}` as "request.topic.dates")}</h2>
           </div>
           {prefill[s] ? (
             <>
-              <div className="flex flex-col gap-1.5 rounded-xl border-[1.5px] border-ink bg-sky-soft px-3 pb-3 pt-2.5">
-                <span className="text-[12px]">{t("answer.prefilled", { from })}</span>
-                <span className={`hand-written text-[34px] leading-[1.1] ${modes[s] === "fix" ? "text-muted line-through decoration-red decoration-2" : ""}`}>
+              <div className="flex flex-col gap-1.5 rounded-xl border border-edge bg-sky-soft px-3 pb-3 pt-2.5">
+                <span className="text-[10.8px]">{t("answer.prefilled", { from })}</span>
+                <span className={`hand-written text-[27.5px] leading-[1.1] ${modes[s] === "fix" ? "text-muted line-through decoration-red decoration-2" : ""}`}>
                   {summarize(s, prefill[s], locale, t) || t("answer.empty")}
                 </span>
               </div>
@@ -314,7 +314,7 @@ export function AnswerForm({
                       // 맞으면 바로 다음 항목으로
                       if (m === "ok") go(step + 1);
                     }}
-                    className={`inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full border-[1.5px] border-ink text-[15px] ${modes[s] === m ? "bg-sky" : "bg-white"}`}
+                    className={`inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full border border-edge text-[13.5px] ${modes[s] === m ? "bg-sky" : "bg-white"}`}
                   >
                     {modes[s] === m ? <Icon name="check" size={16} strokeWidth={2} /> : null}
                     {t(m === "ok" ? "answer.right" : "answer.fix")}
@@ -353,7 +353,7 @@ export function AnswerForm({
                 setModes((x) => ({ ...x, [s]: none ? "none" : "new" }));
                 if (none) go(step + 1);
               }}
-              className={`inline-flex h-8 items-center self-end rounded-full border-[1.5px] border-ink px-4 text-[13px] ${modes[s] === "none" ? "bg-sky" : "bg-white"}`}
+              className={`inline-flex h-8 items-center self-end rounded-full border border-edge px-4 text-[11.7px] ${modes[s] === "none" ? "bg-sky" : "bg-white"}`}
             >
               {t("answer.none")}
             </button>
@@ -364,7 +364,7 @@ export function AnswerForm({
           <TornTape color="mint" w={66} h={21} rotate={6} className="-top-3 right-6" />
           <div className="flex items-center gap-3">
             <Mascot pose={6} size={52} />
-            <h2 className="text-[28px] leading-[1.2]">
+            <h2 className="text-[22.7px] leading-[1.2]">
               <span className="hl">{t("answer.almost")}</span>
             </h2>
           </div>
@@ -375,15 +375,15 @@ export function AnswerForm({
 
       <div className="bottom-bar mt-auto flex flex-col gap-2 bg-bg px-4 pt-4">
         {state.error ? (
-          <p role="alert" className="px-1 text-[14px] text-red">
+          <p role="alert" className="px-1 text-[12.6px] text-red">
             {t(state.error === "consent" ? "answer.needConsent" : state.error === "closed" ? "accept.expired" : state.error === "self" ? "answer.self" : state.error === "empty" ? "answer.needOne" : "common.error")}
           </p>
         ) : last && !answered.length ? (
           // 마지막 화면인데 답한 게 하나도 없다(전부 건드리지 않고 넘겼다): 보낼 수 없는 까닭
-          <p className="px-1 text-[14px] text-muted">{t("answer.needOne")}</p>
+          <p className="px-1 text-[12.6px] text-muted">{t("answer.needOne")}</p>
         ) : null}
         {canSend ? (
-          <button disabled={pending || !answered.length || (needsConsent && !consent)} className="btn-primary !min-h-[50px] w-full !text-[24px]">
+          <button disabled={pending || !answered.length || (needsConsent && !consent)} className="btn-primary !min-h-[45px] w-full !text-[19.4px]">
             {t("answer.send")}
           </button>
         ) : (
@@ -395,11 +395,11 @@ export function AnswerForm({
                 setModes((x) => ({ ...x, [s!]: prefill[s!] ? null : x[s!] === "none" ? "none" : null }));
                 go(step + 1);
               }}
-              className="btn-outline !min-h-[50px] w-[40%] shrink-0 !text-[23px]"
+              className="btn-outline !min-h-[45px] w-[40%] shrink-0 !text-[18.6px]"
             >
               {t("answer.skip")}
             </button>
-            <button type="button" onClick={() => go(step + 1)} className="btn-primary !min-h-[50px] flex-1 !text-[24px]">
+            <button type="button" onClick={() => go(step + 1)} className="btn-primary !min-h-[45px] flex-1 !text-[19.4px]">
               <Icon name="chevron" size={19} strokeWidth={2} />
               {t("answer.next")}
             </button>
