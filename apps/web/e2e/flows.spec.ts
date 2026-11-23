@@ -47,7 +47,7 @@ async function askNew(page: import("@playwright/test").Page, name: string) {
   await page.getByRole("button", { name: `${name} 새로` }).click();
 }
 
-/** 물어보기 화면에서 '링크 복사'를 눌러 링크를 만들고 복사된 글에서 링크를 꺼낸다(링크 칸은 화면에 없다) */
+/** 물어보기 화면에서 '링크 복사'를 눌러 링크를 만들고 복사된 글에서 링크를 꺼낸다(화면은 그대로이고 링크 칸은 없다) */
 async function makeLink(page: import("@playwright/test").Page) {
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.getByRole("button", { name: "링크 복사", exact: true }).click();
@@ -139,12 +139,15 @@ test("물어보기(새 사람) → 앱 없이 웹에서 답하기 → 답이 내
   await expect(page.getByRole("heading", { name: "물어보기" })).toBeVisible();
   await askNew(page, "아빠");
   askDadUrl = await makeLink(page);
-  // 링크를 만든 화면: 준비 완료 도장과 보낼 단추 둘(링크 글자·같이 보낼 말 칸은 없다)
-  await expect(page.getByRole("heading", { name: "아빠님에게 보낼 준비가 됐어요" })).toBeVisible();
+  // 링크를 만들어도 화면은 그대로다: 물어볼 항목·보낼 단추 둘·머리말의 공유 아이콘이 남고 '준비 완료' 화면으로 바뀌지 않는다(링크 글자·같이 보낼 말 칸은 없다)
+  await expect(page).toHaveURL(/\/request$/);
+  await expect(page.getByText("무엇을 물어볼까요?")).toBeVisible();
+  await expect(page.getByText("준비 완료")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "물어보기", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "링크 복사", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "공유하기", exact: true })).toBeVisible();
   await expect(page.getByLabel("같이 보낼 말")).toHaveCount(0);
-  await shot(page, "04-ask-ready");
+  await shot(page, "04-ask-after-copy");
 
   const dad = await newPage(browser);
   await dad.goto(askDadUrl);
@@ -239,7 +242,7 @@ test("물어보기(새 사람) → 앱 없이 웹에서 답하기 → 답이 내
   await shot(page, "08-home");
 });
 
-test("물어보기: 공유창이 막히면 링크는 그대로 두고 한 번 더 누르면 바로 보낸다(링크는 한 번만 만든다)", async ({ browser }) => {
+test("물어보기: 공유창이 막히면 화면은 그대로 두고 우리 공유 팝업이 뜨며, 팝업에서 바로 보낸다(링크는 한 번만 만든다)", async ({ browser }) => {
   const page = await as(browser, "jisu");
   // 누른 지 오래돼 브라우저가 공유창을 막은 것처럼: 첫 번째 공유는 NotAllowedError, 그다음은 열린다
   await page.addInitScript(() => {
@@ -262,22 +265,65 @@ test("물어보기: 공유창이 막히면 링크는 그대로 두고 한 번 �
   await askNew(page, "큰이모");
   created.length = 0;
   await page.getByRole("button", { name: "물어보기", exact: true }).click();
-  await expect(page.getByRole("status").filter({ hasText: ko["request.tapAgain"] })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "큰이모님에게 보낼 준비가 됐어요" })).toBeVisible();
+  // 화면은 그대로, 아래에서 공유 팝업이 올라온다(링크 글자는 없다)
+  const sheet = page.getByRole("dialog");
+  await expect(sheet.getByRole("heading", { name: /큰이모.*에게 물어보기/ })).toBeVisible();
+  await expect(sheet.getByRole("button", { name: "링크 복사", exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/request$/);
+  await expect(page.getByText("무엇을 물어볼까요?")).toBeVisible();
   await expect(page.getByTestId("invite-url")).toHaveCount(0);
-  await shot(page, "04b-ask-ready-again");
-  // 한 번 더 누르면 새 링크를 만들지 않고 바로 공유창이 열린다
-  await page.getByRole("button", { name: "물어보기", exact: true }).click();
+  await shot(page, "04b-ask-share-sheet");
+  // 팝업의 공유하기는 누르는 그 자리에서 열리니 새 링크 없이 공유창이 열리고, 팝업은 닫히고 '물어봤어요'만 알린다
+  await sheet.getByRole("button", { name: "공유하기", exact: true }).click();
   await expect.poll(() => page.evaluate(() => (window as unknown as { __shared: unknown[] }).__shared.length)).toBe(1);
   const shared = await page.evaluate(() => (window as unknown as { __shared: { url?: string }[] }).__shared[0]!);
   expect(shared.url).toMatch(/\/r\/[A-Za-z0-9_-]{40,}/);
+  await expect(page.getByRole("status").filter({ hasText: ko["request.asked"] })).toBeVisible();
+  await expect(sheet).toHaveCount(0);
+  await expect(page.getByText("무엇을 물어볼까요?")).toBeVisible();
   expect(created).toHaveLength(1);
-  // 같은 링크를 복사로도 쓴다(다시 만들지 않는다)
+  // 머리말 공유 아이콘은 '물어보기' 단추와 같다: 같은 링크를 다시 공유한다
+  await page.getByRole("button", { name: "공유하기", exact: true }).click();
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __shared: unknown[] }).__shared.length)).toBe(2);
+  expect(await page.evaluate(() => (window as unknown as { __shared: { url?: string }[] }).__shared[1]!.url)).toBe(shared.url);
+  expect(created).toHaveLength(1);
+  // 같은 링크를 복사로도 쓴다(다시 만들지 않는다). 복사해도 화면은 그대로
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.getByRole("button", { name: "링크 복사", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: ko["common.copied"] })).toBeVisible();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toContain(shared.url!);
   expect(created).toHaveLength(1);
+  await shot(page, "04c-ask-copied-toast");
+  // 물어볼 항목을 바꾸면 다음엔 새 링크를 만든다(앞 링크는 그대로 열린다)
+  await page.getByRole("button", { name: "사이즈", exact: true }).click();
+  await page.getByRole("button", { name: "링크 복사", exact: true }).click();
+  await expect.poll(() => created.length).toBe(2);
+  await expect(page).toHaveURL(/\/request$/);
+});
+
+test("물어보기: 공유창이 없는 곳(PC)이면 머리말 공유 아이콘이 우리 공유 팝업을 연다 — 링크 복사 · 문자로 보내기, 링크 글자는 없다", async ({ browser }) => {
+  const page = await as(browser, "jisu");
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
+  });
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/request");
+  await askNew(page, "고모부");
+  // 머리말의 공유 아이콘: 눌러 링크를 만들고(공유창이 없으니) 우리 팝업을 연다
+  await page.getByRole("button", { name: "공유하기", exact: true }).click();
+  const sheet = page.getByRole("dialog");
+  await expect(sheet.getByRole("heading", { name: /고모부.*에게 물어보기/ })).toBeVisible();
+  await expect(sheet.getByRole("button", { name: "공유하기", exact: true })).toHaveCount(0);
+  await expect(sheet.getByText(/\/r\//)).toHaveCount(0);
+  // 문자로 보내기는 휴대폰에서만(이 테스트 기기는 휴대폰): 글과 링크가 문자 본문으로 간다
+  expect(await sheet.getByRole("link", { name: "문자로 보내기" }).getAttribute("href")).toMatch(/^sms:\?&body=.+%2Fr%2F/);
+  await sheet.getByRole("button", { name: "링크 복사", exact: true }).click();
+  await expect(sheet.getByRole("button", { name: ko["common.copied"], exact: true })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/\/r\/[A-Za-z0-9_-]{40,}/);
+  await sheet.getByRole("button", { name: "닫기" }).click();
+  await expect(sheet).toHaveCount(0);
+  await expect(page).toHaveURL(/\/request$/);
+  await expect(page.getByText("무엇을 물어볼까요?")).toBeVisible();
 });
 
 test("하나만 물으면 답하는 화면도 하나: 진행 막대 없이 바로 보내기", async ({ browser }) => {

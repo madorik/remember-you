@@ -8,10 +8,10 @@ import { askReplyAlerts, replyAlertsState, useIsNative } from "@/components/nati
 import { enableWebPush, readWebPushState, type WebPushState } from "@/lib/web-push-client";
 
 /**
- * 물어보기 링크를 만든 직후 '답장 오면 알려 드릴까요?' 한 줄: 누르면 이 브라우저의 알림 받기(웹 푸시)를 켠다(설정의 스위치와 같은 길).
+ * 물어보기 링크를 보낸 직후(공유 팝업 아래·첫 토스트 곁) '답장 오면 알려 드릴까요?' 한 줄: 누르면 이 브라우저의 알림 받기(웹 푸시)를 켠다(설정의 스위치와 같은 길).
  * 앱 안에서는 OS 알림 허락(푸시 등록)을 묻는다(아직 안 물어본 기기만). 브라우저가 못 받거나 막혀 있거나 이미 켜져 있으면 보이지 않는다(켠 직후에는 켰다는 표시만 남는다)
  */
-export function ReplyAlert({ locale, publicKey }: { locale: Locale; publicKey: string | null }) {
+export function ReplyAlert({ locale, publicKey, className = "mx-4 mt-3.5" }: { locale: Locale; publicKey: string | null; /** 바깥 여백·그림자 같은 자리 클래스 */ className?: string }) {
   const t = useT(locale);
   const native = useIsNative();
   const [state, setState] = useState<WebPushState | "unknown">("unknown");
@@ -39,7 +39,7 @@ export function ReplyAlert({ locale, publicKey }: { locale: Locale; publicKey: s
 
   if (justOn) {
     return (
-      <p role="status" className="mx-4 mt-3.5 flex min-h-11 items-center gap-2 px-1 text-[12.6px]">
+      <p role="status" className={`flex min-h-11 items-center gap-2 px-1 text-[12.6px] ${className}`}>
         <Icon name="check" size={16} strokeWidth={2.2} className="shrink-0 text-[#5dbb9a]" />
         {t("request.alertOn")}
       </p>
@@ -68,7 +68,7 @@ export function ReplyAlert({ locale, publicKey }: { locale: Locale; publicKey: s
           setBusy(false);
         }
       }}
-      className="mx-4 mt-3.5 flex min-h-11 items-center gap-2 rounded-full border border-dashed border-edge bg-white px-3.5 text-left text-[12.6px] disabled:opacity-50"
+      className={`flex min-h-11 items-center gap-2 rounded-full border border-dashed border-edge bg-white px-3.5 text-left text-[12.6px] disabled:opacity-50 ${className}`}
     >
       <Icon name="bell" size={17} strokeWidth={1.8} className="shrink-0" />
       {t("request.alertAsk")}

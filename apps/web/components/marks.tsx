@@ -69,7 +69,7 @@ export function CheckGlyph({ size = 14 }: { size?: number }) {
 
 type IconName =
   | "back" | "close" | "lock" | "alert" | "mic" | "camera" | "link" | "copy" | "share" | "gift" | "external" | "bell"
-  | "plus" | "check" | "calendar" | "people" | "card" | "globe" | "personAdd" | "chevron" | "trash" | "pick" | "map" | "eye" | "settings" | "star" | "pencil" | "up" | "undo" | "arrow" | "stop";
+  | "plus" | "check" | "calendar" | "people" | "card" | "globe" | "personAdd" | "chevron" | "trash" | "pick" | "map" | "eye" | "settings" | "star" | "pencil" | "up" | "undo" | "arrow" | "stop" | "chat";
 
 const ICONS: Record<IconName, React.ReactNode> = {
   back: <path d="M15 18l-6-6 6-6" />,
@@ -116,6 +116,7 @@ const ICONS: Record<IconName, React.ReactNode> = {
       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
     </>
   ),
+  chat: <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.6-.8L3 21l1.9-5.4A8.4 8.4 0 1 1 21 11.5z" />,
   share: <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13" />,
   gift: <path d="M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />,
   external: <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" />,

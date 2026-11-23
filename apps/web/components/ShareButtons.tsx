@@ -14,11 +14,18 @@ export function canShare(): boolean {
   return !!(w.Capacitor?.isNativePlatform?.() && w.Capacitor.Plugins?.Share) || !!navigator.share;
 }
 
+/** 휴대폰인가(문자 보내기 단추를 보일지 정할 때) */
+export function isPhone(): boolean {
+  const w = window as unknown as CapWindow;
+  if (w.Capacitor?.isNativePlatform?.()) return true;
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+}
+
 /**
- * 공유창을 연다: shared(보냈거나 사용자가 닫았다) · blocked(브라우저가 막았다: 누른 지 오래돼 NotAllowedError) · unavailable(공유창이 없다).
+ * 공유창을 연다: shared(보냈다) · closed(사용자가 공유창을 닫았다) · blocked(브라우저가 막았다: 누른 지 오래돼 NotAllowedError) · unavailable(공유창이 없다).
  * 누르는 순간 바로 불러야 브라우저가 허락한다(링크를 만든 뒤라면 늦을 수 있다)
  */
-export async function shareLink(text: string, url?: string): Promise<"shared" | "blocked" | "unavailable"> {
+export async function shareLink(text: string, url?: string): Promise<"shared" | "closed" | "blocked" | "unavailable"> {
   const w = window as unknown as CapWindow;
   try {
     if (w.Capacitor?.isNativePlatform?.() && w.Capacitor.Plugins?.Share) {
@@ -30,8 +37,7 @@ export async function shareLink(text: string, url?: string): Promise<"shared" | 
       return "shared";
     }
   } catch (e) {
-    // 사용자가 공유창을 닫은 것도 성공으로 본다
-    if (e instanceof Error && e.name === "AbortError") return "shared";
+    if (e instanceof Error && e.name === "AbortError") return "closed";
     if (e instanceof Error && e.name === "NotAllowedError") return "blocked";
   }
   return "unavailable";
@@ -39,7 +45,9 @@ export async function shareLink(text: string, url?: string): Promise<"shared" | 
 
 /** 앱(Capacitor)이면 네이티브 공유, 아니면 브라우저 공유, 그것도 없으면 false */
 export async function nativeShare(text: string, url?: string): Promise<boolean> {
-  return (await shareLink(text, url)) === "shared";
+  // 사용자가 공유창을 닫은 것도 성공으로 본다(복사로 넘어가지 않는다)
+  const res = await shareLink(text, url);
+  return res === "shared" || res === "closed";
 }
 
 /** 글을 복사한다. 클립보드가 막혀 있으면 옛 방식으로 한 번 더. 복사했으면 true */
