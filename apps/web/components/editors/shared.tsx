@@ -1,7 +1,8 @@
 "use client";
 
 import { NONE, translate, type Locale, type MessageKey, type Vars } from "@readme/core";
-import { CheckGlyph, DrawnCheck } from "../marks";
+import { useState } from "react";
+import { CheckGlyph, DrawnCheck, Icon } from "../marks";
 
 export type TFn = (key: MessageKey, vars?: Vars) => string;
 
@@ -75,6 +76,23 @@ export function SectionHeading({ children, tone = "ink", right }: { children: Re
       <span className={`hand text-[18.6px] leading-none ${tone === "red" ? "text-red" : ""}`}>{children}</span>
       {right ? <span className="text-[11.7px] text-muted">{right}</span> : null}
     </div>
+  );
+}
+
+/**
+ * 접어 두는 칸 묶음(받는 사람 화면에서 긴 항목이 설문처럼 보이지 않게): 제목 줄을 누르면 펼쳐진다. 이미 값이 든 묶음(startOpen)은 처음부터 펼쳐 둔다.
+ * 접혀도 값은 위 편집기가 쥐고 있어서 그대로 남는다
+ */
+export function Collapsible({ title, startOpen = false, children }: { title: string; startOpen?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(startOpen);
+  return (
+    <section className="flex flex-col gap-4">
+      <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="flex min-h-11 items-center justify-between border-b border-dashed border-ink/30 pb-1.5 text-left">
+        <SectionHeading>{title}</SectionHeading>
+        <Icon name="chevron" size={17} strokeWidth={2} className={`shrink-0 text-muted transition-transform ${open ? "rotate-90" : ""}`} />
+      </button>
+      {open ? children : null}
+    </section>
   );
 }
 

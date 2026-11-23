@@ -7,6 +7,7 @@ import { NotesButton } from "@/app/(app)/people/[id]/NotesButton";
 import { PersonMenu } from "@/app/(app)/people/[id]/PersonMenu";
 import { ViewBeacon } from "@/app/(app)/people/[id]/ViewBeacon";
 import { QuickNote } from "@/app/(app)/people/[id]/QuickNote";
+import { ResendLink } from "@/components/ResendLink";
 import { TagEditor } from "@/app/(app)/people/[id]/TagEditor";
 import { cancelInvite } from "@/app/actions/request";
 import { Avatar } from "@/components/Avatar";
@@ -154,13 +155,17 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
 
       {/* 물어보고 답을 기다리는 중: 아직 아무도 안 연 링크는 여기서 취소한다 */}
       {waiting ? (
-        <div className="mx-4 mt-3 flex min-h-12 items-center gap-2.5 rounded-[12.6px] border border-edge bg-sky-soft pl-4 pr-1.5">
+        <div className="mx-4 mt-3 flex min-h-12 items-center gap-2 rounded-[12.6px] border border-edge bg-sky-soft pl-4 pr-1.5">
           <Icon name="link" size={17} strokeWidth={2} className="shrink-0 text-accent" />
-          <span className="min-w-0 flex-1 text-[12.6px]">{t("home.waiting")}</span>
+          <span className="flex min-w-0 flex-1 flex-col py-1.5">
+            <span className="text-[12.6px] leading-[1.25]">{t("home.waiting")}</span>
+            <span className="text-[10.8px] leading-[1.3] text-muted">{t("person.waitingDays", { n: waiting.days })}</span>
+          </span>
+          <ResendLink locale={locale} contactId={p.contactId} className="flex min-h-11 shrink-0 items-center px-2 text-[12.6px] text-accent underline decoration-[1.5px] underline-offset-4 disabled:opacity-50" />
           <form action={cancelInvite}>
             <input type="hidden" name="id" value={waiting.inviteId} />
             <input type="hidden" name="back" value={`/people/${p.contactId}`} />
-            <button className="flex min-h-11 items-center px-2.5 text-[12.6px] text-red">{t("privacy.linkCancel")}</button>
+            <button className="flex min-h-11 items-center px-2 text-[12.6px] text-red">{t("privacy.linkCancel")}</button>
           </form>
         </div>
       ) : null}

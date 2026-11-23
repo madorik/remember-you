@@ -8,6 +8,7 @@ import { saveOffsets } from "@/app/actions/card";
 import { ReminderPicker } from "@/components/editors/ReminderPicker";
 import { useT } from "@/components/editors/shared";
 import { useIsNative } from "@/components/native";
+import { disableWebPush, enableWebPush, readWebPushState } from "@/lib/web-push-client";
 
 /** 서버 액션이 도는 동안 흐리게 하고 누르지 못하게 하는 단추(폼 안에서). 움직임 줄이기를 켜면 깜빡이지 않는다 */
 export function PendingButton({ className = "", children }: { className?: string; children: React.ReactNode }) {
@@ -129,20 +130,6 @@ export function ReminderSetting({ locale, offsets }: { locale: Locale; offsets: 
   );
 }
 
-/** 브라우저 공개 키(base64url)를 구독에 넘길 바이트로 */
-function keyBytes(base64Url: string): Uint8Array<ArrayBuffer> {
-  const pad = "=".repeat((4 - (base64Url.length % 4)) % 4);
-  const raw = atob((base64Url + pad).replace(/-/g, "+").replace(/_/g, "/"));
-  const out = new Uint8Array(new ArrayBuffer(raw.length));
-  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
-  return out;
-}
-
-async function saveSubscription(sub: PushSubscription): Promise<boolean> {
-  const res = await fetch("/api/push", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: JSON.stringify(sub.toJSON()), platform: "web" }) }).catch(() => null);
-  return !!res?.ok;
-}
-
 /**
  * 이 브라우저에서 알림 받기(웹 푸시): 앱이 아니고, 브라우저가 지원하고, 서버에 푸시 키가 있을 때만 보인다.
  * 켜면 알림 권한을 묻고 구독을 서버에 저장한다(생일·기념일, 물어보기 답장). 끄면 구독을 지운다.
@@ -158,18 +145,9 @@ export function WebPushSetting({ locale, publicKey }: { locale: Locale; publicKe
   useEffect(() => {
     if (native) return;
     let gone = false;
-    void (async () => {
-      if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
-        // 아이폰·아이패드의 사파리는 홈 화면에 추가한 웹앱에서만 웹 푸시를 준다(iOS 16.4부터): 설치 전에는 PushManager가 없다
-        const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-        return void (!gone && setState(ios ? "install" : "unsupported"));
-      }
-      if (Notification.permission === "denied") return void (!gone && setState("blocked"));
-      const reg = await navigator.serviceWorker.getRegistration("/sw.js").catch(() => undefined);
-      const sub = await reg?.pushManager.getSubscription().catch(() => null);
-      if (sub) void saveSubscription(sub);
-      if (!gone) setState(sub ? "on" : "off");
-    })();
+    void readWebPushState().then((next) => {
+      if (!gone) setState(next);
+    });
     return () => {
       gone = true;
     };
@@ -179,25 +157,11 @@ export function WebPushSetting({ locale, publicKey }: { locale: Locale; publicKe
   const on = state === "on";
 
   async function turnOn() {
-    const perm = await Notification.requestPermission();
-    if (perm !== "granted") return setState(perm === "denied" ? "blocked" : "off");
-    const reg = await navigator.serviceWorker.register("/sw.js");
-    await navigator.serviceWorker.ready;
-    const sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(publicKey) }));
-    if (!(await saveSubscription(sub))) {
-      await sub.unsubscribe().catch(() => {});
-      throw new Error("save");
-    }
-    setState("on");
+    setState(await enableWebPush(publicKey));
   }
 
   async function turnOff() {
-    const reg = await navigator.serviceWorker.getRegistration("/sw.js");
-    const sub = await reg?.pushManager.getSubscription();
-    if (sub) {
-      await fetch("/api/push", { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: JSON.stringify(sub.toJSON()), platform: "web" }) }).catch(() => {});
-      await sub.unsubscribe().catch(() => {});
-    }
+    await disableWebPush();
     setState("off");
   }
 

@@ -2,13 +2,14 @@
 
 import { NONE, NONE_LABEL, SEASONS, type LifeData, type Locale } from "@readme/core";
 import { useState } from "react";
-import { CircleOption, TextField, joinList, splitList, toggleWithNone, useT } from "./shared";
+import { CircleOption, Collapsible, TextField, joinList, splitList, toggleWithNone, useT } from "./shared";
 
 /** 생활과 여행: 취미 · 계절 · 가 보고 싶은 곳(디저트는 좋아하는 음식, 동물은 좋아하는 것들, 책은 문화생활로) */
-export function LifeEditor({ value, onChange, locale }: { value: LifeData; onChange: (v: LifeData) => void; locale: Locale }) {
+export function LifeEditor({ value, onChange, locale, lite = false }: { value: LifeData; onChange: (v: LifeData) => void; locale: Locale; lite?: boolean }) {
   const t = useT(locale);
   const [hobbies, setHobbies] = useState(joinList(value.hobbies));
   const toggle = (code: string) => onChange({ ...value, seasons: toggleWithNone(value.seasons, code) });
+  const travel = <TextField label={t("fav.travel")} value={value.travel ?? ""} onChange={(travel) => onChange({ ...value, travel })} placeholder={t("fav.travelPlaceholder")} />;
   return (
     <div className="flex flex-col gap-6">
       <TextField
@@ -29,7 +30,14 @@ export function LifeEditor({ value, onChange, locale }: { value: LifeData; onCha
           ))}
         </div>
       </div>
-      <TextField label={t("fav.travel")} value={value.travel ?? ""} onChange={(travel) => onChange({ ...value, travel })} placeholder={t("fav.travelPlaceholder")} />
+      {/* lite(받는 사람 화면): 가 보고 싶은 곳은 접어 둔다(값이 있으면 펼친 채) */}
+      {lite ? (
+        <Collapsible title={t("fav.travel")} startOpen={!!value.travel}>
+          {travel}
+        </Collapsible>
+      ) : (
+        travel
+      )}
     </div>
   );
 }

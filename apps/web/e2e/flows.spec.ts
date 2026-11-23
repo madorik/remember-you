@@ -41,9 +41,9 @@ async function onlyTopics(page: import("@playwright/test").Page, names: string[]
   for (const name of names) await page.getByRole("button", { name, exact: true }).click();
 }
 
-/** 물어보기에서 새 사람: 찾기 칸에 이름을 적고 '○○ 새로'를 고른다 */
+/** 물어보기에서 새 사람: 찾기 칸에 이름을 적고 '○○ 새로'를 고른다(사람이 없는 계정은 칸 안내 글이 달라서 id로 찾는다. 아무와도 안 맞으면 따로 고르지 않아도 새 사람이지만 칩은 그대로 눌러 볼 수 있다) */
 async function askNew(page: import("@playwright/test").Page, name: string) {
-  await page.getByPlaceholder("이름이나 태그로 찾기").fill(name);
+  await page.locator("#request-who").fill(name);
   await page.getByRole("button", { name: `${name} 새로` }).click();
 }
 
@@ -141,26 +141,30 @@ test("물어보기(새 사람) → 앱 없이 웹에서 답하기 → 답이 내
   await expect(dad.getByText("설치 없이 답하는 중")).toBeVisible();
   await expect(dad.getByRole("heading", { name: "지수님이 3가지가 궁금하대요" })).toBeVisible();
   await shot(dad, "05-answer");
-  // 한 화면에 한 항목씩: 음식과 알레르기 → 선물(건너뛰기) → 생일
+  // 한 화면에 한 항목씩, 중요한 것부터: 생일 → 음식과 알레르기 → 좋아하는 음식(건너뛰기). 첫 화면에는 보낸 사람만 볼 수 있다는 표시가 있고 로그인 링크는 없다
   await expect(dad.getByText("1/4")).toBeVisible();
-  await dad.getByRole("button", { name: "굴", exact: true }).first().click();
-  await dad.getByRole("button", { name: "다음", exact: true }).click();
-  await expect(dad.getByText("2/4")).toBeVisible();
-  await dad.getByRole("button", { name: "건너뛰기", exact: true }).click();
-  await expect(dad.getByText("3/4")).toBeVisible();
+  await expect(dad.getByText("지수님만 볼 수 있어요")).toBeVisible();
+  await expect(dad.getByRole("link", { name: "로그인하고 답하기" })).toHaveCount(0);
   await dad.getByRole("radio", { name: "음력" }).click();
   await dad.getByLabel("월").selectOption("11");
   await dad.getByLabel("일").selectOption("3");
   await dad.getByRole("button", { name: "다음", exact: true }).click();
+  await expect(dad.getByText("2/4")).toBeVisible();
+  await dad.getByRole("button", { name: "굴", exact: true }).first().click();
+  await dad.getByRole("button", { name: "다음", exact: true }).click();
+  await expect(dad.getByText("3/4")).toBeVisible();
+  await dad.getByRole("button", { name: "건너뛰기", exact: true }).click();
   await expect(dad.getByRole("heading", { name: "거의 다 됐어요" })).toBeVisible();
+  // 보내기 전에 무엇이 가는지 요약이 보인다
+  await expect(dad.getByText("지수님께 보낼 것")).toBeVisible();
   // 답이 어디에 저장되는지 알려 주고, 건강 정보는 동의가 있어야 보낸다
   await expect(dad.getByText("보낸 답은 지수님이 기억해 두고, 그 뒤로는 지수님이 언제든 바꿀 수 있어요.")).toBeVisible();
   await expect(dad.getByRole("button", { name: "보내기", exact: true })).toBeDisabled();
-  await dad.getByRole("button", { name: /건강 정보를 지수님에게 보내 저장하는 데 동의해요/ }).click();
+  await dad.getByRole("button", { name: /알레르기 같은 건강 정보도 지수님께 전해져요/ }).click();
   await dad.getByRole("button", { name: "보내기", exact: true }).click();
   await expect(dad.getByRole("heading", { name: "마음이 전해졌어요" })).toBeVisible();
   // 나도 물어보기 = 앱 받기(/get): 아이폰은 App Store(로그인 화면으로 가지 않는다), 안드로이드·PC는 Play가 공개되기 전엔 웹으로
-  const askBack = dad.getByRole("link", { name: "나도 물어보기" });
+  const askBack = dad.getByRole("link", { name: "앱에서 나도 물어보기" });
   await expect(askBack).toHaveAttribute("href", /^\/get\?from=answer&next=%2F%3Fnext%3D%252Frequest%253Fname%253D/);
   const store = async (ua: string) => (await dad.request.get("/get?from=answer&next=%2Frequest", { headers: { "user-agent": ua }, maxRedirects: 0 })).headers().location ?? "";
   expect(await store("Mozilla/5.0 (Linux; Android 14) Chrome/130 Mobile Safari/537.36")).toMatch(/\/request$/);
@@ -179,7 +183,8 @@ test("물어보기(새 사람) → 앱 없이 웹에서 답하기 → 답이 내
 
   // 같은 링크로 다시 답할 수 없다
   await dad.goto(askDadUrl);
-  await expect(dad.getByText("이미 답한 링크예요.")).toBeVisible();
+  await expect(dad.getByText("이미 답하셨어요. 지수님이 받았어요.")).toBeVisible();
+  await expect(dad.getByText("설치 없이 답하는 중")).toHaveCount(0);
 
   // 답장이 오면 홈 오른쪽 위 종에 새 알림 개수가 붙고, 누르면 종 아래 드롭다운에 알림이 모여 있다. 알림을 누르면 그 사람 화면, 열면 읽은 것으로 종의 숫자가 사라진다
   await page.goto("/home");
@@ -396,13 +401,13 @@ test("로그인하고 답하기: 내 리드미 값이 미리 채워지고, 내 �
 
   await doyun.goto(url);
   await expect(doyun.getByRole("link", { name: "로그인하고 답하기" })).toHaveCount(0);
+  // 생일(중요한 것부터): 내 리드미 값(양력 2월 14일)이 미리 들어 있다
+  await expect(doyun.getByLabel("월").first()).toHaveValue("2");
+  await expect(doyun.getByLabel("일").first()).toHaveValue("14");
+  await doyun.getByRole("button", { name: "다음", exact: true }).click();
   // 사이즈: 지수도 모르고 내 리드미에도 없어서 직접 적는다
   await doyun.getByPlaceholder("예: 235").fill("235");
   await doyun.getByPlaceholder("예: 11").fill("11");
-  await doyun.getByRole("button", { name: "다음", exact: true }).click();
-  // 생일: 내 리드미 값(양력 2월 14일)이 미리 들어 있다
-  await expect(doyun.getByLabel("월").first()).toHaveValue("2");
-  await expect(doyun.getByLabel("일").first()).toHaveValue("14");
   await doyun.getByRole("button", { name: "다음", exact: true }).click();
   await expect(doyun.getByRole("button", { name: "나에 대한 기록에도 저장" })).toHaveAttribute("aria-pressed", "true");
   await doyun.getByRole("button", { name: "보내기", exact: true }).click();
@@ -1095,7 +1100,7 @@ test("오늘의 질문: 가까운 사람의 빈 칸을 하나씩 묻고, 답하�
   await expect(card).toHaveCount(0);
 });
 
-test("오늘의 질문: '물어보기'는 그 사람을 고른 채 그 질문의 항목만 물어보기로 보내고, 오늘 한 번 쓴 것으로 센다", async ({ page }) => {
+test("오늘의 질문: '물어보기'는 그 사람을 고른 채 그 질문 하나만 물어보기로 보내고, 오늘 한 번 쓴 것으로 센다", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "데모로 둘러보기" }).click();
   await expect(page).toHaveURL(/\/home/);
@@ -1104,10 +1109,10 @@ test("오늘의 질문: '물어보기'는 그 사람을 고른 채 그 질문의
   const id = href.split("/").pop()!;
   const first = ((await card.getByRole("heading").textContent()) ?? "").trim();
   await card.getByRole("button", { name: "물어보기" }).click();
-  await expect(page).toHaveURL(new RegExp(`/request\\?to=${id}&topic=[a-z]+$`));
-  // 그 사람이 고정돼 있고 묻는 항목은 하나뿐이다
+  await expect(page).toHaveURL(new RegExp(`/request\\?to=${id}&q=[A-Za-z]+$`));
+  // 그 사람이 고정돼 있고 묻는 건 그 질문 하나뿐이다(항목을 고르는 칸은 없다)
   await expect(page.getByRole("heading", { name: "물어보기" })).toBeVisible();
-  await expect(page.locator("form button[aria-pressed=true]")).toHaveCount(1);
+  await expect(page.locator("form button[aria-pressed]")).toHaveCount(0);
   // 돌아오면 한 번 쓴 것으로 세서 다음 질문이 뜬다
   await page.goto("/home");
   await expect(card.getByRole("heading")).not.toHaveText(first);

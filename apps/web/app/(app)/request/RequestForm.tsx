@@ -1,6 +1,6 @@
 "use client";
 
-import { SECTIONS, SECTIONS_BY_IMPORTANCE, type AvatarConfig, type Locale, type Section } from "@readme/core";
+import { ASK_DEFAULT_TOPICS, QUESTIONS, QUESTION_SECTION, SECTIONS, SECTIONS_BY_IMPORTANCE, aboutPrompt, askMinutes, defaultAskTopics, type AvatarConfig, type DailyQuestion, type Locale, type Section } from "@readme/core";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { createRequest, type InviteState } from "@/app/actions/request";
 import { leaveTour, trackTour } from "@/app/actions/tour";
@@ -11,6 +11,7 @@ import { CheckGlyph, Icon } from "@/components/marks";
 import { Mascot } from "@/components/Mascot";
 import { SectionIcon } from "@/components/SectionIcon";
 import { TagChip } from "@/components/PersonRow";
+import { ReplyAlert } from "@/components/ReplyAlert";
 import { LinkField, ShareButtons } from "@/components/ShareButtons";
 import { matchesPerson } from "@/lib/search";
 
@@ -34,10 +35,42 @@ type Who = { kind: "person"; person: AskPerson } | { kind: "new"; name: string }
  * 누구에게: 주소록 사람을 이름·태그로 찾아 고르면 그 사람에게 묻고 답은 그 사람 기록에 들어간다(내 기록에 적힌 값은 서버가 미리 채워 보낸다).
  * 없는 사람이면 적은 이름으로 새로. fixed(사람 화면에서 왔을 때)면 그 사람으로 정해져 있다
  */
-export function RequestForm({ locale, people, fixed, initialName, defaults, xmas = false, initialMessage = "", focus = null, tour = false }: { locale: Locale; people: AskPerson[]; fixed: string | null; initialName: string; defaults: Section[]; xmas?: boolean; initialMessage?: string; focus?: Section | null; tour?: boolean }) {
+export function RequestForm({
+  locale,
+  people,
+  fixed,
+  initialName,
+  defaults,
+  xmas = false,
+  initialMessage = "",
+  focus = null,
+  question = null,
+  webPushKey = null,
+  tour = false,
+}: {
+  locale: Locale;
+  people: AskPerson[];
+  fixed: string | null;
+  initialName: string;
+  defaults: Section[];
+  xmas?: boolean;
+  initialMessage?: string;
+  focus?: Section | null;
+  /** 오늘의 질문 하나만 묻는다(?q=) */
+  question?: DailyQuestion["id"] | null;
+  webPushKey?: string | null;
+  tour?: boolean;
+}) {
   const t = useT(locale);
-  // 오늘의 질문에서 온 물어보기(focus)는 그 질문이 속한 항목 하나만 묻는다
-  const topicsFor = (p: AskPerson | null) => (focus ? [focus] : !xmas && p && p.missing.length ? p.missing : defaults);
+  // 한 질문만 묻는 물어보기(question)는 항목을 고르지 않고 그 질문 하나만(서버가 그 질문이 속한 항목으로 저장한다)
+  // 그 밖에는 누구에게든 같은 규칙: 아직 안 적힌 것 중 중요한 것부터 3개까지만 골라 두고(나머지는 직접 고른다), 다 적혀 있으면 기본 항목
+  const topicsFor = (p: AskPerson | null): Section[] => {
+    if (question) return [QUESTION_SECTION[question]];
+    if (focus) return [focus];
+    if (xmas) return defaults;
+    const picked = p ? defaultAskTopics(p.missing) : [];
+    return picked.length ? picked : defaults;
+  };
   const fixedPerson = fixed ? (people.find((p) => p.id === fixed) ?? null) : null;
   const [who, setWho] = useState<Who | null>(fixedPerson ? { kind: "person", person: fixedPerson } : initialName ? { kind: "new", name: initialName } : null);
   const [query, setQuery] = useState("");
@@ -51,23 +84,27 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
     seen.current = true;
     void trackTour("view", "ask");
   }, [tour]);
+  const q = query.replace(/\s+/g, " ").trim();
+  const matches = (q ? people.filter((p) => matchesPerson(q, p.name, p.tag)) : people).slice(0, 12);
+  const exact = people.some((p) => [p.name, p.tag, p.label].some((x) => x && x.replace(/\s+/g, "") === q.replace(/\s+/g, "")));
+  // 적은 이름이 아무와도 안 맞으면 새 사람으로 친다('새로' 칩을 따로 누르지 않아도 된다)
+  const typedNew = !who && !!q && !matches.length;
+  const target: Who | null = who ?? (typedNew ? { kind: "new", name: q.slice(0, 40) } : null);
+  const name = target ? (target.kind === "person" ? target.person.label : target.name) : "";
+  const targetKind = target?.kind;
   const made = useRef(false);
   useEffect(() => {
     if (!tour || !state.url || made.current) return;
     made.current = true;
-    void trackTour("ask", who?.kind === "person" ? "person" : "new");
-  }, [tour, state.url, who]);
-  const name = who ? (who.kind === "person" ? who.person.label : who.name) : "";
-  const q = query.replace(/\s+/g, " ").trim();
-  const matches = (q ? people.filter((p) => matchesPerson(q, p.name, p.tag)) : people).slice(0, 12);
-  const exact = people.some((p) => [p.name, p.tag, p.label].some((x) => x && x.replace(/\s+/g, "") === q.replace(/\s+/g, "")));
+    void trackTour("ask", targetKind === "person" ? "person" : "new");
+  }, [tour, state.url, targetKind]);
   const choose = (p: AskPerson) => {
     setWho({ kind: "person", person: p });
     setTopics(topicsFor(p));
   };
   const chooseNew = () => {
     setWho({ kind: "new", name: q.slice(0, 40) });
-    setTopics(defaults);
+    setTopics(topicsFor(null));
   };
   // 이름 칸에서 엔터: 하나만 걸렸으면 그 사람, 아니면 지금 적은 이름으로 새로(아래 '새로' 칩과 같다). 한글 조합 중 엔터는 글자를 끝내는 것뿐
   const onNameKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -94,18 +131,22 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
             <figure className="relative m-0 flex shrink-0 -rotate-[4deg] flex-col items-center border border-edge bg-white px-[5.4px] pb-[16.2px] pt-[5.4px]">
               <TornTape color="pink" w={58} h={20} rotate={-6} className="-top-[11.7px] left-[16.2px]" />
               <span className="flex h-[88.2px] w-[88.2px] items-center justify-center overflow-hidden bg-white">
-                {who?.kind === "person" ? <Avatar config={who.person.avatar} size={92} label={who.person.label} decorative /> : <Mascot pose={6} size={84} />}
+                {target?.kind === "person" ? <Avatar config={target.person.avatar} size={92} label={target.person.label} decorative /> : <Mascot pose={6} size={84} />}
               </span>
               <figcaption className="sr-only">{name.trim()}</figcaption>
             </figure>
             <div className="min-w-0 flex-1">
               <h2 className="hand-written !font-normal text-[21.1px] leading-[1.15]">{t("request.ready", { name: name.trim() })}</h2>
               <ul className="mt-2.5 flex flex-wrap gap-x-2 gap-y-1.5">
-                {SECTIONS_BY_IMPORTANCE.filter((x) => topics.includes(x)).map((x) => (
-                  <li key={x} className="hand flex h-[27px] items-center rounded-full border border-edge bg-[#e4ecfa] px-2.5 text-[13px] leading-none">
-                    {topicLabel(x)}
-                  </li>
-                ))}
+                {question ? (
+                  <li className="hand flex min-h-[27px] items-center rounded-full border border-edge bg-[#e4ecfa] px-2.5 py-1 text-[13px] leading-[1.2]">{QUESTIONS.find((x) => x.id === question)?.prompt[locale]}</li>
+                ) : (
+                  SECTIONS_BY_IMPORTANCE.filter((x) => topics.includes(x)).map((x) => (
+                    <li key={x} className="hand flex h-[27px] items-center rounded-full border border-edge bg-[#e4ecfa] px-2.5 text-[13px] leading-none">
+                      {topicLabel(x)}
+                    </li>
+                  ))
+                )}
               </ul>
             </div>
           </div>
@@ -129,6 +170,7 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
             <LinkField url={state.url} label={t("common.copyLink")} />
           </div>
         </section>
+        {webPushKey ? <ReplyAlert locale={locale} publicKey={webPushKey} /> : null}
         <div className="bottom-bar mt-auto flex flex-col gap-2 bg-bg px-4 pt-4">
           <ShareButtons locale={locale} url={state.url} text={shareText} sendLabel={t("request.send")} />
           {/* 체험의 끝: 링크를 만들었으면 시작하기로 마치고 홈으로 */}
@@ -144,6 +186,8 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
     );
   }
 
+  // 링크 만들기가 막혀 있는 까닭(짧게)
+  const reason = pending ? null : !name.trim() ? (q && !typedNew ? "request.pickWho" : "request.needName") : !topics.length ? "request.pickOne" : null;
   const chip = "flex h-9 items-center gap-1.5 rounded-full border border-edge bg-white pl-[4.5px] pr-3.5 text-[12.6px]";
   const h2 = "hand scribble text-[19.4px] leading-none";
   const mint = { "--scribble": "#5dbb9a" } as React.CSSProperties;
@@ -151,7 +195,8 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
   return (
     <form action={action} className="flex flex-1 flex-col">
       <input type="hidden" name="sections" value={JSON.stringify(topics)} />
-      {who?.kind === "person" ? <input type="hidden" name="to" value={who.person.id} /> : null}
+      {question ? <input type="hidden" name="questions" value={JSON.stringify([question])} /> : null}
+      {target?.kind === "person" ? <input type="hidden" name="to" value={target.person.id} /> : null}
       <input type="hidden" name="name" value={name} />
 
       {fixed ? null : (
@@ -180,7 +225,7 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
                   onClick={() => {
                     setWho(null);
                     setQuery("");
-                    setTopics(defaults);
+                    setTopics(topicsFor(null));
                   }}
                   className="flex h-8 w-8 shrink-0 items-center justify-center"
                 >
@@ -203,7 +248,7 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
                   onKeyDown={onNameKey}
                   maxLength={40}
                   enterKeyHint="go"
-                  placeholder={t("people.search")}
+                  placeholder={t(people.length ? "people.search" : "request.whoPlaceholder")}
                   className="field !pl-[37.8px] [&::-webkit-search-cancel-button]:appearance-none"
                 />
               </div>
@@ -216,7 +261,11 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
                     </button>
                   ))}
                   {q && !exact ? (
-                    <button type="button" onClick={chooseNew} className="flex h-9 items-center gap-1.5 rounded-full border border-dashed border-edge pl-3 pr-3.5 text-[12.6px] text-accent">
+                    <button
+                      type="button"
+                      onClick={chooseNew}
+                      className={`flex h-9 items-center gap-1.5 rounded-full border pl-3 pr-3.5 text-[12.6px] ${typedNew ? "border-edge bg-sky text-ink" : "border-dashed border-edge text-accent"}`}
+                    >
                       <Icon name="personAdd" size={15} strokeWidth={2} />
                       {q}
                       <TagChip>{t("voice.newPerson")}</TagChip>
@@ -230,34 +279,48 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
       )}
 
       <section className={`card relative mx-4 px-3.5 pb-3.5 pt-2.5 ${fixed ? "mt-5" : "mt-3.5"}`}>
-        <div className="flex min-h-[30.6px] items-center justify-between">
+        <div className="flex min-h-[30.6px] items-center justify-between gap-2">
           <h2 className={h2} style={mint}>
             {t("request.topics")}
           </h2>
-          <span className="hand inline-flex h-[27px] items-center rounded-[9px] border border-edge bg-sky-soft px-2.5 text-[13.8px] leading-none">{topics.length}</span>
+          {question ? null : (
+            <span className="flex items-center gap-2">
+              {/* 많이 고르면 받는 사람이 드는 시간만 슬쩍 보여 준다(기본 3개 안쪽에서는 숨김) */}
+              {topics.length > ASK_DEFAULT_TOPICS ? <span className="text-[11.7px] text-muted">{t("request.burden", { n: askMinutes(topics) })}</span> : null}
+              <span className="hand inline-flex h-[27px] items-center rounded-[9px] border border-edge bg-sky-soft px-2.5 text-[13.8px] leading-none">{topics.length}</span>
+            </span>
+          )}
         </div>
-        <div className="mt-2 grid grid-cols-3 gap-2">
-          {SECTIONS_BY_IMPORTANCE.map((x) => {
-            const on = topics.includes(x);
-            return (
-              <button
-                key={x}
-                type="button"
-                aria-pressed={on}
-                onClick={() => setTopics(on ? topics.filter((y) => y !== x) : SECTIONS.filter((y) => y === x || topics.includes(y)))}
-                className={`relative flex h-[52.2px] flex-col items-center justify-center gap-[2.7px] rounded-xl text-[10.8px] leading-none ${on ? "border-[2.5px] border-ink bg-[#e4ecfa]" : "border border-edge bg-white"}`}
-              >
-                <SectionIcon section={x} size={30} outline />
-                {topicLabel(x)}
-                {on ? (
-                  <span aria-hidden="true" className="absolute -right-[4.5px] -top-[6.3px] flex h-5 w-5 items-center justify-center rounded-full border border-edge bg-sky text-ink">
-                    <CheckGlyph size={12} />
-                  </span>
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
+        {question ? (
+          // 오늘의 질문 하나만 묻는 물어보기: 항목 대신 그 질문 하나
+          <div className="mt-2 flex items-center gap-2.5 rounded-xl border-[2.5px] border-ink bg-[#e4ecfa] px-3 py-2.5">
+            <SectionIcon section={QUESTION_SECTION[question]} size={30} outline />
+            <span className="min-w-0 flex-1 text-[13.5px] leading-[1.4]">{aboutPrompt(question, name, locale)}</span>
+          </div>
+        ) : (
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {SECTIONS_BY_IMPORTANCE.map((x) => {
+              const on = topics.includes(x);
+              return (
+                <button
+                  key={x}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setTopics(on ? topics.filter((y) => y !== x) : SECTIONS.filter((y) => y === x || topics.includes(y)))}
+                  className={`relative flex h-[52.2px] flex-col items-center justify-center gap-[2.7px] rounded-xl text-[10.8px] leading-none ${on ? "border-[2.5px] border-ink bg-[#e4ecfa]" : "border border-edge bg-white"}`}
+                >
+                  <SectionIcon section={x} size={30} outline />
+                  {topicLabel(x)}
+                  {on ? (
+                    <span aria-hidden="true" className="absolute -right-[4.5px] -top-[6.3px] flex h-5 w-5 items-center justify-center rounded-full border border-edge bg-sky text-ink">
+                      <CheckGlyph size={12} />
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       <section className="card relative mx-4 mt-3.5 flex flex-col px-3.5 pb-3 pt-2.5">
@@ -273,7 +336,8 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
           onChange={(e) => setMessage(e.target.value)}
           rows={2}
           maxLength={300}
-          className="hand-written mt-1 h-[54px] w-full resize-none border-0 bg-transparent p-0 text-[17.8px] leading-[27px] outline-none [background-image:repeating-linear-gradient(180deg,transparent_0_26px,#d5e1f3_26px_27px)]"
+          placeholder={t("request.messagePlaceholder")}
+          className="hand-written mt-1 h-[54px] w-full resize-none border-0 bg-transparent p-0 text-[17.8px] leading-[27px] outline-none placeholder:font-sans placeholder:text-[13.5px] placeholder:text-muted [background-image:repeating-linear-gradient(180deg,transparent_0_26px,#d5e1f3_26px_27px)]"
         />
       </section>
 
@@ -283,7 +347,8 @@ export function RequestForm({ locale, people, fixed, initialName, defaults, xmas
             {t(state.error === "pickOne" ? "request.pickOne" : name.trim() ? "common.error" : "request.needName")}
           </p>
         ) : null}
-        <button disabled={pending || !topics.length || !name.trim()} className="inline-flex h-11 items-center gap-[4.5px] rounded-full border border-edge bg-sky pl-2.5 pr-3.5 text-[14.4px] disabled:border-ink/[0.22] disabled:bg-[#e8e1cf] disabled:text-[#5a5f78]">
+        {reason ? <p className="w-full px-1 text-[12.6px] text-muted">{t(reason)}</p> : null}
+        <button disabled={pending || !!reason} className="inline-flex h-11 items-center gap-[4.5px] rounded-full border border-edge bg-sky pl-2.5 pr-3.5 text-[14.4px] disabled:border-ink/[0.22] disabled:bg-[#e8e1cf] disabled:text-[#5a5f78]">
           <Icon name="link" size={17} strokeWidth={1.7} />
           {t("request.make")}
         </button>

@@ -3,7 +3,7 @@
 import { ALCOHOL_KINDS, ALCOHOL_LEVELS, SPICY_LEVELS, type AlcoholData, type Locale, type TasteData } from "@readme/core";
 import { useState } from "react";
 import { ChiliIcon } from "../Chili";
-import { CircleOption, SectionHeading, TextField, joinList, splitList, useT } from "./shared";
+import { CircleOption, Collapsible, SectionHeading, TextField, joinList, splitList, useT } from "./shared";
 
 /** 매운맛: 고추 다섯 개 한 줄. 몇 번째를 누르느냐가 단계(그만큼 빨개진다), 옆에 그 단계 이름. 같은 걸 다시 누르면 뺀다 */
 export function SpicyScale({ value, onChange, locale, large = false }: { value: number | null; onChange: (v: number | null) => void; locale: Locale; large?: boolean }) {
@@ -79,9 +79,16 @@ export function AlcoholPicker({ value, onChange, locale }: { value: AlcoholData;
   );
 }
 
-export function TasteEditor({ value, onChange, locale, large = false }: { value: TasteData; onChange: (v: TasteData) => void; locale: Locale; large?: boolean }) {
+export function TasteEditor({ value, onChange, locale, large = false, lite = false }: { value: TasteData; onChange: (v: TasteData) => void; locale: Locale; large?: boolean; lite?: boolean }) {
   const t = useT(locale);
   const [likes, setLikes] = useState(joinList(value.likes));
+  const rest = (
+    <>
+      <TextField label={t("fav.dessert")} value={value.dessert ?? ""} onChange={(dessert) => onChange({ ...value, dessert })} placeholder={t("fav.dessertPlaceholder")} />
+      <TextField label={t("taste.drinks")} value={value.drinks} onChange={(drinks) => onChange({ ...value, drinks })} placeholder={t("taste.drinksPlaceholder")} />
+      <AlcoholPicker value={value.alcohol ?? { level: null, kinds: [] }} onChange={(alcohol) => onChange({ ...value, alcohol })} locale={locale} />
+    </>
+  );
   return (
     <div className="flex flex-col gap-6">
       <TextField
@@ -94,9 +101,14 @@ export function TasteEditor({ value, onChange, locale, large = false }: { value:
         placeholder={t("taste.likesPlaceholder")}
       />
       <SpicyScale value={value.spicy} onChange={(spicy) => onChange({ ...value, spicy })} locale={locale} large={large} />
-      <TextField label={t("fav.dessert")} value={value.dessert ?? ""} onChange={(dessert) => onChange({ ...value, dessert })} placeholder={t("fav.dessertPlaceholder")} />
-      <TextField label={t("taste.drinks")} value={value.drinks} onChange={(drinks) => onChange({ ...value, drinks })} placeholder={t("taste.drinksPlaceholder")} />
-      <AlcoholPicker value={value.alcohol ?? { level: null, kinds: [] }} onChange={(alcohol) => onChange({ ...value, alcohol })} locale={locale} />
+      {/* lite(받는 사람 화면): 간식·마시는 것·술은 접어 둔다(값이 있으면 펼친 채) */}
+      {lite ? (
+        <Collapsible title={t("answer.more")} startOpen={!!(value.dessert || value.drinks || value.alcohol?.level)}>
+          {rest}
+        </Collapsible>
+      ) : (
+        rest
+      )}
     </div>
   );
 }

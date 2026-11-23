@@ -1,11 +1,10 @@
 "use client";
 
-import { emptySection, isEmptySection, sanitizeSection, type CardData, type GiftsData, type Locale, type PartialCard, type Section } from "@readme/core";
-import Link from "next/link";
+import { emptySection, isEmptySection, sanitizeSection, type AvatarConfig, type CardData, type GiftsData, type Locale, type PartialCard, type Section } from "@readme/core";
 import { useActionState, useEffect, useRef, useState } from "react";
 import type { AnswerState } from "@/app/actions/request";
-import { GetAppLink } from "@/components/GetAppLink";
-import { useIsNative } from "@/components/native";
+import { AnswerSent } from "@/components/AnswerSent";
+import { Avatar } from "@/components/Avatar";
 import { DateSpecPicker } from "@/components/editors/DatesEditor";
 import { CultureEditor } from "@/components/editors/CultureEditor";
 import { FavoritesEditor } from "@/components/editors/FavoritesEditor";
@@ -16,7 +15,6 @@ import { SizesEditor } from "@/components/editors/SizesEditor";
 import { TasteEditor } from "@/components/editors/TasteEditor";
 import { CircleOption, TextField, joinList, splitList, useT } from "@/components/editors/shared";
 import { DrawnCheck, Icon } from "@/components/marks";
-import { AnswerDone } from "@/components/AnswerDone";
 import { TornTape } from "@/components/TornTape";
 import { Mascot } from "@/components/Mascot";
 import { SectionIcon } from "@/components/SectionIcon";
@@ -61,16 +59,6 @@ function GiftsLite({ value, onChange, locale }: { value: GiftsData; onChange: (v
   );
 }
 
-/** 편지 봉투(나도 물어보기 단추) */
-function Envelope() {
-  return (
-    <svg aria-hidden="true" width="18.9" height="18.9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-      <rect x="3.5" y="5.5" width="17" height="13" rx="2.5" />
-      <path d="M4.5 7.5l7.5 5.5 7.5-5.5" />
-    </svg>
-  );
-}
-
 /** 제목 속 '3가지' · '3 things'에 형광펜 */
 function highlightCount(text: string): React.ReactNode {
   const m = /^(.*?)(\d+\s?(?:가지|things?))(.*)$/.exec(text);
@@ -88,6 +76,7 @@ export function AnswerForm({
   locale,
   token,
   from,
+  fromAvatar,
   message,
   sections,
   prefill,
@@ -98,6 +87,8 @@ export function AnswerForm({
   locale: Locale;
   token: string;
   from: string;
+  /** 물어본 사람이 꾸민 얼굴(없으면 캐릭터) */
+  fromAvatar: AvatarConfig | null;
   message: string;
   sections: Section[];
   /** 물어본 사람이 이미 알고 있는 값(그 사람 기록에서) */
@@ -115,7 +106,7 @@ export function AnswerForm({
   const [saveMine, setSaveMine] = useState(true);
   const [step, setStep] = useState(0);
   const [state, action, pending] = useActionState(submit, INITIAL);
-  const inApp = useIsNative();
+  const form = useRef<HTMLFormElement>(null);
 
   // 새로고침·뒤로 가기에도 쓰던 답이 남게 이 탭에만 임시로 둔다(보내면 지운다). 하이드레이션이 어긋나지 않게 마운트 뒤에 되살린다
   const draftKey = `readme:answer:${token}`;
@@ -156,46 +147,7 @@ export function AnswerForm({
   const answered = sections.filter(isAnswered);
   const none = sections.filter((x) => modes[x] === "none");
 
-  if (state.sent) {
-    const sent = answered;
-    // 답한 뒤: 나도 그 사람에게 물어보기. 웹에서는 앱 받기(아이폰은 App Store, 안드로이드는 앱이 있으면 앱을 열고 없으면 Play 공개 전엔 웹), 앱 안에서는 바로 물어보기(로그인 안 했으면 로그인부터)
-    const askBack = `/request?name=${encodeURIComponent(from)}`;
-    const here = signedIn ? askBack : `/?next=${encodeURIComponent(askBack)}`;
-    return (
-      <AnswerDone
-        title={t("answer.sent.title")}
-        body={t("answer.sentShort", { from })}
-        topics={sent}
-        labels={{ sentTitle: t("answer.sentTopics", { from }), topic: (x) => t(`request.topic.${x}` as "request.topic.dates"), perksTitle: t("answer.perksTitle") }}
-        perks={
-          signedIn
-            ? []
-            : [
-                { icon: "pencil", text: t("answer.perk.edit") },
-                { icon: "people", text: t("answer.perk.see") },
-                { icon: "bell", text: t("answer.perk.remind") },
-              ]
-        }
-      >
-        {inApp ? (
-          <Link href={here} className="btn-primary w-full !text-[21.1px]">
-            <Envelope />
-            {t("answer.askBack")}
-          </Link>
-        ) : (
-          <GetAppLink href={`/get?from=answer&next=${encodeURIComponent(here)}`} appPath={askBack} className="btn-primary w-full !text-[21.1px]">
-            <Envelope />
-            {t("answer.askBack")}
-          </GetAppLink>
-        )}
-        {state.savedMine ? (
-          <Link href="/me" className="flex min-h-11 items-center justify-center text-[12.6px] text-muted">
-            {t("answer.openApp")}
-          </Link>
-        ) : null}
-      </AnswerDone>
-    );
-  }
+  if (state.sent) return <AnswerSent locale={locale} from={from} topics={answered} signedIn={signedIn} savedMine={state.savedMine} />;
 
   const set = <S extends Section>(s: S, v: CardData[S]) => {
     setAnswers((a) => ({ ...a, [s]: v }));
@@ -233,13 +185,32 @@ export function AnswerForm({
     </>
   );
 
+  // 지금 화면에서 적는 칸들(입력·글상자) 순서대로
+  const fieldsOf = () =>
+    Array.from(form.current?.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([disabled]), textarea:not([disabled])') ?? []).filter((x) => x.getClientRects().length > 0);
+
   return (
     <form
+      ref={form}
       action={action}
       className="flex flex-1 flex-col"
+      // 키보드의 엔터 글쇠 모양: 다음 칸이 있으면 '다음', 마지막 화면의 마지막 칸이면 '완료'
+      onFocusCapture={(e) => {
+        const el = e.target;
+        if (!(el instanceof HTMLInputElement)) return;
+        const all = fieldsOf();
+        el.enterKeyHint = canSend && all.indexOf(el) === all.length - 1 ? "done" : "next";
+      }}
       onKeyDown={(e) => {
-        // 마지막 화면 전에는 엔터로 보내지지 않게
-        if (e.key === "Enter" && !canSend && (e.target as HTMLElement).tagName === "INPUT") e.preventDefault();
+        // 엔터로는 보내지지 않고, 다음 칸으로(마지막 칸이면 다음 화면으로, 마지막 화면이면 키보드를 접는다). 글상자의 엔터는 줄바꿈, 한글 조합 중 엔터는 글자를 끝내는 것뿐
+        const el = e.target;
+        if (e.key !== "Enter" || e.nativeEvent.isComposing || e.keyCode === 229 || !(el instanceof HTMLInputElement)) return;
+        e.preventDefault();
+        const all = fieldsOf();
+        const next = all[all.indexOf(el) + 1];
+        if (next) next.focus();
+        else if (!canSend) go(step + 1);
+        else el.blur();
       }}
     >
       <input type="hidden" name="token" value={token} />
@@ -270,21 +241,21 @@ export function AnswerForm({
       {step === 0 ? (
         <section className="relative flex flex-col gap-5 px-5 pt-5">
           <div className="flex items-center gap-4">
+            {/* 물어본 사람이 꾸민 얼굴(없으면 캐릭터) */}
             <figure className="m-0 shrink-0 -rotate-[4deg] border border-edge bg-white px-[5.4px] pb-[16.2px] pt-[5.4px]">
               <span className="flex h-[72.9px] w-[72.9px] items-center justify-center overflow-hidden bg-white">
-                <Mascot pose={6} size={70} />
+                {fromAvatar ? <Avatar config={fromAvatar} size={66} label={from} decorative /> : <Mascot pose={6} size={70} />}
               </span>
             </figure>
-            <h1 className="hand-written !font-normal min-w-0 flex-1 text-[23.5px] leading-[1.2]">{highlightCount(t("answer.title", { from, n: sections.length }))}</h1>
+            <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
+              <h1 className="hand-written !font-normal text-[23.5px] leading-[1.2]">{highlightCount(t("answer.title", { from, n: sections.length }))}</h1>
+              <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-ink/30 bg-paper px-2.5 py-[3px] text-[11.7px]">
+                <Icon name="lock" size={13} strokeWidth={1.9} className="shrink-0" />
+                {t("answer.onlyFrom", { from })}
+              </span>
+            </div>
           </div>
           {message ? <p className="-rotate-[0.6deg] whitespace-pre-line rounded-[3.2px_3.2px_13px_3.2px] border border-edge bg-[#fff3b0] px-3.5 py-2.5 hand-written text-[18.6px] leading-[1.3]">{message}</p> : null}
-          {signedIn ? null : (
-            // 앱을 쓰는 사람이 로그인 안 된 브라우저에서 열었으면: 로그인하고 답하면 내 리드미 값이 미리 채워지고, 물어본 사람 목록에 내 얼굴로 보인다
-            <Link href={`/?next=${encodeURIComponent(`/r/${token}`)}`} className="flex min-h-11 items-center gap-1 self-start text-[12.6px] text-accent underline decoration-[1.5px] underline-offset-4">
-              {t("answer.signInFirst")}
-              <Icon name="chevron" size={15} strokeWidth={2} />
-            </Link>
-          )}
         </section>
       ) : null}
 
@@ -335,12 +306,12 @@ export function AnswerForm({
                 />
               ) : null}
               {s === "safety" ? <SafetyEditor large value={answers.safety ?? emptySection("safety")} onChange={(v) => set("safety", v)} locale={locale} /> : null}
-              {s === "taste" ? <TasteEditor large value={answers.taste ?? emptySection("taste")} onChange={(v) => set("taste", v)} locale={locale} /> : null}
+              {s === "taste" ? <TasteEditor large lite value={answers.taste ?? emptySection("taste")} onChange={(v) => set("taste", v)} locale={locale} /> : null}
               {s === "sizes" ? <SizesEditor value={answers.sizes ?? emptySection("sizes")} onChange={(v) => set("sizes", v)} locale={locale} /> : null}
               {s === "gifts" ? <GiftsLite value={answers.gifts ?? emptySection("gifts")} onChange={(v) => set("gifts", v)} locale={locale} /> : null}
-              {s === "favorites" ? <FavoritesEditor value={answers.favorites ?? emptySection("favorites")} onChange={(v) => set("favorites", v)} locale={locale} /> : null}
-              {s === "culture" ? <CultureEditor value={answers.culture ?? emptySection("culture")} onChange={(v) => set("culture", v)} locale={locale} /> : null}
-              {s === "life" ? <LifeEditor value={answers.life ?? emptySection("life")} onChange={(v) => set("life", v)} locale={locale} /> : null}
+              {s === "favorites" ? <FavoritesEditor lite value={answers.favorites ?? emptySection("favorites")} onChange={(v) => set("favorites", v)} locale={locale} /> : null}
+              {s === "culture" ? <CultureEditor lite value={answers.culture ?? emptySection("culture")} onChange={(v) => set("culture", v)} locale={locale} /> : null}
+              {s === "life" ? <LifeEditor lite value={answers.life ?? emptySection("life")} onChange={(v) => set("life", v)} locale={locale} /> : null}
               {s === "pets" ? <PetsEditor value={answers.pets ?? emptySection("pets")} onChange={(v) => set("pets", v)} locale={locale} /> : null}
             </div>
           ) : null}
@@ -368,6 +339,22 @@ export function AnswerForm({
               <span className="hl">{t("answer.almost")}</span>
             </h2>
           </div>
+          {/* 보내기 전에 무엇이 가는지 한눈에 */}
+          {answered.length ? (
+            <div className="flex flex-col gap-1.5">
+              <h3 className="hand text-[15.3px] leading-none">{t("answer.willSend", { from })}</h3>
+              <ul className="flex flex-col rounded-xl border border-edge bg-white px-3 py-1.5">
+                {answered.map((x) => (
+                  <li key={x} className="flex items-baseline gap-2 border-b border-dashed border-ink/20 py-1.5 text-[12.6px] last:border-b-0">
+                    <span className="w-[92px] shrink-0 text-muted">{t(`request.topic.${x}` as "request.topic.dates")}</span>
+                    <span className="hand-written min-w-0 flex-1 truncate text-[17px] leading-[1.2]">
+                      {modes[x] === "none" ? t("answer.none") : summarize(x, (modes[x] === "ok" ? prefill[x] : answers[x]) as CardData[Section], locale, t) || t("answer.empty")}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           {finish}
         </section>
       )}

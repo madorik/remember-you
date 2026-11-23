@@ -3,13 +3,13 @@
 import { METALS, PATTERNS, STYLES, VIBES, NONE, NONE_LABEL, type CatalogItem, type FavoritesData, type Locale } from "@readme/core";
 import { useState } from "react";
 import { ColorPicker } from "./ColorPicker";
-import { CircleOption, SectionHeading, TextField, joinList, splitList, toggleWithNone, useT } from "./shared";
+import { CircleOption, Collapsible, SectionHeading, TextField, joinList, splitList, toggleWithNone, useT } from "./shared";
 
 type CodeKey = "patterns" | "styles" | "metals" | "vibes";
 type TextKey = "idol" | "character" | "team" | "animal";
 
 /** 취향: 향과 꽃 · 스타일(좋아하는 색 포함) · 분위기와 장소 · 최애(사람·캐릭터·팀·동물). 영화·드라마·음악은 '문화생활' 항목 */
-export function FavoritesEditor({ value, onChange, locale }: { value: FavoritesData; onChange: (v: FavoritesData) => void; locale: Locale }) {
+export function FavoritesEditor({ value, onChange, locale, lite = false }: { value: FavoritesData; onChange: (v: FavoritesData) => void; locale: Locale; lite?: boolean }) {
   const t = useT(locale);
   const [places, setPlaces] = useState(joinList(value.places ?? []));
   const toggle = (key: CodeKey, code: string) => {
@@ -29,14 +29,20 @@ export function FavoritesEditor({ value, onChange, locale }: { value: FavoritesD
   const field = (key: TextKey) => (
     <TextField label={t(`fav.${key}` as "fav.idol")} value={value[key] ?? ""} onChange={(v) => onChange({ ...value, [key]: v })} placeholder={t(`fav.${key}Placeholder` as "fav.idolPlaceholder")} />
   );
-  const group = (title: string, children: React.ReactNode) => (
-    <section className="flex flex-col gap-4">
-      <div className="border-b border-dashed border-ink/30 pb-1.5">
-        <SectionHeading>{title}</SectionHeading>
-      </div>
-      {children}
-    </section>
-  );
+  // lite(받는 사람 화면): collapse를 건 묶음은 접어 둔다(값이 든 묶음은 펼친 채)
+  const group = (title: string, children: React.ReactNode, collapse = false, filled = false) =>
+    lite && collapse ? (
+      <Collapsible title={title} startOpen={filled}>
+        {children}
+      </Collapsible>
+    ) : (
+      <section className="flex flex-col gap-4">
+        <div className="border-b border-dashed border-ink/30 pb-1.5">
+          <SectionHeading>{title}</SectionHeading>
+        </div>
+        {children}
+      </section>
+    );
 
   return (
     <div className="flex flex-col gap-9">
@@ -55,6 +61,8 @@ export function FavoritesEditor({ value, onChange, locale }: { value: FavoritesD
           {chips("styles", t("fav.styles"), STYLES)}
           {chips("metals", t("fav.metals"), METALS)}
         </>,
+        true,
+        !!(value.colors?.length || value.patterns?.length || value.styles?.length || value.metals?.length),
       )}
       {group(
         t("fav.mood"),
@@ -70,6 +78,8 @@ export function FavoritesEditor({ value, onChange, locale }: { value: FavoritesD
             placeholder={t("fav.placesPlaceholder")}
           />
         </>,
+        true,
+        !!(value.vibes?.length || value.places?.length),
       )}
       {group(
         t("fav.people"),
@@ -79,6 +89,8 @@ export function FavoritesEditor({ value, onChange, locale }: { value: FavoritesD
           {field("team")}
           {field("animal")}
         </>,
+        true,
+        !!(value.idol || value.character || value.team || value.animal),
       )}
     </div>
   );
