@@ -1,4 +1,4 @@
-import { aboutPrompt, addDays, canAnswerOwn, formatDayFull, formatDotted, holidayKey, monthName, nextHoliday, NONE, NONE_LABEL, questionsLeft, sameYmd, upcomingEvents, weekday, weekdayNames, yearEnd, type UpcomingEvent } from "@readme/core";
+import { aboutPrompt, addDays, canAnswerOwn, daysOn, formatDayFull, formatDotted, formatMonthDay, formatSpec, holidayKey, nextHoliday, NONE, NONE_LABEL, questionsLeft, sameYmd, solarToLunar, upcomingEvents, weekday, weekdayNames, yearEnd, type UpcomingEvent, type YMD } from "@readme/core";
 import Link from "@/components/AppLink";
 import { Avatar } from "@/components/Avatar";
 import { Wordmark } from "@/components/chrome";
@@ -8,7 +8,8 @@ import { HomeQuestion } from "@/components/HomeQuestion";
 import { Mascot } from "@/components/Mascot";
 import { NotificationBell, type BellItem } from "@/components/NotificationBell";
 import { ProfileMenu } from "@/components/ProfileMenu";
-import { Chev, DdayStamp, GiftBox, HeartBullet, TicketStub, TornTape } from "@/components/planner";
+import { DateHead, DStamp, HeroButton, HeroFrame, HeroPolaroid, RememberedBox, WeekCard, type WeekDay } from "@/components/HomeParts";
+import { Chev } from "@/components/planner";
 import { ReviewMoment } from "@/components/ReviewAsk";
 import { Icon } from "@/components/marks";
 import { eventName, eventsFor, peopleDates } from "@/lib/events";
@@ -18,15 +19,16 @@ import { displayName } from "@/lib/person";
 import { QUESTION_TOPIC } from "@/lib/question-topic";
 import { makeT } from "@/lib/t";
 
-// 플래너 시안(P2-Home·NoQ·Done): 머리(로고·종·내 얼굴) → '11월 넷째 주' 한 주 띠 → 가장 가까운 날 큰 카드(분홍 테이프 · D-n 고무 도장 · 기억해 둔 것 줄노트 · 티켓 띠 '선물 힌트 보기')
-// → 오늘의 질문 3줄 카드(질문 있음) / '이어서 챙길 날' 목록(질문 없음) / 체크 목록(오늘 질문 다 함) → '이어서' #해시태그 줄. 아래에 꽉 찬 단추 줄은 두지 않는다.
-// 큰 카드: 사람 기념일이 두 달 안에 있으면 그 사람 카드. 하나도 없을 때만 30일 안의 명절·챙기는 날, 그것도 없으면 '새 친구 추가해 봐요'.
+// 홈 시안 H-Home(날짜 머리 구조): 머리(로고·종·내 얼굴) → 날짜 머리(2026년 · 음력, 큰 오늘 날짜, 요일 글자, 손으로 그은 줄)
+// → 다가오는 날 큰 카드(줄무늬 망고 테이프 · D-n 도장 · 폴라로이드 · 기억해 둔 것 분홍 상자 · 망고 단추 '선물 힌트 보기')
+// → 이번 주 카드(오늘부터 8칸, '챙길 날 n번!') → 오늘의 질문 3줄 카드(질문 있음) + '이어서' #해시태그 줄 / '이어서 챙길 날' 목록(질문 없음) / 체크 목록(오늘 질문 다 함).
+// 큰 카드: 사람 기념일이 두 달 안에 있으면 그 사람 카드. 하나도 없을 때만 30일 안의 명절·챙기는 날, 그것도 없으면 '새 친구 추가해 봐요'. 변형들도 같은 틀(HeroFrame)에 그림·글·단추를 끼운다.
 // 연말(크리스마스 45일 전~당일)엔 더 가까운 사람 기념일이 없으면(사람이 하나도 없을 때 포함) 크리스마스 카드(트리 + 감성 문구 + 상태를 따라가는 단추)가 큰 카드 자리를 채운다.
-// 캐릭터는 한 화면에 하나: 질문 카드가 있으면 큰 카드 위에 빼꼼(2), 질문이 없으면 목록 카드 위에 누움(12), 다 했으면 체크 카드 위에 별(11).
+// 캐릭터: 큰 카드 위에 빼꼼(2)은 늘, 질문이 없으면 목록 카드 위에 누움(12), 다 했으면 체크 카드 위에 별(11). 화면이 한 장을 넘어도 되니 아래로 민다.
 
 const STUB_NOTE = "rgb(31 35 64 / 0.3)";
 
-/** 사람 기록에서 '기억해 둔 것': 꽃·마실 것·간식·좋아하는 음식·향·갖고 싶은 것(앞의 둘을 줄노트에 적고, 전체 개수를 띠에 적는다) */
+/** 사람 기록에서 '기억해 둔 것': 꽃·마실 것·간식·좋아하는 음식·향·갖고 싶은 것(앞의 둘을 분홍 상자에 · 로 이어 적는다) */
 function rememberedOf(p: Person | null, locale: "ko" | "en"): { label: string; value: string }[] {
   const c = p?.card;
   if (!c) return [];
@@ -45,45 +47,41 @@ function rememberedOf(p: Person | null, locale: "ko" | "en"): { label: string; v
   return out;
 }
 
-/** 첫째·둘째… / 1st·2nd… */
-function nth(n: number, locale: "ko" | "en"): string {
-  if (locale === "ko") return ["첫째", "둘째", "셋째", "넷째", "다섯째", "여섯째"][n - 1] ?? `${n}째`;
-  return n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : `${n}th`;
-}
-
-/** 음력 이름이 있는 날이면 시안처럼 짧게: 음력 10.21 */
-function lunarShort(e: UpcomingEvent, locale: "ko" | "en"): string {
-  if (e.spec.calendar !== "lunar") return "";
-  const m = `${e.spec.leap ? (locale === "ko" ? "윤" : "leap ") : ""}${e.spec.month}.${e.spec.day}`;
-  return locale === "ko" ? `음력 ${m}` : `Lunar ${m}`;
-}
-
-/** 큰 카드 제목 크기: 시안은 '엄마 칠순' 36px. 길면 줄인다 */
+/** 큰 카드 제목 크기(손글씨): 시안 37px의 90%. 길면 줄인다 */
 function heroTitleSize(len: number, many: boolean): number {
-  // 손글씨(포어스토리) 크기: 예전 값(36·30·25·21, 여럿이면 24)의 0.81배
-  if (many) return 19.4;
-  return len <= 5 ? 29.2 : len <= 7 ? 24.3 : len <= 10 ? 20.3 : 17;
+  if (many) return 21.6;
+  return len <= 5 ? 33.3 : len <= 7 ? 28 : len <= 10 ? 23.4 : 19.8;
 }
 
 /** 칸막이 점선(카드 안 줄): 시안은 남색 16% */
 const dashedRule = { borderColor: STUB_NOTE };
 
-/** 큰 카드 안의 동그란 그림(명절 그림·새 친구 자리) */
-function RoundArt({ children, dashed = false, tint = "#E3F4EC" }: { children: React.ReactNode; dashed?: boolean; tint?: string }) {
-  return (
-    <span aria-hidden="true" className={`flex h-[41.4px] w-[41.4px] shrink-0 items-center justify-center rounded-full border ${dashed ? "border-dashed" : ""} border-edge`} style={{ background: tint }}>
-      {children}
-    </span>
-  );
+/** 그 날의 음력: '음력 10월 21일' / 'Lunar 10/21'(2050년 밖이면 빈 글) */
+function lunarFull(day: YMD, locale: "ko" | "en"): string {
+  const l = solarToLunar(day);
+  return l ? formatSpec({ calendar: "lunar", month: l.m, day: l.d, leap: l.leap }, locale) : "";
 }
 
-/** 큰 카드 맨 아래 티켓 띠가 가는 곳 하나 */
-interface StubLink {
-  href: string;
-  label: string;
-  /** 오른쪽 작은 글(기억해 둔 것 2개) */
-  note?: string;
-  icon: "gift" | "personAdd";
+/** 이번 주 칸 아래 작은 음력: 10.15 */
+function lunarDots(day: YMD, locale: "ko" | "en"): string {
+  const l = solarToLunar(day);
+  if (!l) return "";
+  return `${l.leap ? (locale === "ko" ? "윤" : "L") : ""}${String(l.m).padStart(2, "0")}.${String(l.d).padStart(2, "0")}`;
+}
+
+/** 큰 카드 폴라로이드 자리에 들어가는 그림(명절 그림·새 친구 자리) */
+function ArtBox({ children, dashed = false }: { children: React.ReactNode; dashed?: boolean }) {
+  return (
+    <HeroPolaroid>
+      {dashed ? (
+        <span aria-hidden="true" className="flex h-[59.4px] w-[59.4px] items-center justify-center rounded-full border border-dashed border-edge bg-white">
+          {children}
+        </span>
+      ) : (
+        children
+      )}
+    </HeroPolaroid>
+  );
 }
 
 export function HomeView({ locale, avatar, today, people, question: asked, questionsUsed, questionLog, answers, answered, muted, isAdmin }: HomeData) {
@@ -124,7 +122,6 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
   // 사람 기념일이 두 달 안에 하나도 없을 때만: 30일 안에 오는 명절·챙기는 날 중 가장 가까운 하나
   const holiday = next || xmas ? null : nextHoliday(today);
   const stampDays = next ? next.daysUntil : ((xmas ?? holiday)?.daysUntil ?? null);
-  const stampDate = next ? next.date : (xmas ?? holiday)?.date;
   const holidayTitle = holiday ? t(holidayKey(holiday.id)) : "";
   const hintHref = (e: UpcomingEvent) => `/people/${e.contactId}/reminder?kind=${e.kind}${e.label ? `&label=${encodeURIComponent(e.label)}` : ""}`;
   const remembered = nextFaces.length === 1 ? rememberedOf(nextPerson, locale) : [];
@@ -141,192 +138,187 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
   const showList = !showQuestion && !showDone && followUps.length > 0;
   const showEmptyPeople = !showQuestion && !showDone && !showList && people.length === 0;
   const showTags = (showQuestion || showDone) && followUps.length > 0;
-  const peek = !showDone && !showList;
-  // 큰 카드와 그 아래 카드 사이 틈(시안의 늘어나는 빈칸)
-  const slotGap = showDone || showList ? "min-h-[37.8px] flex-[1.2_1_0]" : showQuestion || showEmptyPeople ? (answered || muted ? "min-h-7 flex-1" : "min-h-[16.2px] flex-1") : "min-h-2 flex-1";
 
-  // 이번 주(월~일): 오늘은 망고 동그라미, 챙길 날은 분홍 점선 동그라미 + 얼굴
+  // 날짜 머리: 2026년 · 음력 10월 15일, 큰 오늘 날짜, 월~일 요일 글자
   const names = weekdayNames(locale);
-  const sinceMon = (weekday(today) + 6) % 7;
-  const week = Array.from({ length: 7 }, (_, i) => addDays(today, i - sinceMon));
-  const weekEvents = upcomingEvents(peopleDates(people), week[0]!, 6);
-  // 몇째 주: 그 주 목요일이 속한 달의 몇째 주(한국에서 흔한 센 방법)
-  const thu = week[3]!;
-  const weekTitle = t("home.weekOf", { month: monthName(thu.m, locale, true), nth: nth(Math.ceil(thu.d / 7), locale) });
+  const todayLunar = lunarFull(today, locale);
+  const dateSmall = `${locale === "ko" ? `${today.y}년` : today.y}${todayLunar ? ` · ${todayLunar}` : ""}`;
 
-  const stub = (s: StubLink) => (
-    <TicketStub>
-      <Link href={s.href} className="flex h-[45px] items-center gap-2 rounded-b-[14.9px] px-[16.2px]">
-        {s.icon === "gift" ? <GiftBox /> : <Icon name="personAdd" size={22} strokeWidth={1.7} className="shrink-0" />}
-        <span className="hand flex-1 text-[20.3px] leading-none">{s.label}</span>
-        {s.note ? <span className="text-[10.8px] opacity-70">{s.note}</span> : null}
-        <Chev size={15} color="#1F2340" strokeWidth={2.2} />
-      </Link>
-    </TicketStub>
-  );
+  // 이번 주 카드: 오늘부터 8칸. 챙길 날이 있는 칸은 그 사람 얼굴 + 하트, 공휴일·챙기는 날은 이름을 작게
+  const weekEvents = upcomingEvents(peopleDates(people), today, 7);
+  const weekDays: WeekDay[] = Array.from({ length: 8 }, (_, i) => {
+    const day = addDays(today, i);
+    const marks = daysOn(day);
+    const mark = marks[0] ?? null;
+    return {
+      key: `${day.m}-${day.d}`,
+      wd: weekday(day),
+      d: day.d,
+      lunar: lunarDots(day, locale),
+      today: i === 0,
+      mark: mark ? { text: mark.short[locale], off: marks.some((x) => x.off) } : null,
+      faces: weekEvents.filter((e) => sameYmd(e.date, day)).map((e) => ({ key: `${e.contactId}-${e.kind}-${e.label ?? ""}`, avatar: personOf(e.contactId)?.avatar ?? null, label: eventName(e, t, locale) })),
+    };
+  });
+  const weekCount = weekEvents.length;
+  const weekCountText = weekCount === 0 ? null : weekCount <= 4 ? t(`home.weekCount${weekCount}` as "home.weekCount1") : t("home.weekCount", { n: weekCount });
 
-  /** 큰 카드 틀: 분홍 테이프 · (빼꼼 캐릭터) · 얼굴 + 제목·날짜 + D-n 도장 · 안쪽 줄 · 티켓 띠 */
-  const hero = (opts: { face: React.ReactNode; title: React.ReactNode; sub?: React.ReactNode; inner?: React.ReactNode; bottom: React.ReactNode }) => (
-    <section aria-label={t("home.upcoming")} className="card relative mx-4 flex shrink-0 flex-col px-4 pt-4">
-      <TornTape color="pink" w={78} h={24} rotate={-6} className="-top-3 left-5" />
-      {peek ? (
-        <span className="pointer-events-none absolute right-[19.8px] -top-[36.5px]">
-          <Mascot pose={2} size={48.3} />
-        </span>
-      ) : null}
-      <div className="flex items-center gap-2.5">
-        {opts.face}
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          {opts.title}
-          {opts.sub ? <span className="text-[11.3px] text-muted">{opts.sub}</span> : null}
-        </div>
-        {stampDays !== null ? (
-          <span className="-mr-0.5 -mt-1">
-            {/* 눈으로는 도장(D-6)이 알리니 읽어 줄 때만 '6 일 뒤' */}
-            {stampDays > 0 ? (
-              <span className="sr-only">
-                {stampDays} {stampDays === 1 ? t("home.dayToGo") : t("home.daysToGo")}
-              </span>
-            ) : null}
-            <DdayStamp big={stampDays === 0 ? t("start.today") : `D-${stampDays}`} bigSize={stampDays === 0 ? (locale === "ko" ? 26 : 20) : String(stampDays).length > 2 ? 20 : String(stampDays).length > 1 ? 25 : 30} small={stampDate ? formatDotted(stampDate) : undefined} />
+  /** D-n 도장(눈으로는 도장이 알리니 읽어 줄 때만 '6 일 뒤') */
+  const stamp =
+    stampDays !== null ? (
+      <>
+        {stampDays > 0 ? (
+          <span className="sr-only">
+            {stampDays} {stampDays === 1 ? t("home.dayToGo") : t("home.daysToGo")}
           </span>
         ) : null}
-      </div>
-      {opts.inner}
-      {opts.bottom}
-    </section>
+        <DStamp fontSize={stampDays === 0 ? (locale === "ko" ? 28 : 22) : String(stampDays).length > 2 ? 22 : String(stampDays).length > 1 ? 27 : 32}>{stampDays === 0 ? t("start.today") : `D-${stampDays}`}</DStamp>
+      </>
+    ) : null;
+
+  const heroTitle = (text: string, size: number) => (
+    <h2 className="hand leading-[1.05]" style={{ fontSize: size }}>
+      <span className="hl">{text}</span>
+    </h2>
   );
 
   let heroCard: React.ReactNode;
   if (next) {
-    const lines = remembered.slice(0, 2);
+    const note = remembered
+      .slice(0, 2)
+      .map((l) => l.value)
+      .join(" · ");
     const title = (nextGroup.length > 2 ? nextGroup.slice(0, 1) : nextGroup).map((e) => ({ key: `${e.contactId}-${e.kind}-${e.label ?? ""}`, text: eventName(e, t, locale) }));
     const many = nextGroup.length > 1;
-    heroCard = hero({
-      face:
-        nextFaces.length > 1 ? (
-          <FaceStack faces={nextFaces.map((e) => ({ key: e.contactId, avatar: personOf(e.contactId)?.avatar ?? null, label: e.name }))} size={40} />
-        ) : (
-          <Link href={`/people/${next.contactId}`} aria-label={nextPerson ? displayName(nextPerson) : next.name} className="shrink-0">
-            <Avatar config={nextPerson?.avatar ?? null} size={46} label={nextPerson ? displayName(nextPerson) : next.name} decorative />
-          </Link>
-        ),
-      // 같은 날 둘까지는 한 줄씩, 셋 이상이면 첫 사람 + '외 n명'
-      title: (
-        <>
-          {title.map((x) => (
-            <h2 key={x.key} className="hand leading-none" style={{ fontSize: heroTitleSize(x.text.length, many) }}>
-              {x.text}
-            </h2>
-          ))}
-          {nextGroup.length > 2 ? <span className="text-[11.7px] text-ink-2">{t("home.others", { n: nextGroup.length - 1 })}</span> : null}
-        </>
-      ),
-      // 양력 날짜를 먼저, 음력이면 옆에
-      sub: (
-        <span className="whitespace-nowrap">
-          {formatDayFull(next.date, locale)}
-          {nextGroup.length === 1 && lunarShort(next, locale) ? ` · ${lunarShort(next, locale)}` : ""}
-        </span>
-      ),
-      inner: lines.length ? (
-        <ul className="mt-2.5 px-0.5">
-          {lines.map((l) => (
-            <li key={`${l.label}-${l.value}`} className="hand-written flex h-[27px] items-center gap-2 overflow-hidden whitespace-nowrap border-b border-dashed text-[18.6px] leading-none" style={dashedRule}>
-              <HeartBullet />
-              <span className="font-sans text-[9.9px] leading-none text-muted">{l.label}</span>
-              <span className="min-w-0 truncate">{l.value}</span>
-            </li>
-          ))}
-        </ul>
-      ) : null,
-      bottom:
-        nextFaces.length > 1 ? (
-          <TicketStub>
-            {nextFaces.map((e, i) => (
-              <Link key={e.contactId} href={hintHref(e)} className={`flex h-[41.4px] items-center gap-2.5 px-[16.2px] ${i ? "border-t border-dashed" : "rounded-t-none"} ${i === nextFaces.length - 1 ? "rounded-b-[14.9px]" : ""}`} style={i ? { borderTopColor: "rgba(31,35,64,.30)" } : undefined}>
-                <span aria-hidden="true">
-                  <Avatar config={personOf(e.contactId)?.avatar ?? null} size={26} label={e.name} />
-                </span>
-                <span className="hand min-w-0 flex-1 truncate text-[17.8px] leading-none">{t("home.hintsFor", { name: e.name })}</span>
-                <Chev size={15} color="#1F2340" strokeWidth={2.2} />
-              </Link>
+    const lunar = lunarFull(next.date, locale);
+    const firstName = nextPerson ? displayName(nextPerson) : next.name;
+    heroCard = (
+      <HeroFrame
+        ariaLabel={t("home.upcoming")}
+        label={t("home.upcoming")}
+        stamp={stamp}
+        art={
+          nextFaces.length > 1 ? (
+            <HeroPolaroid caption={`${firstName} ${t("home.others", { n: nextFaces.length - 1 })}`}>
+              <FaceStack faces={nextFaces.map((e) => ({ key: e.contactId, avatar: personOf(e.contactId)?.avatar ?? null, label: e.name }))} size={44} />
+            </HeroPolaroid>
+          ) : (
+            <Link href={`/people/${next.contactId}`} aria-label={firstName} className="shrink-0">
+              <HeroPolaroid caption={firstName}>
+                <Avatar config={nextPerson?.avatar ?? null} size={84} label={firstName} decorative />
+              </HeroPolaroid>
+            </Link>
+          )
+        }
+        // 같은 날 둘까지는 한 줄씩, 셋 이상이면 첫 사람 + '외 n명'
+        title={
+          <>
+            {title.map((x) => (
+              <span key={x.key}>{heroTitle(x.text, heroTitleSize(x.text.length, many))}</span>
             ))}
-          </TicketStub>
+            {nextGroup.length > 2 ? <span className="text-[11.7px] text-ink-2">{t("home.others", { n: nextGroup.length - 1 })}</span> : null}
+          </>
+        }
+        // 양력 날짜를 먼저, 음력은 옆에
+        sub={
+          <>
+            {formatDayFull(next.date, locale)}
+            {lunar ? ` · ${lunar}` : ""}
+          </>
+        }
+        inner={note ? <RememberedBox label={t("home.remembered")} text={note} /> : null}
+      >
+        {nextFaces.length > 1 ? (
+          nextFaces.map((e, i) => <HeroButton key={e.contactId} href={hintHref(e)} label={t("home.hintsFor", { name: e.name })} first={i === 0} small />)
         ) : (
-          stub({ href: hintHref(next), label: t("home.hints"), note: remembered.length ? t("home.hintsCount", { n: remembered.length }) : undefined, icon: "gift" })
-        ),
-    });
+          <HeroButton href={hintHref(next)} label={t("home.hints")} />
+        )}
+      </HeroFrame>
+    );
   } else if (xmas) {
     // 사람이 없으면: 챙기고 싶은 사람을 더하고(사람 추가) → 곧바로 그 사람에게 물어보기(받고 싶은 것) → 답이 오면 이 카드가 알려 주며 선물 고르기로. 사람이 있으면 곧장 선물 고르기
-    heroCard = hero({
-      face: (
-        <RoundArt>
-          <HolidayArt id="christmas" size={34} />
-        </RoundArt>
-      ),
-      title: (
-        <h2 className="hand leading-none" style={{ fontSize: 20.3 }}>
-          {t("home.yearEnd")}
-        </h2>
-      ),
-      // 답이 온 사람이 있으면 그 소식이 곧 문구(누가 답했는지), 아니면 감성 문구
-      sub: (
-        <span className="block whitespace-pre-line text-[11.3px] leading-[1.4]">
-          {answeredFirst
-            ? answeredIds.length > 1
-              ? t("home.yearEndAnswered", { name: displayName(answeredFirst), n: answeredIds.length - 1 })
-              : t("notif.answered", { name: displayName(answeredFirst) })
-            : t("home.yearEndLine")}
-        </span>
-      ),
-      bottom: people.length
-        ? stub({ href: xmasGiftHref, label: t("home.yearEndGift"), icon: "gift" })
-        : stub({ href: "/people/new?xmas=1", label: t("home.yearEndAdd"), icon: "personAdd" }),
-    });
+    heroCard = (
+      <HeroFrame
+        ariaLabel={t("home.upcoming")}
+        label={t("home.upcoming")}
+        stamp={stamp}
+        art={
+          <ArtBox>
+            <HolidayArt id="christmas" size={78} />
+          </ArtBox>
+        }
+        title={
+          <h2 className="hand leading-[1.1]" style={{ fontSize: 22.5 }}>
+            <span className="hl">{t("home.yearEnd")}</span>
+          </h2>
+        }
+        // 답이 온 사람이 있으면 그 소식이 곧 문구(누가 답했는지), 아니면 감성 문구
+        sub={
+          <span className="block whitespace-pre-line leading-[1.4]">
+            {answeredFirst
+              ? answeredIds.length > 1
+                ? t("home.yearEndAnswered", { name: displayName(answeredFirst), n: answeredIds.length - 1 })
+                : t("notif.answered", { name: displayName(answeredFirst) })
+              : t("home.yearEndLine")}
+          </span>
+        }
+      >
+        {people.length ? <HeroButton href={xmasGiftHref} label={t("home.yearEndGift")} /> : <HeroButton href="/people/new?xmas=1" label={t("home.yearEndAdd")} />}
+      </HeroFrame>
+    );
   } else if (holiday) {
     // 사람이 있으면 그 중 골라 선물 힌트로(사람들 고르기), 없으면 먼저 사람부터
-    heroCard = hero({
-      face: (
-        <RoundArt>
-          <HolidayArt id={holiday.id} size={34} />
-        </RoundArt>
-      ),
-      title: (
-        <h2 className="hand leading-none" style={{ fontSize: heroTitleSize(holidayTitle.length, false) }}>
-          {holidayTitle}
-        </h2>
-      ),
-      sub: (
-        <span className="whitespace-nowrap">
-          {formatDayFull(holiday.date, locale)}
-          {holiday.spec.calendar === "lunar" ? ` · ${locale === "ko" ? "음력" : "Lunar"} ${holiday.spec.month}.${holiday.spec.day}` : ""}
-        </span>
-      ),
-      bottom: people.length ? stub({ href: "/people?pick=1&me=0&to=gift", label: t("plan.gift"), icon: "gift" }) : stub({ href: "/people/new", label: t("home.addPerson"), icon: "personAdd" }),
-    });
+    const lunar = lunarFull(holiday.date, locale);
+    heroCard = (
+      <HeroFrame
+        ariaLabel={t("home.upcoming")}
+        label={t("home.upcoming")}
+        stamp={stamp}
+        art={
+          <ArtBox>
+            <HolidayArt id={holiday.id} size={78} />
+          </ArtBox>
+        }
+        title={heroTitle(holidayTitle, heroTitleSize(holidayTitle.length, false))}
+        sub={
+          <>
+            {formatDayFull(holiday.date, locale)}
+            {lunar ? ` · ${lunar}` : ""}
+          </>
+        }
+      >
+        {people.length ? <HeroButton href="/people?pick=1&me=0&to=gift" label={t("plan.gift")} /> : <HeroButton href="/people/new" label={t("home.addPerson")} />}
+      </HeroFrame>
+    );
   } else {
-    heroCard = hero({
-      face: (
-        <RoundArt dashed tint="#FFFDF8">
-          <Icon name="personAdd" size={22} strokeWidth={1.7} className="text-muted" />
-        </RoundArt>
-      ),
-      title: (
-        <h2 className="hand leading-none" style={{ fontSize: 20.3 }}>
-          {t("home.newFriend")}
-        </h2>
-      ),
-      // 사람은 있는데 날짜를 아는 사람이 없으면 생일·기념일을 물어볼 수도 있다
-      inner:
-        people.length && !events.length ? (
-          <Link href="/request" className="mt-2 flex min-h-11 items-center justify-between border-t border-dashed text-[13.5px]" style={dashedRule}>
-            {t("home.askDates")}
-            <Chev size={16} />
-          </Link>
-        ) : null,
-      bottom: stub({ href: "/people/new", label: t("home.addPerson"), icon: "personAdd" }),
-    });
+    heroCard = (
+      <HeroFrame
+        ariaLabel={t("home.upcoming")}
+        label={null}
+        stamp={null}
+        art={
+          <ArtBox dashed>
+            <Icon name="personAdd" size={30} strokeWidth={1.6} className="text-muted" />
+          </ArtBox>
+        }
+        title={
+          <h2 className="hand leading-[1.1]" style={{ fontSize: 22.5 }}>
+            <span className="hl">{t("home.newFriend")}</span>
+          </h2>
+        }
+        // 사람은 있는데 날짜를 아는 사람이 없으면 생일·기념일을 물어볼 수도 있다
+        inner={
+          people.length && !events.length ? (
+            <Link href="/request" className="mt-[14.4px] flex min-h-11 items-center justify-between border-t border-dashed text-[13.5px]" style={dashedRule}>
+              {t("home.askDates")}
+              <Chev size={16} />
+            </Link>
+          ) : null
+        }
+      >
+        <HeroButton href="/people/new" label={t("home.addPerson")} />
+      </HeroFrame>
+    );
   }
 
   return (
@@ -340,50 +332,20 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
           <ProfileMenu avatar={avatar} admin={isAdmin} labels={{ menu: t("home.profileMenu"), profile: t("profile.title"), admin: t("home.adminMenu"), signOut: t("privacy.signOut") }} />
         </div>
       </header>
-      <div className="min-h-1 flex-[0.4_1_0]" />
+      <div className="h-[3.6px] shrink-0" />
 
-      {/* 이번 주 띠: 누르면 월별 달력(카드 전체가 눌린다) */}
-      <section aria-label={t("home.thisWeek")} className="shrink-0">
-        <div className="mb-2 ml-5 mr-4 flex h-[27px] items-center justify-between">
-          <h1 className="hand scribble text-[21.1px] leading-none">{weekTitle}</h1>
-          <Link href="/calendar" aria-label={t("home.openCalendar")} className="relative z-20 flex h-10 items-center gap-1 px-1 text-[11.7px] text-muted">
-            <Icon name="calendar" size={16} strokeWidth={1.8} className="shrink-0" />
-            {t("home.calendar")}
-            <Chev size={12} />
-          </Link>
-        </div>
-        <div className="relative mx-4 transition-transform active:scale-[0.995]">
-          <Link href="/calendar" tabIndex={-1} aria-hidden="true" className="absolute inset-0 z-10 rounded-[16.2px]" />
-          <ol className="card grid grid-cols-7 px-1 py-2">
-            {week.map((day, i) => {
-              const wd = weekday(day);
-              const dayEvents = weekEvents.filter((e) => sameYmd(e.date, day));
-              const isToday = sameYmd(day, today);
-              const has = dayEvents.length > 0;
-              return (
-                <li key={i} aria-current={isToday ? "date" : undefined} className={`flex flex-col items-center gap-[2.7px] py-0.5 ${i ? "border-l border-dashed" : ""}`} style={i ? { borderColor: "rgba(31,35,64,.30)" } : undefined}>
-                  <span className={`text-[9.9px] ${isToday ? "font-bold text-ink" : wd === 0 ? "text-red" : "text-muted"}`}>{isToday ? t("start.today") : names[wd]}</span>
-                  <span
-                    className={`hand flex h-[30.6px] w-[30.6px] items-center justify-center rounded-full text-[19.4px] leading-none ${isToday ? "box-border border border-edge bg-sky shadow-[1.5px_1.5px_0_rgb(31_35_64/0.22)]" : has ? "box-border border border-dashed bg-[#FDE6EB]" : ""} ${!isToday && wd === 0 ? "text-red" : ""}`}
-                    style={has && !isToday ? { borderColor: "#A8481A" } : undefined}
-                  >
-                    {day.d}
-                  </span>
-                  <span className="flex h-5 items-center">
-                    <FaceStack faces={dayEvents.map((e) => ({ key: `${e.contactId}-${e.kind}-${e.label ?? ""}`, avatar: personOf(e.contactId)?.avatar ?? null, label: eventName(e, t, locale) }))} size={20} />
-                  </span>
-                </li>
-              );
-            })}
-          </ol>
-        </div>
-      </section>
+      {/* 날짜 머리: 년 · 음력, 큰 오늘 날짜(이 화면의 제목), 요일 글자 */}
+      <DateHead label={t("start.today")} small={dateSmall} big={formatMonthDay(today, locale)} todayWd={weekday(today)} names={names.map((n) => (locale === "ko" ? n : n.slice(0, 1)))} />
 
-      <div className={peek ? "min-h-12 flex-[1.2_1_0]" : "min-h-6 flex-1"} />
+      <div className="h-[30.6px] shrink-0" />
       {heroCard}
+      <div className="h-[27px] shrink-0" />
 
-      {/* 큰 카드 아래 틈: 방금 답했거나 그만 묻기로 했으면 그 말을 이 틈에 적는다(레이아웃을 더 밀지 않게) */}
-      <div className={`flex items-center ${slotGap}`}>
+      {/* 이번 주: 오늘부터 8칸. 누르면 월별 달력(카드 전체가 눌린다) */}
+      <WeekCard title={t("home.thisWeek")} countText={weekCountText} calendarHref="/calendar" calendarLabel={t("home.openCalendar")} names={names} days={weekDays} />
+
+      {/* 이번 주 카드 아래 틈: 방금 답했거나 그만 묻기로 했으면 그 말을 이 틈에 적는다 */}
+      <div className={`flex shrink-0 items-center ${answered || muted ? "min-h-[37.8px]" : "min-h-[23.4px]"}`}>
         {answered || muted ? (
           <p role="status" className="mx-5 flex items-center gap-2 text-[12.6px] text-muted">
             <Icon name="check" size={16} className="text-accent" />
@@ -411,7 +373,7 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
 
       {showDone ? (
         <>
-          <section aria-label={t("home.questionDone", { n: questionsUsed })} className="card relative mx-4 flex shrink-0 flex-col px-3.5 pb-1.5 pt-2.5">
+          <section aria-label={t("home.questionDone", { n: questionsUsed })} className="card relative mx-4 mt-[9px] flex shrink-0 flex-col px-3.5 pb-1.5 pt-2.5">
             <span className="pointer-events-none absolute right-3.5 -top-[30.6px]">
               <Mascot pose={11} size={44.7} />
             </span>
@@ -463,29 +425,29 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
       {/* 질문이 없는 날: 큰 카드 다음에 이어서 챙길 날 줄 목록 */}
       {showList ? (
         <>
-          <section aria-labelledby="home-next" className="card relative mx-4 flex shrink-0 flex-col px-3.5 pb-0.5 pt-2">
-            <span className="pointer-events-none absolute right-4 -top-8">
+          <section aria-labelledby="home-next" className="card relative mx-4 flex shrink-0 flex-col px-[12.6px] pb-[1.8px] pt-[7.2px]">
+            <span className="pointer-events-none absolute right-[14.4px] -top-[28.8px]">
               <Mascot pose={12} size={40.7} />
             </span>
-            <div className="flex h-9 items-center">
-              <h2 id="home-next" className="hand scribble whitespace-nowrap text-[19.4px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
+            <div className="flex h-[34.2px] items-center">
+              <h2 id="home-next" className="hand scribble whitespace-nowrap text-[21.6px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
                 {t("home.followUpDates")}
               </h2>
             </div>
-            <ul className="mt-1.5">
+            <ul className="mt-[5.4px]">
               {followUps.slice(0, 3).map((e) => {
                 const who = personOf(e.contactId);
                 const name = eventName(e, t, locale);
                 return (
                   <li key={`${e.contactId}-${e.kind}-${e.label ?? ""}`} className="border-t border-dashed" style={dashedRule}>
-                    <Link href={`/people/${e.contactId}`} className="flex h-[41.4px] items-center gap-2.5">
-                      <span className="flex w-10 flex-col items-center leading-none">
-                        <span className="hand text-[18.6px]">{formatDotted(e.date)}</span>
-                        <span className="mt-0.5 text-[9px] text-muted">{names[weekday(e.date)]}</span>
+                    <Link href={`/people/${e.contactId}`} className="flex h-[43.2px] items-center gap-[9px]">
+                      <span className="flex w-[37.8px] flex-col items-center leading-none">
+                        <span className="hand text-[18.9px]">{formatDotted(e.date)}</span>
+                        <span className="mt-[2.7px] text-[9.9px] text-muted">{names[weekday(e.date)]}</span>
                       </span>
                       <Avatar config={who?.avatar ?? null} size={30} label={name} decorative />
-                      <span className="hand-written min-w-0 flex-1 truncate text-[19.4px] leading-none">{name}</span>
-                      <span className="hand text-[16.2px] leading-none" style={{ color: "#A8481A" }}>
+                      <span className="hand-written min-w-0 flex-1 truncate text-[19.8px] leading-none">{name}</span>
+                      <span className="hand text-[17.1px] leading-none" style={{ color: "#A8481A" }}>
                         D-{e.daysUntil}
                       </span>
                       <Chev size={14} />
@@ -521,9 +483,9 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
       {/* 이어서: 다음 챙길 날 #해시태그(가로로 밀고, 오른쪽 끝은 흐려진다) */}
       {showTags ? (
         <>
-          <div className="min-h-3 flex-[0.6_1_0]" />
+          <div className="h-[12.6px] shrink-0" />
           <section aria-label={t("home.followUpDates")} className="flex h-[41.4px] shrink-0 items-center gap-1.5 overflow-x-auto pl-5 [-webkit-mask-image:linear-gradient(90deg,#000_86%,transparent)] [mask-image:linear-gradient(90deg,#000_86%,transparent)] [scrollbar-width:none]">
-            <span className="hand shrink-0 text-[19.4px]">{t("home.followUp")}</span>
+            <span className="hand shrink-0 text-[19.8px]">{t("home.followUp")}</span>
             <svg viewBox="0 0 28 20" width="25.2" height="18" fill="none" stroke="#1F2340" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
               <path d="M2 5 C8 16 15 17 22 11" strokeDasharray="3 3" />
               <path d="M18 9.6 L22.6 10.4 L21.4 15" />
@@ -541,7 +503,7 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
         </>
       ) : null}
 
-      <div className="min-h-2 flex-1" />
+      <div className="page-end min-h-0 flex-1" />
     </>
   );
 }
