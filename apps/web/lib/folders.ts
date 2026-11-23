@@ -86,3 +86,17 @@ export function folderSheetLabels(t: T): FolderSheetLabels {
     colors: Object.fromEntries(FOLDER_COLORS.map((c) => [c, t(`folder.color.${c}` as "folder.color.mango")])) as Record<FolderColor, string>,
   };
 }
+
+/** 사람의 폴더 고르기 시트(사람 화면 ··· 메뉴 · 프로필 고치기)에 넘기는 문구. 제목의 이름 자리는 "{name}" */
+export function personFolderLabels(t: T) {
+  return {
+    title: t("folder.of", { name: "{name}" }),
+    done: t("folder.done"),
+    newFolder: t("folder.new"),
+    namePlaceholder: t("folder.namePlaceholder"),
+    create: t("folder.create"),
+    count: t("folder.count", { n: "{n}" }),
+    close: t("common.close"),
+    error: t("common.error"),
+  };
+}

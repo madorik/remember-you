@@ -65,5 +65,7 @@ export async function loadVoice({ searchParams }: PageInput): Promise<VoiceData>
   const people = [...(await listPeople(s))]
     .sort((a, b) => Number(b.favorite) - Number(a.favorite))
     .map((p) => ({ id: p.contactId, name: p.name, tag: p.nickname && p.nickname !== p.name ? p.nickname : "", avatar: p.avatar, hint: personHint(p.card, s.profile.locale, t) }));
-  return { locale: s.profile.locale, people, tour: searchParams.tour ? { n: 1, total: tourTotal() } : null };
+  // 사람 화면의 구슬에서 왔으면(?to=) 그 사람에게 고정(내 사람이 아니면 무시)
+  const fixed = searchParams.to ? (people.find((p) => p.id === searchParams.to) ?? null) : null;
+  return { locale: s.profile.locale, people, fixed, tour: searchParams.tour ? { n: 1, total: tourTotal() } : null };
 }

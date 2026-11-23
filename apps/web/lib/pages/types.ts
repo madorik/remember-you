@@ -31,6 +31,9 @@ export interface MeAvatarData {
   locale: Locale;
   name: string;
   avatar: AvatarConfig;
+  today: YMD;
+  /** 내가 적어 둔 생일(없으면 null) */
+  birthday: DateSpec | null;
 }
 
 export interface OnboardingAvatarData {
@@ -102,5 +105,7 @@ export interface RequestData {
 export interface VoiceData {
   locale: Locale;
   people: { id: string; name: string; tag: string; avatar: AvatarConfig | null; hint: string }[];
+  /** 사람 화면에서 구슬로 들어왔을 때(?to=) 적을 사람. 말하는 것·적는 것 모두 이 사람의 기록으로 들어간다 */
+  fixed: { id: string; name: string; tag: string; avatar: AvatarConfig | null; hint: string } | null;
   tour: TourInfo | null;
 }

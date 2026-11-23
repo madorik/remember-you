@@ -340,6 +340,9 @@ type Labels = CaptureBadgeLabels & {
   target: TargetSheetLabels;
   /** 줄 항목 바꾸기(고르는 칸의 이름) */
   changeField: string;
+  /** 사람 화면에서 왔을 때 위 태그의 이름표('{name}의 기록으로 적는 중')와 × 단추('{name} 정하기 풀기') */
+  to: string;
+  toClear: string;
   /** 항목 이름: 메모, 내 리드미에서 선물 목록 */
   memo: string;
   wishMe: string;
@@ -401,13 +404,39 @@ function TargetFace({ target, avatar, name }: { target: CaptureTarget; avatar: A
   );
 }
 
+/**
+ * 사람 화면의 구슬에서 들어왔을 때 위에 붙는 태그: 그 사람의 작은 얼굴 + 이름(× 를 누르면 정하기를 풀고 예전처럼 이름으로 찾는다).
+ * onClear가 없으면(확인 화면) × 없이 보여 주기만 한다
+ */
+function FixedTag({ person, labels, onClear, className = "" }: { person: MentionOption; labels: Pick<Labels, "to" | "toClear">; onClear?: () => void; className?: string }) {
+  const name = mentionLabel(person);
+  return (
+    <div className={`flex justify-center ${className}`}>
+      <span role="group" aria-label={labels.to.replace("{name}", name)} data-capture-tag="" className="inline-flex h-[34.2px] max-w-full items-center gap-1.5 rounded-full border border-ink bg-white pl-[3.6px] pr-2.5">
+        <Avatar config={person.avatar} size={26} label={name} decorative />
+        <span className="hand-written min-w-0 truncate text-[18px] leading-none">{name}</span>
+        {onClear ? (
+          <button
+            type="button"
+            aria-label={labels.toClear.replace("{name}", name)}
+            onClick={onClear}
+            className="relative -mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted before:absolute before:-inset-2"
+          >
+            <Icon name="close" size={15} strokeWidth={2} />
+          </button>
+        ) : null}
+      </span>
+    </div>
+  );
+}
+
 /** 말로·글로 적기 아래의 기억해 두기 알약(시안: 높이 48, 망고 + 남색 선). 꺼지면 눌러 앉힌 바탕 */
 const SAVE_PILL = "inline-flex h-12 items-center gap-1.5 rounded-full border border-edge bg-sky pl-3.5 pr-[16.2px] text-[15.3px] disabled:border-ink/[0.22] disabled:bg-[#e8e1cf] disabled:text-[#5a5f78]";
 
 /** 첫 문구가 번쩍 사라지지 않게, 나누기가 아무리 빨라도 이 시간(ms)은 정리하는 화면을 보인다 */
 const MIN_SCENE_MS = 600;
 
-export function VoiceCapture({ locale, labels, people = [], tour = null }: { locale: Locale; labels: Labels; people?: MentionOption[]; tour?: VoiceTour | null }) {
+export function VoiceCapture({ locale, labels, people = [], fixed = null, tour = null }: { locale: Locale; labels: Labels; people?: MentionOption[]; /** 사람 화면의 구슬에서 왔을 때(?to=) 적을 사람 */ fixed?: MentionOption | null; tour?: VoiceTour | null }) {
   const canListen = useSyncExternalStore(
     () => () => {},
     () => !!webCtor() || !!nativeSpeech(),
@@ -430,6 +459,9 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
   const [pending, start] = useTransition();
   const [saving, startSave] = useTransition();
   const router = useRouter();
+  // 사람 화면에서 왔으면 말하는 것·적는 것 모두 그 사람 기록으로(태그의 ×로 풀면 예전처럼 이름으로 찾는다)
+  const [pinned, setPinned] = useState(true);
+  const target = fixed && pinned ? fixed : null;
   const via = useRef<"voice" | "text">("text");
   // 말로 적는 동안(듣기·최종 결과 기다리기·나눠 적기) 받아 적은 글은 한 글자씩
   const shown = useTyped(text, listening || settling || pending);
@@ -474,7 +506,7 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
   const [caret, setCaret] = useState(0);
   const [dismissed, setDismissed] = useState(false);
   const [active, setActive] = useState(0);
-  const mention = dismissed || !people.length ? null : mentionAt(text, caret);
+  const mention = dismissed || !people.length || target ? null : mentionAt(text, caret);
   const options = mention ? people.filter((p) => matchesPerson(mention.query, p.name, p.tag)).slice(0, 6) : [];
   const listOpen = options.length > 0;
   const activeIndex = Math.min(active, Math.max(0, options.length - 1));
@@ -626,7 +658,7 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
     via.current = how;
     start(async () => {
       const began = Date.now();
-      const r = await draftCapture(v, undefined, tagged).catch((): CaptureDraft => ({ lines: [], error: "failed" }));
+      const r = await draftCapture(v, target?.id, target ? [] : tagged, !!target).catch((): CaptureDraft => ({ lines: [], error: "failed" }));
       const wait = MIN_SCENE_MS - (Date.now() - began);
       if (wait > 0) await new Promise((done) => setTimeout(done, wait));
       if (!alive.current) return;
@@ -924,7 +956,8 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
             <span aria-hidden="true" className="absolute -left-[6.3px] top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 border-b border-l border-edge bg-white" />
           </p>
         </div>
-        <section className="card relative mx-4 mt-6 px-3.5 pb-1 pt-2.5" aria-live="polite" aria-relevant="additions text">
+        {target ? <FixedTag person={target} labels={labels} className="mt-3" /> : null}
+        <section className={`card relative mx-4 px-3.5 pb-1 pt-2.5 ${target ? "mt-3" : "mt-6"}`} aria-live="polite" aria-relevant="additions text">
           <h2 className="hand scribble mb-3 text-[19.4px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
             {labels.saved}
           </h2>
@@ -1089,7 +1122,7 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
   // 스스로 멈춘 뒤 글이 남았다: 기억해 두기를 누를 차례
   const nudgeSave = ready && !!text.trim() && !listening && !settling && !pending;
   const toggle = canListen ? (
-    <div role="radiogroup" aria-label={labels.mode} className="relative z-10 mx-auto mt-6 flex w-fit shrink-0 rounded-xl border border-edge bg-white p-[2.7px]">
+    <div role="radiogroup" aria-label={labels.mode} className={`relative z-10 mx-auto flex w-fit ${target ? "mt-3" : "mt-6"} shrink-0 rounded-xl border border-edge bg-white p-[2.7px]`}>
       {(["voice", "text"] as const).map((m) => (
         <button
           key={m}
@@ -1104,6 +1137,8 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
       ))}
     </div>
   ) : null;
+  // 사람 화면의 구슬에서 왔으면 위에 '누구에게 적는지' 태그(×로 풀기)
+  const tagBar = target ? <FixedTag person={target} labels={labels} onClear={() => setPinned(false)} className="mt-4" /> : null;
   // 체험: 마이크면 "이렇게 말해보세요", 글이면 "이렇게 써보세요" + 예시 문장. 키보드가 뜨면 접어 적는 칸이 한 화면에 보이게
   const tourPrompt = tour ? (
     <TourNote label={mode === "voice" ? tour.say : tour.write} className="mt-[16.2px]">
@@ -1137,6 +1172,7 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
           submit(text, "text");
         }}
       >
+        {tagBar}
         {toggle}
         {tourPrompt}
         <div className="flex flex-col gap-2 px-4 pt-5">
@@ -1149,15 +1185,15 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
             rows={5}
             maxLength={500}
             autoFocus={canListen}
-            placeholder={labels.placeholderText}
-            aria-label={labels.placeholderText}
+            placeholder={target ? labels.placeholder : labels.placeholderText}
+            aria-label={target ? labels.placeholder : labels.placeholderText}
             className="hand-written block min-h-[135px] w-full resize-none border-0 bg-transparent p-0 text-[19.4px] leading-[27px] outline-none [background-image:repeating-linear-gradient(180deg,transparent_0_26px,#d5e1f3_26px_27px)] placeholder:text-muted/80 [html[data-kb]_&]:h-32 [html[data-kb]_&]:min-h-32"
           />
           </section>
           <div className="flex min-h-8 items-center justify-center">{errorLine}</div>
         </div>
         <div className="bottom-bar mt-auto flex flex-col items-center gap-2.5 bg-bg px-4 pt-2.5">
-          {people.length ? (
+          {people.length && !target ? (
             <div
               id={listOpen ? "mention-list" : undefined}
               role={listOpen ? "listbox" : "group"}
@@ -1211,6 +1247,7 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
         submit(text, heard.current.trim() ? "voice" : "text");
       }}
     >
+      {tagBar}
       {toggle}
       {tourPrompt}
       <div className="relative flex flex-1 flex-col items-center justify-center px-5 pb-4">

@@ -142,13 +142,13 @@ export function AvatarBuilder({
       {paper ? <TornTape color="mango" w={72} h={22} rotate={-4} className="-top-3 left-[40%]" /> : null}
       <div className="flex items-center gap-4 px-1 pt-1.5">
         <div className="relative shrink-0">
-          <span className="relative block -rotate-3 border border-edge bg-white px-1.5 pb-[16.2px] pt-1.5">
-            <span className="flex h-[93.6px] w-[93.6px] items-center justify-center overflow-hidden bg-[#FFF0C9]">
-              <span className="block overflow-hidden rounded-full shadow-[0_0_0_3px_#1F2340]" style={{ width: 83, height: 83, background: avatarBackground(value) }}>
-                <AvatarArt config={value} size={92} />
+          <span className="relative block -rotate-3 border border-edge bg-white px-1.5 pb-[21.6px] pt-1.5">
+            <span className="flex h-[144px] w-[144px] items-center justify-center overflow-hidden bg-[#FFF0C9]">
+              <span className="block overflow-hidden rounded-full shadow-[0_0_0_3px_#1F2340]" style={{ width: 128, height: 128, background: avatarBackground(value) }}>
+                <AvatarArt config={value} size={142} />
               </span>
             </span>
-            <TornTape color="pink" w={60} h={18} rotate={-8} className="-top-3 left-6" />
+            <TornTape color="pink" w={72} h={21.6} rotate={-8} className="-top-3 left-8" />
           </span>
           {/* 아무거나: 망고 동그라미 주사위. 누르면 머리·옷·색을 아무렇게나 바꾼다 */}
           <button

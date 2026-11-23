@@ -1,7 +1,8 @@
-import { formatMonthDay, formatSpec, nextOccurrence, parseYmd, SECTIONS_BY_IMPORTANCE, solarToLunar, type Locale } from "@readme/core";
+import { formatMonthDay, formatSpec, nextOccurrence, parseYmd, SECTIONS_BY_IMPORTANCE, solarToLunar } from "@readme/core";
 import Link from "@/components/AppLink";
 import { AskOnButton } from "@/app/(app)/people/[id]/AskOnButton";
 import { FavoriteStar } from "@/app/(app)/people/[id]/FavoriteStar";
+import { NameEditor } from "@/app/(app)/people/[id]/NameEditor";
 import { NotesButton } from "@/app/(app)/people/[id]/NotesButton";
 import { PersonMenu } from "@/app/(app)/people/[id]/PersonMenu";
 import { ViewBeacon } from "@/app/(app)/people/[id]/ViewBeacon";
@@ -9,6 +10,7 @@ import { QuickNote } from "@/app/(app)/people/[id]/QuickNote";
 import { TagEditor } from "@/app/(app)/people/[id]/TagEditor";
 import { cancelInvite } from "@/app/actions/request";
 import { Avatar } from "@/components/Avatar";
+import { lunarDots } from "@/components/BirthdayLine";
 import { Icon } from "@/components/marks";
 import { Mascot } from "@/components/Mascot";
 import { SectionBody } from "@/components/SectionBody";
@@ -16,14 +18,10 @@ import { CAKE_ART, SectionIcon } from "@/components/SectionIcon";
 import { ReviewMoment } from "@/components/ReviewAsk";
 import { SeeAnswers } from "@/components/SeeAnswers";
 import { TornTape } from "@/components/TornTape";
+import { personFolderLabels } from "@/lib/folders";
 import type { T } from "@/lib/i18n";
 import type { PersonData } from "@/lib/pages/person.data";
 import { makeT } from "@/lib/t";
-
-/** 그 날의 음력 점 표기: 음력 10.21 / Lunar 10.21(윤달은 윤10.21). 모르면(2050년 밖) 빈 글 */
-function lunarDots(l: { m: number; d: number; leap?: boolean }, locale: Locale, t: T) {
-  return `${t("dates.lunar")} ${l.leap ? (locale === "ko" ? "윤" : "L") : ""}${String(l.m).padStart(2, "0")}.${String(l.d).padStart(2, "0")}`;
-}
 
 function dayLeft(daysUntil: number, t: T) {
   return daysUntil === 0 ? t("start.today") : `D-${daysUntil}`;
@@ -64,16 +62,7 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
               gift: t("person.pickGift"),
               folder: t("folder.label"),
               remove: t("common.delete"),
-              folderSheet: {
-                title: t("folder.of", { name: "{name}" }),
-                done: t("folder.done"),
-                newFolder: t("folder.new"),
-                namePlaceholder: t("folder.namePlaceholder"),
-                create: t("folder.create"),
-                count: t("folder.count", { n: "{n}" }),
-                close: t("common.close"),
-                error: t("common.error"),
-              },
+              folderSheet: personFolderLabels(t),
               sheet: {
                 open: t("person.remove"),
                 title: t("person.removeTitle", { name: displayName }),
@@ -103,8 +92,12 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
         </Link>
         <div className="flex min-w-0 flex-1 flex-col items-start gap-2.5 pr-[5.4px]">
           <div className="flex w-full items-end justify-between gap-2">
-            {/* 긴 이름은 두 줄까지 */}
-            <h1 className="hl line-clamp-2 min-w-0 break-words px-0.5 text-[36.9px] leading-none">{displayName}</h1>
+            {/* 이어지지 않은 사람은 이름이 곧 내가 부르는 말이라 이름을 눌러 그 자리에서 고친다(이어진 사람의 이름은 그 사람 것이라 아래 태그로). 긴 이름은 두 줄까지 */}
+            {p.personId ? (
+              <h1 className="hl line-clamp-2 min-w-0 break-words px-0.5 text-[36.9px] leading-none">{displayName}</h1>
+            ) : (
+              <NameEditor contactId={p.contactId} initial={displayName} labels={{ edit: t("person.renameName"), save: t("common.save"), cancel: t("common.cancel"), error: t("common.error") }} />
+            )}
             <Mascot pose={4} size={40.6} />
           </div>
           {/* 앱 사용자와 이어진 사람은 내가 단 태그도 이름 밑에서 바로 고친다 */}

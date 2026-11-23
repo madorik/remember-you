@@ -7,16 +7,16 @@ import type { VoiceData } from "@/lib/pages/types";
 import { makeT } from "@/lib/t";
 
 // 말로 적기: 말하면(또는 적으면) 누구의 어느 칸인지 나눠서 바로 넣는다. 없는 사람은 새로, 맞는 칸이 없으면 메모로
-export function VoiceView({ locale, people, tour }: VoiceData) {
+export function VoiceView({ locale, people, fixed, tour }: VoiceData) {
   const t = makeT(locale);
   return (
     <div className="flex flex-1 flex-col">
-      {/* 가입 직후 체험이면 닫기 대신 오른쪽 위 '건너뛰기'(체험을 접고 홈으로) */}
+      {/* 가입 직후 체험이면 닫기 대신 오른쪽 위 '건너뛰기'(체험을 접고 홈으로). 사람 화면의 구슬에서 왔으면 닫을 때 그 사람 화면으로 */}
       <div className="flex h-12 shrink-0 items-center justify-between pl-1.5 pr-2.5">
         {tour ? (
           <span className="w-11" />
         ) : (
-          <Link href="/home" prefetch={false} aria-label={t("common.close")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] items-center justify-center">
+          <Link href={fixed ? `/people/${fixed.id}` : "/home"} prefetch={false} aria-label={t("common.close")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] items-center justify-center">
             <Icon name="close" size={22} strokeWidth={1.8} />
           </Link>
         )}
@@ -51,6 +51,7 @@ export function VoiceView({ locale, people, tour }: VoiceData) {
       <VoiceCapture
         locale={locale}
         people={people}
+        fixed={fixed}
         tour={tour ? { page: t("tour.page", { n: tour.n, total: tour.total }), say: t("tour.say"), write: t("tour.write"), example: t("tour.example"), next: t("common.next") } : null}
         labels={{
           mode: t("voice.mode"),
@@ -89,6 +90,8 @@ export function VoiceView({ locale, people, tour }: VoiceData) {
           changeField: t("voice.changeField"),
           memo: t("voice.memo"),
           wishMe: t("gift.wishTitle"),
+          to: t("voice.to", { name: "{name}" }),
+          toClear: t("voice.toClear", { name: "{name}" }),
           sections: Object.fromEntries(SECTIONS.map((x) => [x, t(`section.${x}`)])) as Record<Section, string>,
           more: t("voice.more"),
           aiOff: t("voice.aiOff"),

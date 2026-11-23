@@ -70,8 +70,9 @@ const TAB_ICONS = {
 } as const;
 
 /** 아래쪽 탭 막대: 종이색 막대에 가는 윗선, 지금 탭은 망고 알약. fab: 막대 바로 위 오른쪽에 떠 있는 버튼(사람들 화면의 직접 적기 등) */
-/** voice: 가운데 마이크(말로 적기). AI 키가 있을 때만 화면이 aiConfigured()로 켠다(이 파일은 클라이언트에서도 불려서 서버 전용 모듈을 못 들인다) */
-export function TabBar({ active, t, fab, voice = false }: { active: "home" | "people" | "me" | "privacy" | null; t: T; fab?: React.ReactNode; voice?: boolean }) {
+/** voice: 가운데 마이크(말로 적기). AI 키가 있을 때만 화면이 aiConfigured()로 켠다(이 파일은 클라이언트에서도 불려서 서버 전용 모듈을 못 들인다).
+ *  voiceTo: 사람 화면이면 그 사람의 contactId — 구슬이 그 사람에게 적는 말로 적기(/voice?to=)로 간다 */
+export function TabBar({ active, t, fab, voice = false, voiceTo = null }: { active: "home" | "people" | "me" | "privacy" | null; t: T; fab?: React.ReactNode; voice?: boolean; voiceTo?: string | null }) {
   const tabs = [
     { key: "home", href: "/home", label: t("nav.home") },
     { key: "people", href: "/people", label: t("nav.people") },
@@ -116,7 +117,7 @@ export function TabBar({ active, t, fab, voice = false }: { active: "home" | "pe
         {voice ? (
           <div className="flex items-center justify-center">
             {/* 가운데 구슬 속 캐릭터(막대 한가운데): 누르면 말로 또는 글로 기억해 두기. 누르면 통 튀고, 말로 적는 동안엔 활발해진다(components/CharOrb.tsx) */}
-            <CharOrbLink href="/voice" label={t("voice.title")} size={62} />
+            <CharOrbLink href={voiceTo ? `/voice?to=${voiceTo}` : "/voice"} label={t("voice.title")} size={62} />
           </div>
         ) : null}
         {tabs.slice(2).map(tab)}

@@ -34,5 +34,6 @@ export async function loadMeEditSection({ params }: PageInput): Promise<MeEditSe
 /** 내 프로필(얼굴·이름) */
 export async function loadMeAvatar(): Promise<MeAvatarData> {
   const s = await requireSession();
-  return { locale: s.profile.locale, name: s.profile.displayName, avatar: s.profile.avatar };
+  const { card } = await s.tx((q) => readCard(q, s.user.id));
+  return { locale: s.profile.locale, name: s.profile.displayName, avatar: s.profile.avatar, today: todayFor(s.profile), birthday: card.dates?.birthday ?? null };
 }

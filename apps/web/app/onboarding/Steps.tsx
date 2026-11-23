@@ -1,10 +1,11 @@
 "use client";
 
-import { emptySection, type AvatarConfig, type DateSpec, type Locale, type ReminderOffset, type SafetyData } from "@readme/core";
+import { emptySection, type AvatarConfig, type DateSpec, type Locale, type ReminderOffset, type SafetyData, type YMD } from "@readme/core";
 import Link from "next/link";
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { finishOnboarding, saveAvatar, saveFood } from "@/app/actions/card";
+import { BirthdayLine } from "@/components/BirthdayLine";
 import { TornTape, type TornTapeColor } from "@/components/TornTape";
 import { AvatarBuilder, NameField } from "@/components/editors/AvatarBuilder";
 import { DateSpecPicker, ReminderPicker } from "@/components/editors/DatesEditor";
@@ -86,12 +87,17 @@ export function AvatarStep({
   mode = "onboarding",
   title = "",
   back = "/me",
+  today,
+  birthday = null,
 }: {
   locale: Locale;
   name: string;
   avatar: AvatarConfig;
   next: string;
   mode?: "onboarding" | "edit";
+  /** 고칠 때 이름 칸 밑에 보일 내 생일 줄(오늘 날짜 기준으로 올해 날짜를 낸다) */
+  today?: YMD;
+  birthday?: DateSpec | null;
   /** 고칠 때 머리 줄 제목(내 프로필) */
   title?: string;
   /** 고칠 때 머리 줄의 뒤로 가기 주소 */
@@ -116,7 +122,17 @@ export function AvatarStep({
         {hidden}
         <ProfileHeader title={title} back={back} backLabel={t("common.back")} save={t("common.save")} />
         <div className="px-4 pt-3">
-          <AvatarBuilder value={value} onChange={setValue} locale={locale} side={<NameField label={t("profile.nickname")} value={name} />} />
+          <AvatarBuilder
+            value={value}
+            onChange={setValue}
+            locale={locale}
+            side={
+              <>
+                <NameField label={t("profile.nickname")} value={name} />
+                {today ? <BirthdayLine birthday={birthday} today={today} locale={locale} href="/me/edit?open=dates" t={t} /> : null}
+              </>
+            }
+          />
         </div>
       </form>
     );

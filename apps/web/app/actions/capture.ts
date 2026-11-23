@@ -290,13 +290,18 @@ export async function captureNote(raw: string, aboutId?: string, picked?: { id: 
  * 말로 적기 1단계 — 나누기만 한다: AI가 (사람 · 칸 · 값)으로 나눈 결과를 아무것도 저장하지 않고 초안으로 돌려준다.
  * 화면은 초안의 값을 고치게 하고, 저장 단계(saveCapture)에 고친 항목을 되돌려 보낸다
  */
-export async function draftCapture(raw: string, aboutId?: string, picked?: { id: string; label: string }[]): Promise<CaptureDraft> {
+export async function draftCapture(raw: string, aboutId?: string, picked?: { id: string; label: string }[], only = false): Promise<CaptureDraft> {
   const c = await classify(raw, aboutId, picked);
   if ("error" in c) return { lines: [], error: c.error };
   let done;
   try {
-    // 같은 이름이 여럿이면 어느 쪽인지 고르게(pick) 하고, 후보를 같이 돌려준다
-    done = await apply(c.s, c.people, resolveCapture(c.items, c.people.map(asCapture), { detect: true, certain: c.certain }), false);
+    // only: 사람 화면의 구슬에서 온 말(?to=)이라 모든 줄이 aboutId 사람의 기록이다(누구 이야기인지 따지지 않는다). 내 사람이 아니면 아무 줄도 만들지 않는다
+    const target = only && aboutId ? c.people.find((p) => p.contactId === aboutId) : undefined;
+    const rows: ResolvedCapture[] = target
+      ? c.items.map((item, idx) => ({ idx, item, target: { kind: "person", id: target.contactId }, spoken: displayName(target), candidates: [] }))
+      : // 같은 이름이 여럿이면 어느 쪽인지 고르게(pick) 하고, 후보를 같이 돌려준다
+        resolveCapture(c.items, c.people.map(asCapture), { detect: true, certain: c.certain });
+    done = await apply(c.s, c.people, rows, false);
   } catch {
     return { lines: [], error: "failed" };
   }

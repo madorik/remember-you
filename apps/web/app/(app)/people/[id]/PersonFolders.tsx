@@ -25,7 +25,24 @@ export interface PersonFolderLabels {
  * 사람 화면 ··· 메뉴의 '폴더'가 여는 시트: 그 사람이 들어갈 폴더를 체크해서 맞추고, 맨 끝에서 새 폴더를 바로 만들어 넣을 수 있다.
  * (프로필 카드에는 폴더 칩을 두지 않는다 — 폴더는 이 시트에서만 고친다). 열려 있을 때만 그려진다
  */
-export function PersonFoldersSheet({ contactId, name, folders, mine, labels, onClose }: { contactId: string; name: string; folders: FolderView[]; mine: string[]; labels: PersonFolderLabels; onClose: () => void }) {
+export function PersonFoldersSheet({
+  contactId,
+  name,
+  folders,
+  mine,
+  labels,
+  onClose,
+  onSaved,
+}: {
+  contactId: string;
+  name: string;
+  folders: FolderView[];
+  mine: string[];
+  labels: PersonFolderLabels;
+  onClose: () => void;
+  /** 저장이 끝났을 때 고른 폴더(프로필 고치기가 칩을 바로 맞춘다) */
+  onSaved?: (ids: string[]) => void;
+}) {
   const router = useRouter();
   const [picked, setPicked] = useState<string[]>(mine);
   const [making, setMaking] = useState(false);
@@ -51,8 +68,9 @@ export function PersonFoldersSheet({ contactId, name, folders, mine, labels, onC
     setFailed(false);
     start(async () => {
       const r = await setPersonFolders(contactId, picked);
-      if (r.ok) onClose();
-      else setFailed(true);
+      if (!r.ok) return setFailed(true);
+      onSaved?.(picked);
+      onClose();
     });
   }
 
