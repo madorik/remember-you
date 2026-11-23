@@ -176,7 +176,8 @@ test("물어보기(새 사람) → 앱 없이 웹에서 답하기 → 답이 내
   await dad.getByRole("button", { name: "굴", exact: true }).first().click();
   await dad.getByRole("button", { name: "다음", exact: true }).click();
   await expect(dad.getByText("3/4")).toBeVisible();
-  await dad.getByRole("button", { name: "건너뛰기", exact: true }).click();
+  // 비워 두고 '다음'만 누르면 그 항목은 보내지 않는다
+  await dad.getByRole("button", { name: "다음", exact: true }).click();
   await expect(dad.getByRole("heading", { name: "거의 다 됐어요" })).toBeVisible();
   // 보내기 전에 무엇이 가는지 요약이 보인다
   await expect(dad.getByText("지수님께 보낼 것")).toBeVisible();
@@ -502,9 +503,9 @@ test("아는 사람에게 다시 물어보기: 내 기록 값이 미리 채워�
 
   const dad = await newPage(browser);
   await dad.goto(url);
-  await expect(dad.getByText("지수님이 이렇게 알고 있어요")).toBeVisible();
-  await expect(dad.getByText("음력 11월 3일")).toBeVisible();
-  await dad.getByRole("button", { name: "맞아요" }).click();
+  // 맞아요/달라요 없이 처음부터 질문지가 펼쳐지고, 보낸 사람이 아는 값이 채워져 있다
+  await expect(dad.getByText("지수님이 알고 있는 걸 채워 뒀어요. 다르면 고쳐 주세요")).toBeVisible();
+  await expect(dad.getByRole("button", { name: "맞아요" })).toHaveCount(0);
   // 하나만 물었으니 마지막 화면 없이 같은 화면에서 바로 보낸다
   await expect(dad.getByRole("heading", { name: "거의 다 됐어요" })).toHaveCount(0);
   await dad.getByRole("button", { name: "보내기", exact: true }).click();
@@ -1780,13 +1781,13 @@ test("연말 카드의 흐름: 사람이 없으면 추가 → 곧바로 물어�
   await expect(upcoming.getByText(ko["home.yearEndLine"].replace("\n", " "))).toBeVisible();
   await expect(page.getByRole("button", { name: "알림", exact: true })).toBeVisible();
 
-  // ④ 엄마가 앱 없이 웹에서 답한다(좋아하는 것 하나, 나머지는 건너뛰기)
+  // ④ 엄마가 앱 없이 웹에서 답한다(좋아하는 것 하나, 나머지는 비워 두고 다음)
   const mom = await newPage(browser);
   await mom.goto(url);
   await mom.getByRole("button", { name: "분위기 맞춰", exact: true }).click();
   await mom.getByRole("button", { name: "다음", exact: true }).click();
-  await mom.getByRole("button", { name: "건너뛰기", exact: true }).click();
-  await mom.getByRole("button", { name: "건너뛰기", exact: true }).click();
+  await mom.getByRole("button", { name: "다음", exact: true }).click();
+  await mom.getByRole("button", { name: "다음", exact: true }).click();
   await mom.getByRole("button", { name: "보내기", exact: true }).click();
   await expect(mom.getByRole("heading", { name: "마음이 전해졌어요" })).toBeVisible();
 

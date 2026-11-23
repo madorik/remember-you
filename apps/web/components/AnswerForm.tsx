@@ -101,7 +101,7 @@ export function AnswerForm({
 }) {
   const t = useT(locale);
   const [answers, setAnswers] = useState<PartialCard>(() => Object.fromEntries(sections.map((s) => [s, prefill[s] ?? mine[s] ?? emptySection(s)])) as PartialCard);
-  const [modes, setModes] = useState<Record<string, Mode | null>>(() => Object.fromEntries(sections.map((s) => [s, prefill[s] ? null : "new"])));
+  const [modes, setModes] = useState<Record<string, Mode | null>>(() => Object.fromEntries(sections.map((s) => [s, prefill[s] ? "fix" : "new"])));
   const [consent, setConsent] = useState(false);
   const [saveMine, setSaveMine] = useState(true);
   const [step, setStep] = useState(0);
@@ -139,7 +139,7 @@ export function AnswerForm({
     }
   }, [answers, modes, step, saveMine, state.sent, draftKey]);
 
-  // 답한 항목: 맞아요·없어요를 눌렀거나 값을 적은 것. 건드리지 않고 '다음'만 누른 빈 항목은 답이 아니다(보내면 물어본 사람 기록에 빈 값이 저장되고 '답했다'는 알림만 간다)
+  // 답한 항목: 없어요를 눌렀거나 값이 있는 것(미리 채운 값을 그대로 두고 '다음'을 누르면 그 값이 맞다는 뜻). 건드리지 않고 '다음'만 누른 빈 항목은 답이 아니다(보내면 물어본 사람 기록에 빈 값이 저장되고 '답했다'는 알림만 간다)
   const isAnswered = (x: Section) => {
     const m = modes[x];
     return m === "ok" || m === "none" || ((m === "new" || m === "fix") && !isEmptySection(x, answers[x]));
@@ -151,7 +151,7 @@ export function AnswerForm({
 
   const set = <S extends Section>(s: S, v: CardData[S]) => {
     setAnswers((a) => ({ ...a, [s]: v }));
-    if (modes[s] === "none") setModes((m) => ({ ...m, [s]: "new" }));
+    if (modes[s] == null || modes[s] === "none") setModes((m) => ({ ...m, [s]: prefill[s] ? "fix" : "new" }));
   };
   const payload = Object.fromEntries(answered.map((s) => [s, modes[s] === "none" ? emptySection(s) : modes[s] === "ok" ? prefill[s] : answers[s]]));
   const needsConsent = answered.includes("safety");
@@ -266,35 +266,8 @@ export function AnswerForm({
             <SectionIcon section={s} size={44} outline />
             <h2 className="flex-1 text-[21.1px] leading-[1.15]">{t(`request.topic.${s}` as "request.topic.dates")}</h2>
           </div>
-          {prefill[s] ? (
-            <>
-              <div className="flex flex-col gap-1.5 rounded-xl border border-edge bg-sky-soft px-3 pb-3 pt-2.5">
-                <span className="text-[10.8px]">{t("answer.prefilled", { from })}</span>
-                <span className={`hand-written text-[27.5px] leading-[1.1] ${modes[s] === "fix" ? "text-muted line-through decoration-red decoration-2" : ""}`}>
-                  {summarize(s, prefill[s], locale, t) || t("answer.empty")}
-                </span>
-              </div>
-              <div className="flex gap-2">
-                {(["ok", "fix"] as const).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    aria-pressed={modes[s] === m}
-                    onClick={() => {
-                      setModes((x) => ({ ...x, [s]: m }));
-                      // 맞으면 바로 다음 항목으로
-                      if (m === "ok") go(step + 1);
-                    }}
-                    className={`inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full border border-edge text-[13.5px] ${modes[s] === m ? "bg-sky" : "bg-white"}`}
-                  >
-                    {modes[s] === m ? <Icon name="check" size={16} strokeWidth={2} /> : null}
-                    {t(m === "ok" ? "answer.right" : "answer.fix")}
-                  </button>
-                ))}
-              </div>
-            </>
-          ) : null}
-          {modes[s] === "fix" || modes[s] === "new" ? (
+          {prefill[s] ? <p className="-mt-1.5 text-[11.7px] text-muted">{t("answer.prefilledHint", { from })}</p> : null}
+          {modes[s] !== "none" ? (
             <div className="flex flex-col gap-4">
               {s === "dates" ? (
                 <DateSpecPicker
@@ -306,12 +279,12 @@ export function AnswerForm({
                 />
               ) : null}
               {s === "safety" ? <SafetyEditor large value={answers.safety ?? emptySection("safety")} onChange={(v) => set("safety", v)} locale={locale} /> : null}
-              {s === "taste" ? <TasteEditor large lite value={answers.taste ?? emptySection("taste")} onChange={(v) => set("taste", v)} locale={locale} /> : null}
+              {s === "taste" ? <TasteEditor large value={answers.taste ?? emptySection("taste")} onChange={(v) => set("taste", v)} locale={locale} /> : null}
               {s === "sizes" ? <SizesEditor value={answers.sizes ?? emptySection("sizes")} onChange={(v) => set("sizes", v)} locale={locale} /> : null}
               {s === "gifts" ? <GiftsLite value={answers.gifts ?? emptySection("gifts")} onChange={(v) => set("gifts", v)} locale={locale} /> : null}
-              {s === "favorites" ? <FavoritesEditor lite value={answers.favorites ?? emptySection("favorites")} onChange={(v) => set("favorites", v)} locale={locale} /> : null}
-              {s === "culture" ? <CultureEditor lite value={answers.culture ?? emptySection("culture")} onChange={(v) => set("culture", v)} locale={locale} /> : null}
-              {s === "life" ? <LifeEditor lite value={answers.life ?? emptySection("life")} onChange={(v) => set("life", v)} locale={locale} /> : null}
+              {s === "favorites" ? <FavoritesEditor value={answers.favorites ?? emptySection("favorites")} onChange={(v) => set("favorites", v)} locale={locale} /> : null}
+              {s === "culture" ? <CultureEditor value={answers.culture ?? emptySection("culture")} onChange={(v) => set("culture", v)} locale={locale} /> : null}
+              {s === "life" ? <LifeEditor value={answers.life ?? emptySection("life")} onChange={(v) => set("life", v)} locale={locale} /> : null}
               {s === "pets" ? <PetsEditor value={answers.pets ?? emptySection("pets")} onChange={(v) => set("pets", v)} locale={locale} /> : null}
             </div>
           ) : null}
@@ -374,23 +347,10 @@ export function AnswerForm({
             {t("answer.send")}
           </button>
         ) : (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                // 건너뛰면 이 항목은 보내지 않는다
-                setModes((x) => ({ ...x, [s!]: prefill[s!] ? null : x[s!] === "none" ? "none" : null }));
-                go(step + 1);
-              }}
-              className="btn-outline !min-h-[45px] w-[40%] shrink-0 !text-[18.6px]"
-            >
-              {t("answer.skip")}
-            </button>
-            <button type="button" onClick={() => go(step + 1)} className="btn-primary !min-h-[45px] flex-1 !text-[19.4px]">
-              <Icon name="chevron" size={19} strokeWidth={2} />
-              {t("answer.next")}
-            </button>
-          </div>
+          <button type="button" onClick={() => go(step + 1)} className="btn-primary !min-h-[45px] w-full !text-[19.4px]">
+            <Icon name="chevron" size={19} strokeWidth={2} />
+            {t("answer.next")}
+          </button>
         )}
       </div>
     </form>
