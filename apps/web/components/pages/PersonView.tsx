@@ -1,4 +1,4 @@
-import { formatMonthDay, formatSpec, nextOccurrence, parseYmd, SECTIONS_BY_IMPORTANCE, solarToLunar } from "@readme/core";
+import { formatMonthDay, formatSpec, nextOccurrence, parseYmd, solarToLunar } from "@readme/core";
 import Link from "@/components/AppLink";
 import { AskOnButton } from "@/app/(app)/people/[id]/AskOnButton";
 import { FavoriteStar } from "@/app/(app)/people/[id]/FavoriteStar";
@@ -14,8 +14,8 @@ import { Avatar } from "@/components/Avatar";
 import { lunarDots } from "@/components/BirthdayLine";
 import { Icon } from "@/components/marks";
 import { Mascot } from "@/components/Mascot";
-import { SectionBody } from "@/components/SectionBody";
-import { CAKE_ART, SectionIcon } from "@/components/SectionIcon";
+import { filledSections, RememberedList } from "@/components/RememberedList";
+import { CAKE_ART } from "@/components/SectionIcon";
 import { ReviewMoment } from "@/components/ReviewAsk";
 import { SeeAnswers } from "@/components/SeeAnswers";
 import { TornTape } from "@/components/TornTape";
@@ -31,7 +31,7 @@ function dayLeft(daysUntil: number, t: T) {
 export function PersonView({ locale, back, today, person: p, name, notes, folders, answered, waiting, ai }: PersonData) {
   const t = makeT(locale);
   // 적어 둔 항목만(중요한 순서). 생일·기념일도 이 목록의 첫 칸
-  const filled = SECTIONS_BY_IMPORTANCE.map((section) => ({ section, body: SectionBody({ section, card: p.card, today, locale, t, variant: "rich" }) })).filter((x) => x.body != null);
+  const filled = filledSections({ card: p.card, today, locale, t });
   const birthday = p.card.dates?.birthday ?? null;
   const nextBirthday = birthday ? nextOccurrence(birthday, today) : null;
   // 프로필 생일 줄: 양력 날짜 · 음력(음력 생일이면 적은 그대로, 양력 생일이면 그 날의 음력)
@@ -196,41 +196,25 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
         />
       ) : null}
 
-      {/* 기억해 둔 것: 적어 둔 항목마다 제목 줄(누르면 그 항목이 펼쳐진 고치는 화면)과 그 밑에 적어 둔 내용 전부. 연필(수정)은 모든 항목을 고치는 화면 */}
-      <section aria-labelledby="mine-title" className="relative mx-4 mt-[19.8px] flex flex-col">
-        <div className="flex h-11 items-center justify-between pl-[7.2px]">
-          <h2 id="mine-title" className="text-[23.4px] leading-none">
-            {t("person.mineList")}
-          </h2>
-          <Link href={`/people/${p.contactId}/edit`} aria-label={t("me.edit")} className="-mr-0 flex h-11 w-11 relative before:absolute before:-inset-[2.2px] items-center justify-center">
-            <Icon name="pencil" size={21} strokeWidth={1.8} />
-          </Link>
-        </div>
-        {filled.length ? (
-          <div className="card relative px-4">
-            <TornTape color="pink" w={59.4} h={18} rotate={34} className="-right-[9px] -top-[7.2px]" />
-            <ul className="flex flex-col">
-              {filled.map(({ section, body }) => (
-                <li key={section} className="border-t border-dashed border-ink/30 first:border-t-0">
-                  <Link href={`/people/${p.contactId}/edit?open=${section}`} className="flex min-h-[48.6px] items-center gap-[10.8px] pt-[5.4px]">
-                    <SectionIcon section={section} size={38} cake={section === "dates"} />
-                    <span className={`min-w-0 flex-1 text-[16.2px] ${section === "safety" ? "text-red" : ""}`}>{t(`section.${section}` as "section.safety")}</span>
-                    {/* 그 사람이 물어보기에 직접 답한 항목(내가 고치면 이 표시는 빠진다) */}
-                    {p.answered[section] ? (
-                      <span className="inline-flex h-[21.6px] max-w-[48%] shrink-0 items-center gap-1 rounded-full bg-sky-soft pl-1.5 pr-2 text-[10.8px] leading-none shadow-[inset_0_0_0_1px_var(--color-mango-edge)]">
-                        <Icon name="check" size={12} strokeWidth={2.6} className="shrink-0 text-accent" />
-                        <span className="truncate">{t("person.toldBy", { name: displayName })}</span>
-                      </span>
-                    ) : null}
-                    <Icon name="chevron" size={16} strokeWidth={2} className="shrink-0 text-muted" />
-                  </Link>
-                  <div className="pb-[12.6px] pt-[3.6px]">{body}</div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : (
-          // 아직 아무것도 없을 때: 직접 적거나, 그 사람에게 물어보거나(물어보기 화면이 이 사람으로 열린다)
+      {/* 기억해 둔 것: 나 화면의 '나에 대한 기록'과 같은 목록(RememberedList) */}
+      <RememberedList
+        title={t("person.mineList")}
+        filled={filled}
+        editHref={`/people/${p.contactId}/edit`}
+        sectionHref={(section) => `/people/${p.contactId}/edit?open=${section}`}
+        editLabel={t("me.edit")}
+        t={t}
+        // 그 사람이 물어보기에 직접 답한 항목(내가 고치면 이 표시는 빠진다)
+        badge={(section) =>
+          p.answered[section] ? (
+            <span className="inline-flex h-[21.6px] max-w-[48%] shrink-0 items-center gap-1 rounded-full bg-sky-soft pl-1.5 pr-2 text-[10.8px] leading-none shadow-[inset_0_0_0_1px_var(--color-mango-edge)]">
+              <Icon name="check" size={12} strokeWidth={2.6} className="shrink-0 text-accent" />
+              <span className="truncate">{t("person.toldBy", { name: displayName })}</span>
+            </span>
+          ) : null
+        }
+        // 아직 아무것도 없을 때: 직접 적거나, 그 사람에게 물어보거나(물어보기 화면이 이 사람으로 열린다)
+        empty={
           <div className="grid grid-cols-2 gap-2.5">
             <Link href={editDates} className="btn-outline">
               <Icon name="plus" size={17} strokeWidth={2.2} />
@@ -244,8 +228,8 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
               {t("person.askMore")}
             </Link>
           </div>
-        )}
-      </section>
+        }
+      />
 
       <div className="page-end" />
     </>

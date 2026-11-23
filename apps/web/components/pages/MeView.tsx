@@ -3,18 +3,17 @@ import Link from "@/components/AppLink";
 import { Avatar } from "@/components/Avatar";
 import { TornTape } from "@/components/TornTape";
 import { Icon } from "@/components/marks";
-import { SectionBody } from "@/components/SectionBody";
-import { SectionIcon } from "@/components/SectionIcon";
+import { filledSections, RememberedList } from "@/components/RememberedList";
 import { ShareMyRecord } from "@/components/ShareMyRecord";
 import type { MeData } from "@/lib/pages/types";
 import { shareParts } from "@/lib/share-record";
 import { makeT } from "@/lib/t";
 
-// 나: 적어 둔 것을 미리보기로(사람 화면과 같은 모양). 고치기는 /me/edit에서 항목을 펼쳐서
+// 나: 적어 둔 것을 사람 화면의 '기억해 둔 것'과 같은 모양으로. 고치기는 /me/edit에서 항목을 펼쳐서
 export function MeView({ locale, name, avatar, card, today }: MeData) {
   const t = makeT(locale);
-  // 적어 둔 항목만(중요한 순서)
-  const filled = SECTIONS_BY_IMPORTANCE.map((section) => ({ section, body: SectionBody({ section, card, today, locale, t }) })).filter((x) => x.body != null);
+  // 적어 둔 항목만(중요한 순서). 사람 화면과 같은 풀 본문
+  const filled = filledSections({ card, today, locale, t });
   // 내가 적어 둔 것을 가족·친구에게 링크로 보내기(선물 칸은 '받고 싶은 것'이라 같이 보낸다). 링크에는 정보가 없고 받는 사람이 앱에서 연다
   const shareable = shareParts(SECTIONS_BY_IMPORTANCE, card, locale, t, { wishlist: true });
 
@@ -46,38 +45,22 @@ export function MeView({ locale, name, avatar, card, today }: MeData) {
         </div>
       </div>
 
-      <section aria-labelledby="me-title" className="relative mx-4 mt-8 flex flex-col">
-        <div className="card relative flex flex-col px-3.5 pb-3 pt-2.5">
-          <TornTape color="mint" w={68} h={21} rotate={6} className="-top-3 right-6" />
-          <div className="flex min-h-[30.6px] items-center justify-between gap-2">
-            <h2 id="me-title" className="scribble text-[19.4px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
-              {t("me.title")}
-            </h2>
-            <Link href="/me/edit" aria-label={t("me.edit")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] items-center justify-center rounded-full active:bg-fill">
-              <Icon name="pencil" size={19} strokeWidth={1.8} />
-            </Link>
-          </div>
-          {filled.length ? (
-            <ul className="mt-1.5 flex flex-col">
-              {filled.map(({ section, body }) => (
-                <li key={section} className="border-t border-dashed border-ink/30 first:border-t-0">
-                  <Link href={`/me/edit?open=${section}`} className="flex min-h-10 items-center gap-2.5">
-                    <SectionIcon section={section} size={34} outline />
-                    <span className={`hand min-w-0 flex-1 text-[18.6px] leading-[1.1] ${section === "safety" ? "text-red" : ""}`}>{t(`section.${section}`)}</span>
-                    <Icon name="chevron" size={15} strokeWidth={2} className="shrink-0 text-muted" />
-                  </Link>
-                  <div className="pb-2.5 pl-[39.6px]">{body}</div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <Link href="/me/edit" className="hand mt-1 flex min-h-[64.8px] items-center justify-center gap-1.5 text-[19.4px]">
-              <Icon name="plus" size={17} strokeWidth={2.4} />
-              {t("person.write")}
-            </Link>
-          )}
-        </div>
-      </section>
+      {/* 나에 대한 기록: 사람 화면의 '기억해 둔 것'과 같은 목록(RememberedList). 항목을 누르면 그 항목이 펼쳐진 고치는 화면 */}
+      <RememberedList
+        title={t("me.title")}
+        filled={filled}
+        editHref="/me/edit"
+        sectionHref={(section) => `/me/edit?open=${section}`}
+        editLabel={t("me.edit")}
+        t={t}
+        className="mt-6"
+        empty={
+          <Link href="/me/edit" className="btn-outline">
+            <Icon name="plus" size={17} strokeWidth={2.2} />
+            {t("person.write")}
+          </Link>
+        }
+      />
 
       <div className="page-end" />
     </>
