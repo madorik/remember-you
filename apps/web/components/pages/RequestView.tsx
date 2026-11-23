@@ -8,7 +8,7 @@ import { makeT } from "@/lib/t";
 
 // 물어보기: 주소록 사람에게(찾아서 고르거나 사람 화면에서 to로), 또는 새 사람(이름을 적어 새로)에게.
 // 아는 사람이면 아직 안 적힌 항목을 먼저 고르고, 받은 답은 그 사람 기록에 들어간다
-export function RequestView({ locale, people, fixed, initialName, defaults, xmas, initialMessage, focus, question, sender, webPushKey, tour }: RequestData) {
+export function RequestView({ locale, people, fixed, initialName, defaults, xmas, focus, question, webPushKey, tour }: RequestData) {
   const t = makeT(locale);
   const title = fixed ? t("request.titleTo", { name: fixed.label }) : t("request.title");
   return (
@@ -42,7 +42,7 @@ export function RequestView({ locale, people, fixed, initialName, defaults, xmas
           <p className="text-[13.5px] leading-[1.5]">{t("tour.ask.body")}</p>
         </TourNote>
       ) : null}
-      <RequestForm locale={locale} people={people} fixed={fixed?.id ?? null} initialName={initialName} defaults={defaults} xmas={xmas} initialMessage={initialMessage} focus={focus} question={question} sender={sender} webPushKey={webPushKey} tour={!!tour} />
+      <RequestForm locale={locale} people={people} fixed={fixed?.id ?? null} initialName={initialName} defaults={defaults} xmas={xmas} focus={focus} question={question} webPushKey={webPushKey} tour={!!tour} />
     </div>
   );
 }

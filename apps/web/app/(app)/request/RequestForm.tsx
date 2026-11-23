@@ -1,7 +1,7 @@
 "use client";
 
 import { ASK_DEFAULT_TOPICS, QUESTIONS, QUESTION_SECTION, SECTIONS, SECTIONS_BY_IMPORTANCE, aboutPrompt, askMinutes, defaultAskTopics, type AvatarConfig, type DailyQuestion, type Locale, type Section } from "@readme/core";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRequest, type InviteState } from "@/app/actions/request";
 import { leaveTour, trackTour } from "@/app/actions/tour";
 import { useT } from "@/components/editors/shared";
@@ -13,15 +13,16 @@ import { CuteTopicIcon } from "@/components/CuteTopicIcon";
 import { SectionIcon } from "@/components/SectionIcon";
 import { TagChip } from "@/components/PersonRow";
 import { ReplyAlert } from "@/components/ReplyAlert";
-import { LinkField, ShareButtons } from "@/components/ShareButtons";
+import { canShare, copyText, copyTextLater, shareLink } from "@/components/ShareButtons";
 import { Stamp, Star } from "@/components/diary";
-import { requestPreview } from "@/lib/og";
 import { u } from "@/lib/ui-scale";
 import { matchesPerson } from "@/lib/search";
-import { SITE_URL } from "@/lib/site";
-import { AIRMAIL, FacePolaroid, LinkPreview, PostMark, PostageStamp, SpeechBubble } from "./RequestParts";
+import { FacePolaroid, SpeechBubble } from "./RequestParts";
 
 const INITIAL: InviteState = { url: null, text: "", error: null };
+
+/** 누른 단추: 물어보기(공유창) · 링크 복사 */
+type Act = "share" | "copy";
 
 export interface AskPerson {
   id: string;
@@ -48,10 +49,8 @@ export function RequestForm({
   initialName,
   defaults,
   xmas = false,
-  initialMessage = "",
   focus = null,
   question = null,
-  sender,
   webPushKey = null,
   tour = false,
 }: {
@@ -61,12 +60,9 @@ export function RequestForm({
   initialName: string;
   defaults: Section[];
   xmas?: boolean;
-  initialMessage?: string;
   focus?: Section | null;
   /** 오늘의 질문 하나만 묻는다(?q=) */
   question?: DailyQuestion["id"] | null;
-  /** 물어보는 사람(나): 엽서의 From과 링크 미리보기 */
-  sender: { name: string; avatar: AvatarConfig };
   webPushKey?: string | null;
   tour?: boolean;
 }) {
@@ -84,8 +80,19 @@ export function RequestForm({
   const [who, setWho] = useState<Who | null>(fixedPerson ? { kind: "person", person: fixedPerson } : initialName ? { kind: "new", name: initialName } : null);
   const [query, setQuery] = useState("");
   const [topics, setTopics] = useState<Section[]>(topicsFor(fixedPerson));
-  const [message, setMessage] = useState(initialMessage);
-  const [state, action, pending] = useActionState(createRequest, INITIAL);
+  const formRef = useRef<HTMLFormElement>(null);
+  // 만든 링크(한 번만 만든다: 물어보기·링크 복사·다시 보내기가 모두 이걸 쓴다)
+  const [link, setLink] = useState<{ url: string; text: string } | null>(null);
+  const linkRef = useRef<{ url: string; text: string } | null>(null);
+  const creating = useRef<Promise<InviteState> | null>(null);
+  const busy = useRef(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<InviteState["error"]>(null);
+  // 링크는 만들었는데 보내지 못했다(누른 지 오래돼 브라우저가 공유창을 막음·클립보드가 막힘): 그 단추를 한 번 더 누르면 바로 보낸다
+  const [ready, setReady] = useState<Act | null>(null);
+  const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(copiedTimer.current), []);
   // 가입 직후 체험이면: 이 화면을 봤다는 기록(한 번), 링크를 만들면 그 기록(누구에게: 있는 사람/새로)
   const seen = useRef(false);
   useEffect(() => {
@@ -103,10 +110,10 @@ export function RequestForm({
   const targetKind = target?.kind;
   const made = useRef(false);
   useEffect(() => {
-    if (!tour || !state.url || made.current) return;
+    if (!tour || !link || made.current) return;
     made.current = true;
     void trackTour("ask", targetKind === "person" ? "person" : "new");
-  }, [tour, state.url, targetKind]);
+  }, [tour, link, targetKind]);
   const choose = (p: AskPerson) => {
     setWho({ kind: "person", person: p });
     setTopics(topicsFor(p));
@@ -126,14 +133,123 @@ export function RequestForm({
       if (same) choose(same);
     }
   };
-  const shareText = message.trim() ? `${state.text}\n${message.trim()}` : state.text;
   // 폴라로이드에 담을 얼굴: 아는 사람이면 그 얼굴, 새 이름이면 첫 글자, 아직 아무도 없으면 비어 있다
   const who0 = target ? { avatar: target.kind === "person" ? target.person.avatar : null, label: name } : null;
 
   const topicLabel = (x: Section) => t(`request.topic.${x}` as "request.topic.dates");
 
-  // 링크가 만들어지면: 누구에게·무엇을 묻는지와 보낼 메시지를 보여 주고, 아래에서 보낸다
-  if (state.url) {
+  // 물어보기가 막혀 있는 까닭(짧게)
+  const reason = pending ? null : !name.trim() ? (q && !typedNew ? "request.pickWho" : "request.needName") : !topics.length ? "request.pickOne" : null;
+
+  // 링크는 한 번만 만든다(두 번 눌러도, 물어보기와 링크 복사를 번갈아 눌러도 같은 링크). 서버 동작은 예전 '링크 만들기'와 같다
+  const create = (): Promise<InviteState> => {
+    creating.current ??= (async () => {
+      try {
+        return await createRequest(INITIAL, new FormData(formRef.current!));
+      } catch {
+        return { url: null, text: "", error: "common" } satisfies InviteState;
+      }
+    })().then((r) => {
+      if (!r.url) creating.current = null;
+      return r;
+    });
+    return creating.current;
+  };
+  const keep = (r: InviteState): { url: string; text: string } | null => {
+    if (!r.url) {
+      setError(r.error ?? "common");
+      return null;
+    }
+    const made = { url: r.url, text: r.text };
+    linkRef.current = made;
+    setLink(made);
+    return made;
+  };
+  const flashCopied = () => {
+    setCopied(true);
+    clearTimeout(copiedTimer.current);
+    copiedTimer.current = setTimeout(() => setCopied(false), 2200);
+  };
+  /**
+   * 물어보기(공유창) · 링크 복사. 눌러 링크를 만든 다음 곧바로 보낸다.
+   * 링크는 서버에서 만들어져 오래 걸릴 수 있어서 브라우저의 '방금 눌렀다'는 허락이 지나기 쉽다:
+   *  - 복사는 클립보드 쓰기를 누르는 순간 시작하고 글은 약속으로 넘긴다(사파리도 통과). 안 되면 만든 뒤 일반 복사로 한 번 더
+   *  - 공유창은 만든 뒤에 연다. 브라우저가 막으면(NotAllowedError) 링크는 그대로 두고 그 단추를 '준비됨'으로 바꾼다. 한 번 더 누르면 바로(기다림 없이) 열린다
+   *  - 공유창이 없는 곳은 복사로 대신한다
+   */
+  const run = async (act: Act) => {
+    if (busy.current) return;
+    busy.current = true;
+    setPending(true);
+    setError(null);
+    setReady(null);
+    try {
+      const have = linkRef.current;
+      if (act === "share" && canShare()) {
+        const made = have ?? keep(await create());
+        if (!made) return;
+        const res = await shareLink(made.text, made.url);
+        if (res === "blocked") setReady("share");
+        else if (res === "unavailable") {
+          if (await copyText(`${made.text}\n${made.url}`)) flashCopied();
+          else setReady("share");
+        }
+        return;
+      }
+      const created = have ? Promise.resolve<InviteState>({ ...have, error: null }) : create();
+      const ok = await copyTextLater(
+        created.then((r) => {
+          if (!r.url) throw new Error("not created");
+          return `${r.text}\n${r.url}`;
+        }),
+      );
+      const made = have ?? keep(await created);
+      if (!made) return;
+      if (ok) flashCopied();
+      else setReady(act);
+    } finally {
+      busy.current = false;
+      setPending(false);
+    }
+  };
+
+  // 누르면 바로 만들어 보내는 두 단추(만든 뒤에도 다시 보내려고 그대로 둔다). 높이 48px
+  const actions = (
+    <div className="flex w-full items-center gap-2">
+      {(
+        [
+          { act: "share", icon: "share", label: t("request.askNow"), tone: "bg-sky" },
+          { act: "copy", icon: copied ? "check" : "copy", label: t("common.copyLink"), tone: "bg-white" },
+        ] as const
+      ).map((b) => (
+        <button
+          key={b.act}
+          type="button"
+          onClick={() => void run(b.act)}
+          disabled={pending || (!link && !!reason)}
+          aria-busy={pending}
+          className={`hand inline-flex h-[48px] min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-edge px-3 text-[18px] disabled:border-ink/[0.22] disabled:bg-[#e8e1cf] disabled:text-[#5a5f78] ${b.tone} ${ready === b.act ? "chip-flash" : ""}`}
+        >
+          <Icon name={b.icon} size={19} strokeWidth={1.7} />
+          {b.label}
+        </button>
+      ))}
+    </div>
+  );
+  // 복사했어요 · 링크가 준비됐어요(한 번 더): 아래 막대 바로 위에 잠깐 뜬다(단추 자리를 밀지 않게 떠 있다)
+  const status = (
+    <div role="status" aria-live="polite" className="pointer-events-none absolute inset-x-0 bottom-full flex justify-center px-4 pb-2">
+      {copied || ready ? (
+        <span className="flex min-h-10 items-center gap-1.5 rounded-2xl bg-ink px-3.5 text-[14px] text-white shadow-[0_8px_24px_rgba(31,35,64,0.28)]">
+          <Icon name="check" size={16} strokeWidth={2.2} className="shrink-0 text-sky" />
+          {copied ? t("common.copied") : t("request.tapAgain")}
+        </span>
+      ) : null}
+    </div>
+  );
+
+  // 링크가 만들어지면: 누구에게·무엇을 묻는지 보여 주고, 아래에서 다시 보낼 수 있다(링크 글자는 보이지 않는다)
+  if (link) {
     return (
       <div className="flex flex-1 flex-col">
         <section className="card relative mx-4 mt-7 flex flex-col items-center px-3.5 pb-4 pt-5">
@@ -159,28 +275,10 @@ export function RequestForm({
             )}
           </ul>
         </section>
-        <section className="card relative mx-4 mt-3.5 flex flex-col px-3.5 pb-3.5 pt-2.5">
-          <div className="flex min-h-[30.6px] items-center">
-            <h3 className="scribble text-[19.4px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
-              {t("request.message")}
-            </h3>
-          </div>
-          <p className="mt-3 whitespace-pre-line rounded-[18px] border border-edge bg-[#e4ecfa] px-3.5 py-3 text-[12.6px] leading-[1.55]">
-            {state.text}
-            {message.trim() ? (
-              <>
-                {"\n"}
-                <span className="hand-written text-[17.8px] leading-[1.3]">{message.trim()}</span>
-              </>
-            ) : null}
-          </p>
-          <div className="pt-3">
-            <LinkField url={state.url} label={t("common.copyLink")} />
-          </div>
-        </section>
         <ReplyAlert locale={locale} publicKey={webPushKey} />
         <div className="bottom-bar mt-auto flex flex-col gap-2 bg-bg px-4 pt-4">
-          <ShareButtons locale={locale} url={state.url} text={shareText} sendLabel={t("request.send")} big />
+          {status}
+          {actions}
           {/* 체험의 끝: 링크를 만들었으면 시작하기로 마치고 홈으로 */}
           {tour ? (
             <form action={leaveTour}>
@@ -194,8 +292,6 @@ export function RequestForm({
     );
   }
 
-  // 링크 만들기가 막혀 있는 까닭(짧게)
-  const reason = pending ? null : !name.trim() ? (q && !typedNew ? "request.pickWho" : "request.needName") : !topics.length ? "request.pickOne" : null;
   const chip = "flex h-9 items-center gap-1.5 rounded-full border border-edge bg-white pl-[4.5px] pr-3.5 text-[12.6px]";
   const h2 = "hand scribble text-[19.4px] leading-none";
   const mint = { "--scribble": "#5dbb9a" } as React.CSSProperties;
@@ -205,12 +301,8 @@ export function RequestForm({
   const toggle = (x: Section) => setTopics(topics.includes(x) ? topics.filter((y) => y !== x) : SECTIONS.filter((y) => y === x || topics.includes(y)));
   const topicEg = (x: Section) => t(`request.eg.${x}` as "request.eg.dates");
 
-  // 링크를 받는 사람이 메신저에서 보는 미리보기(/r/<토큰>의 링크 미리보기와 같은 함수)
-  const preview = requestPreview(locale, sender.name || undefined, { question, sections: topics });
-  const host = new URL(SITE_URL).host;
-
   return (
-    <form action={action} className="flex flex-1 flex-col">
+    <form ref={formRef} onSubmit={(e) => e.preventDefault()} className="flex flex-1 flex-col">
       <input type="hidden" name="sections" value={JSON.stringify(topics)} />
       {question ? <input type="hidden" name="questions" value={JSON.stringify([question])} /> : null}
       {target?.kind === "person" ? <input type="hidden" name="to" value={target.person.id} /> : null}
@@ -387,55 +479,14 @@ export function RequestForm({
         )}
       </section>
 
-      {/* 같이 보낼 말: 우표 붙은 엽서. To·From 사이 줄 노트에 적는다 */}
-      <section className="relative mx-4 mt-3.5 overflow-hidden rounded-[10px] border border-edge bg-[#FFFDF6]">
-        <div aria-hidden="true" className="h-[6px] border-b border-edge" style={{ backgroundImage: AIRMAIL }} />
-        <div className="relative px-3.5 pb-3 pt-3">
-          <PostageStamp className="right-3 top-3" />
-          <PostMark className="right-[64px] top-4" />
-          <div className="flex min-h-[48px] items-end pr-[64px]">
-            <p className="hand-written flex h-[30px] min-w-0 flex-1 items-end truncate border-b border-dashed border-edge text-[19px] leading-none">
-              <span className="truncate">{t("request.postTo", { name: name.trim() || "" })}</span>
-            </p>
-          </div>
-          <textarea
-            id="request-message"
-            name="message"
-            aria-label={t("request.message")}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            rows={3}
-            maxLength={300}
-            placeholder={name.trim() ? t("request.messagePlaceholderFor", { name: name.trim() }) : t("request.messagePlaceholder")}
-            className="hand-written mt-1.5 h-[81px] w-full resize-none border-0 bg-transparent p-0 text-[17.8px] leading-[27px] outline-none placeholder:font-sans placeholder:text-[13.5px] placeholder:text-muted [background-image:repeating-linear-gradient(180deg,transparent_0_26px,#d5e1f3_26px_27px)]"
-          />
-          {sender.name ? <p className="hand-written mt-1.5 truncate text-right text-[18px] leading-[1.2]">{t("request.postFrom", { name: sender.name })}</p> : null}
-        </div>
-      </section>
-
-      {/* 받는 사람이 메신저에서 보는 모양 */}
-      <section className="card relative mx-4 mt-3.5 px-3.5 pb-3.5 pt-2.5">
-        <div className="flex min-h-[30.6px] items-center">
-          <p className={h2} style={mint}>
-            {name ? t("request.preview", { name }) : t("request.previewAnon")}
-          </p>
-        </div>
-        <div className="mt-2.5">
-          <LinkPreview avatar={sender.avatar} name={sender.name} title={preview.title} description={preview.description} host={host} />
-        </div>
-      </section>
-
       <div className="bottom-bar mt-auto flex flex-col gap-2 bg-bg px-4 pt-4">
-        {state.error ? (
+        {error ? (
           <p role="alert" className="w-full px-1 text-[12.6px] text-red">
-            {t(state.error === "pickOne" ? "request.pickOne" : name.trim() ? "common.error" : "request.needName")}
+            {t(error === "pickOne" ? "request.pickOne" : name.trim() ? "common.error" : "request.needName")}
           </p>
         ) : null}
         {reason ? <p className="w-full px-1 text-[12.6px] text-muted">{t(reason)}</p> : null}
-        <button disabled={pending || !!reason} className="hand inline-flex h-[48px] w-full items-center justify-center gap-1.5 rounded-full border border-edge bg-sky px-4 text-[18px] disabled:border-ink/[0.22] disabled:bg-[#e8e1cf] disabled:text-[#5a5f78]">
-          <Icon name="link" size={19} strokeWidth={1.7} />
-          {t("request.make")}
-        </button>
+        {actions}
       </div>
     </form>
   );

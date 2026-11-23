@@ -68,7 +68,7 @@ export function CheckGlyph({ size = 14 }: { size?: number }) {
 }
 
 type IconName =
-  | "back" | "close" | "lock" | "alert" | "mic" | "camera" | "link" | "share" | "gift" | "external" | "bell"
+  | "back" | "close" | "lock" | "alert" | "mic" | "camera" | "link" | "copy" | "share" | "gift" | "external" | "bell"
   | "plus" | "check" | "calendar" | "people" | "card" | "globe" | "personAdd" | "chevron" | "trash" | "pick" | "map" | "eye" | "settings" | "star" | "pencil" | "up" | "undo" | "arrow" | "stop";
 
 const ICONS: Record<IconName, React.ReactNode> = {
@@ -108,6 +108,12 @@ const ICONS: Record<IconName, React.ReactNode> = {
     <>
       <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
       <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </>
+  ),
+  copy: (
+    <>
+      <rect x="9" y="9" width="12" height="12" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
     </>
   ),
   share: <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13" />,

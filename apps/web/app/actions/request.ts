@@ -43,11 +43,10 @@ export async function createRequest(_: InviteState, form: FormData): Promise<Inv
   const sections = sanitizeSections(json(form.get("sections")));
   // 한 질문만 묻는 링크(?q=): 오늘의 질문 id. 항목은 그 질문이 속한 항목으로 서버가 정한다
   const questions = sanitizeQuestionIds(json(form.get("questions")));
-  const message = String(form.get("message") ?? "").trim().slice(0, 300);
   if (!to && !name) return { url: null, text: "", error: "common" };
   if (!sections.length && !questions.length) return { url: null, text: "", error: "pickOne" };
   try {
-    const invite = await createAsk(s, { to: to || undefined, name, sections, questions, message });
+    const invite = await createAsk(s, { to: to || undefined, name, sections, questions, message: "" });
     revalidatePath("/people", "layout");
     revalidatePath("/home");
     revalidatePath("/privacy");

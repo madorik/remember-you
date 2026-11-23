@@ -47,10 +47,15 @@ async function askNew(page: import("@playwright/test").Page, name: string) {
   await page.getByRole("button", { name: `${name} 새로` }).click();
 }
 
+/** 물어보기 화면에서 '링크 복사'를 눌러 링크를 만들고 복사된 글에서 링크를 꺼낸다(링크 칸은 화면에 없다) */
 async function makeLink(page: import("@playwright/test").Page) {
-  await page.getByRole("button", { name: "링크 만들기" }).click();
-  const url = await page.getByTestId("invite-url").inputValue();
-  expect(url).toMatch(/\/r\/[A-Za-z0-9_-]{40,}/);
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.getByRole("button", { name: "링크 복사", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: ko["common.copied"] })).toBeVisible();
+  await expect(page.getByTestId("invite-url")).toHaveCount(0);
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  const url = /https?:\/\/\S+\/r\/[A-Za-z0-9_-]{40,}/.exec(copied)?.[0] ?? "";
+  expect(url, copied).toMatch(/\/r\/[A-Za-z0-9_-]{40,}/);
   return url;
 }
 
@@ -83,11 +88,11 @@ test("가입하고 온보딩을 마치면 홈과 내 리드미가 보인다(음�
   await expect(page.getByRole("region", { name: "오늘의 질문" })).toHaveCount(0);
 
   await shot(page, "02-home-empty");
-  // 크리스마스 물어보기(?xmas=1): 선물을 먼저 묻는 칸이 켜져 있고 메시지는 크리스마스 말로 채워져 있다
+  // 크리스마스 물어보기(?xmas=1): 선물을 먼저 묻는 칸이 켜져 있다(같이 보낼 말 칸은 없다)
   await page.goto("/request?xmas=1");
   await expect(page.getByRole("button", { name: ko["request.topic.gifts"] })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("button", { name: ko["request.topic.dates"] })).toHaveAttribute("aria-pressed", "false");
-  await expect(page.getByRole("textbox", { name: ko["request.message"] })).toHaveValue(ko["request.xmasMessage"]);
+  await expect(page.getByRole("textbox", { name: "같이 보낼 말" })).toHaveCount(0);
   await shot(page, "02a-request-xmas");
   await page.goto("/home");
   // 이번 주를 누르면 월별 달력, 앞뒤 달로 넘긴다
@@ -134,6 +139,11 @@ test("물어보기(새 사람) → 앱 없이 웹에서 답하기 → 답이 내
   await expect(page.getByRole("heading", { name: "물어보기" })).toBeVisible();
   await askNew(page, "아빠");
   askDadUrl = await makeLink(page);
+  // 링크를 만든 화면: 준비 완료 도장과 보낼 단추 둘(링크 글자·같이 보낼 말 칸은 없다)
+  await expect(page.getByRole("heading", { name: "아빠님에게 보낼 준비가 됐어요" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "물어보기", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "링크 복사", exact: true })).toBeVisible();
+  await expect(page.getByLabel("같이 보낼 말")).toHaveCount(0);
   await shot(page, "04-ask-ready");
 
   const dad = await newPage(browser);
@@ -227,6 +237,47 @@ test("물어보기(새 사람) → 앱 없이 웹에서 답하기 → 답이 내
   // 홈은 챙길 날 위주(사람 줄은 없다): 이번 주 띠의 달력 링크가 보인다
   await expect(page.getByRole("link", { name: "달력 보기" })).toBeVisible();
   await shot(page, "08-home");
+});
+
+test("물어보기: 공유창이 막히면 링크는 그대로 두고 한 번 더 누르면 바로 보낸다(링크는 한 번만 만든다)", async ({ browser }) => {
+  const page = await as(browser, "jisu");
+  // 누른 지 오래돼 브라우저가 공유창을 막은 것처럼: 첫 번째 공유는 NotAllowedError, 그다음은 열린다
+  await page.addInitScript(() => {
+    const w = window as unknown as { __shared: { text?: string; url?: string }[] };
+    w.__shared = [];
+    let n = 0;
+    Object.defineProperty(navigator, "share", {
+      configurable: true,
+      value: async (d: { text?: string; url?: string }) => {
+        if (n++ === 0) throw new DOMException("expired", "NotAllowedError");
+        w.__shared.push(d);
+      },
+    });
+  });
+  const created: string[] = [];
+  page.on("request", (r) => {
+    if (r.method() === "POST" && r.headers()["next-action"]) created.push(r.url());
+  });
+  await page.goto("/request");
+  await askNew(page, "큰이모");
+  created.length = 0;
+  await page.getByRole("button", { name: "물어보기", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: ko["request.tapAgain"] })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "큰이모님에게 보낼 준비가 됐어요" })).toBeVisible();
+  await expect(page.getByTestId("invite-url")).toHaveCount(0);
+  await shot(page, "04b-ask-ready-again");
+  // 한 번 더 누르면 새 링크를 만들지 않고 바로 공유창이 열린다
+  await page.getByRole("button", { name: "물어보기", exact: true }).click();
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __shared: unknown[] }).__shared.length)).toBe(1);
+  const shared = await page.evaluate(() => (window as unknown as { __shared: { url?: string }[] }).__shared[0]!);
+  expect(shared.url).toMatch(/\/r\/[A-Za-z0-9_-]{40,}/);
+  expect(created).toHaveLength(1);
+  // 같은 링크를 복사로도 쓴다(다시 만들지 않는다)
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.getByRole("button", { name: "링크 복사", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: ko["common.copied"] })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain(shared.url!);
+  expect(created).toHaveLength(1);
 });
 
 test("하나만 물으면 답하는 화면도 하나: 진행 막대 없이 바로 보내기", async ({ browser }) => {
@@ -349,7 +400,7 @@ test("아는 사람에게 다시 물어보기: 내 기록 값이 미리 채워�
   await expect(page.locator('input[name="to"]')).toHaveCount(1);
   await expect(page.getByRole("button", { name: "사이즈", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("button", { name: "생일·기념일", exact: true })).toHaveAttribute("aria-pressed", "false");
-  await expect(page.getByLabel("같이 보낼 말")).toHaveValue("");
+  await expect(page.getByLabel("같이 보낼 말")).toHaveCount(0);
   await page.getByRole("button", { name: "다시 고르기" }).click();
   await expect(page.getByPlaceholder("이름이나 태그로 찾기")).toBeVisible();
   // 다시 찾아 아빠를 골라 보낸다: 답은 아빠 기록에 들어간다(아래에서 확인)
@@ -1631,12 +1682,11 @@ test("연말 카드의 흐름: 사람이 없으면 추가 → 곧바로 물어�
   await shot(page, "xmas-2-add");
   await page.getByRole("button", { name: ko["people.createAsk"] }).click();
 
-  // ② 곧바로 그 사람에게 물어보기: 받고 싶은 것 쪽이 켜져 있고 크리스마스 말이 채워져 있다
+  // ② 곧바로 그 사람에게 물어보기: 받고 싶은 것 쪽이 켜져 있다
   await expect(page).toHaveURL(/\/request\?to=[0-9a-f-]{36}&xmas=1$/);
   const id = /to=([0-9a-f-]{36})/.exec(page.url())![1]!;
   await expect(page.getByRole("heading", { level: 1 })).toContainText("물어보기");
   await expect(page.getByRole("button", { name: ko["request.topic.gifts"] })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("textbox", { name: ko["request.message"] })).toHaveValue(ko["request.xmasMessage"]);
   await shot(page, "xmas-3-ask");
   const url = await makeLink(page);
 

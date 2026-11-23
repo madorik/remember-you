@@ -34,7 +34,7 @@ export async function loadPrivacy(): Promise<PrivacyData> {
  */
 export async function loadRequest({ searchParams }: PageInput): Promise<RequestData> {
   const s = await requireSession();
-  // 홈의 크리스마스 물어보기(?xmas=1)에서 왔으면 선물 쪽을 먼저 묻고 메시지도 크리스마스로
+  // 홈의 크리스마스 물어보기(?xmas=1)에서 왔으면 선물 쪽을 먼저 묻는다
   const xmas = !!searchParams.xmas;
   // 반려동물은 키우는 사람만 해당돼서 처음부터 고르지 않는다(직접 고를 수 있다)
   const askable = SECTIONS.filter((x) => x !== "pets");
@@ -63,10 +63,8 @@ export async function loadRequest({ searchParams }: PageInput): Promise<RequestD
     initialName: (searchParams.name ?? "").slice(0, 40),
     defaults,
     xmas,
-    initialMessage: xmas ? makeT(s.profile.locale)("request.xmasMessage") : "",
     focus,
     question,
-    sender: { name: s.profile.displayName.trim(), avatar: s.profile.avatar },
     webPushKey: s.profile.pushEnabled ? webPushPublicKey() : null,
     tour: searchParams.tour ? { n: total, total } : null,
   };
