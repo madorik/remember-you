@@ -212,6 +212,8 @@ export function openPrefill(tokenHash: string, payload: unknown): PartialCard {
 export interface Asking {
   inviteId: string;
   state: InviteStatus;
+  /** 보낸 때(답을 기다린 날수를 센다) */
+  createdAt: string;
   expiresAt: string;
   sections: Section[];
 }
@@ -259,6 +261,7 @@ type PersonRow = {
   cc_updated_at: Date | null;
   a_id: string | null;
   a_sections: unknown;
+  a_created_at: Date | null;
   a_expires_at: Date | null;
   a_used_at: Date | null;
   a_canceled_at: Date | null;
@@ -276,13 +279,13 @@ async function loadPeople(q: Q, me: string, opts: { contactId?: string; cards?: 
     `select c.id, c.person_id, c.nickname, c.favorite, c.ask_off, c.view_days, c.avatar,
             p.id as p_id, p.display_name as p_display_name, p.avatar as p_avatar,
             ${withCards ? "cc.sections" : "null::jsonb"} as cc_sections, cc.answered as cc_answered, cc.updated_at as cc_updated_at,
-            a.id as a_id, a.sections as a_sections, a.expires_at as a_expires_at, a.used_at as a_used_at, a.canceled_at as a_canceled_at,
+            a.id as a_id, a.sections as a_sections, a.created_at as a_created_at, a.expires_at as a_expires_at, a.used_at as a_used_at, a.canceled_at as a_canceled_at,
             (select array_agg(m.group_id::text order by m.created_at) from contact_group_members m where m.contact_id = c.id and m.user_id = $1) as folder_ids
        from contacts c
        left join profiles p on p.id = c.person_id
        left join contact_cards cc on cc.contact_id = c.id
        left join lateral (
-         select i.id, i.sections, i.expires_at, i.used_at, i.canceled_at from invites i where i.contact_id = c.id order by i.created_at desc limit 1
+         select i.id, i.sections, i.created_at, i.expires_at, i.used_at, i.canceled_at from invites i where i.contact_id = c.id order by i.created_at desc limit 1
        ) a on true
       where c.user_id = $1 and ($2::uuid is null or c.id = $2::uuid)
       order by c.created_at`,
@@ -309,6 +312,7 @@ async function loadPeople(q: Q, me: string, opts: { contactId?: string; cards?: 
         ? {
             inviteId: String(c.a_id),
             state: inviteStatus({ expires_at: iso(c.a_expires_at)!, used_at: iso(c.a_used_at), canceled_at: iso(c.a_canceled_at) }),
+            createdAt: iso(c.a_created_at)!,
             expiresAt: iso(c.a_expires_at)!,
             sections: sanitizeSections(c.a_sections),
           }

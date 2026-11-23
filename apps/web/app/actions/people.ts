@@ -1,6 +1,6 @@
 "use server";
 
-import { applyAnswer, isSection, QUESTION_SECTION, QUESTIONS, sanitizeAvatar, ymdKey, type AvatarConfig, type DailyQuestion, type Section } from "@readme/core";
+import { applyAnswer, isSection, QUESTIONS, sanitizeAvatar, ymdKey, type AvatarConfig, type DailyQuestion, type Section } from "@readme/core";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { readPerson, requireSession, sealNote, todayFor, writeContactSection, type Session } from "@/lib/data";
@@ -174,17 +174,17 @@ export async function skipAbout(form?: FormData): Promise<void> {
   redirect("/home");
 }
 
-/** 오늘의 질문 대신 그 사람에게 직접 물어보기: 그 사람을 고른 채, 그 질문이 속한 항목만 골라서 물어보기 화면으로 */
+/** 오늘의 질문 대신 그 사람에게 직접 물어보기: 그 사람을 고른 채, 그 질문 하나만 묻는 물어보기 화면으로(?q=질문 id) */
 export async function askAbout(form: FormData): Promise<void> {
   const contactId = String(form.get("contactId") ?? "");
   const id = String(form.get("id")) as DailyQuestion["id"];
   const { s } = await ownContact(contactId);
-  const section = QUESTIONS.some((x) => x.id === id) ? QUESTION_SECTION[id] : null;
+  const known = QUESTIONS.some((x) => x.id === id);
   await s.tx((q) => spendQuestion(q, s));
   track("daily_ask", { userId: s.user.id, source: id.toLowerCase().replace(/[^a-z_]/g, "_").slice(0, 20) });
   if (QUESTIONS.some((x) => x.id === id)) await addQuestionLog(ymdKey(todayFor(s.profile)), { c: contactId, q: id, o: "w" });
   revalidatePath("/home");
-  redirect(`/request?to=${contactId}${section ? `&topic=${section}` : ""}`);
+  redirect(`/request?to=${contactId}${known ? `&q=${id}` : ""}`);
 }
 
 /** 이 사람에 대해 다시 묻지 않기: 오늘의 질문에서 뺀다(사람 화면에서 다시 켤 수 있다) */

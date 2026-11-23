@@ -1,4 +1,4 @@
-import type { AvatarConfig, DateSpec, Locale, PartialCard, ReminderOffset, SafetyData, Section, YMD } from "@readme/core";
+import type { AvatarConfig, DailyQuestion, DateSpec, Locale, PartialCard, ReminderOffset, SafetyData, Section, YMD } from "@readme/core";
 
 // 화면마다 서버가 읽어 주는 데이터 모양(lib/pages/<화면>.ts가 만들고 components/pages/<화면>View가 그린다).
 // 타입만 둔다(서버 전용 코드를 들이지 않는다)
@@ -97,8 +97,12 @@ export interface RequestData {
   xmas: boolean;
   /** 처음부터 채워 둘 메시지(크리스마스 물어보기에서 왔을 때) */
   initialMessage: string;
-  /** 오늘의 질문의 '물어보기'(?topic=)에서 왔다: 그 항목만 묻는다 */
+  /** 예전 오늘의 질문 '물어보기'(?topic=)에서 왔다: 그 항목만 묻는다 */
   focus: Section | null;
+  /** 오늘의 질문 하나만 묻는다(?q=): 받는 사람은 그 질문의 보기만 보고, 답은 그 칸에 들어간다 */
+  question: DailyQuestion["id"] | null;
+  /** 브라우저 푸시 공개 키(알림이 꺼져 있거나 서버에 키가 없으면 null: 링크를 만든 뒤 '답장 오면 알려 드릴까요?'를 숨긴다) */
+  webPushKey: string | null;
   tour: TourInfo | null;
 }
 

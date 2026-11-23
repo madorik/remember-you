@@ -460,3 +460,44 @@ describe("명절 알림(notifications kind = holiday)", () => {
     assert.equal((await rows(carol, "select 1 from notifications where kind = 'holiday'")).length, 0);
   });
 });
+
+describe("물어보기 링크: 30일·한 질문(0033)", () => {
+  /** 앱 역할로 링크를 만들되 기간(일)과 질문을 고른다 */
+  async function askFor(uid: string, contactId: string, days: number, questions: string[] | null) {
+    const t = token();
+    await rows(
+      uid,
+      `insert into invites (inviter_id, contact_id, token_hash, code, sections, expires_at, questions)
+       values ($1, $2, $3, $4, array['favorites'], now() + make_interval(days => $5), $6)`,
+      [uid, contactId, t.hash, t.code, days, questions],
+    );
+    return t;
+  }
+
+  test("30일까지 열 수 있고 그보다 길면 막힌다(예전 8일 제약은 없다)", async () => {
+    const c = await person(alice, "삼십일");
+    await askFor(alice, c, 30, null);
+    await askFor(alice, c, 7, null);
+    await rejects(askFor(alice, c, 32, null), /invites_expires_check/);
+  });
+
+  test("질문 id는 1~3개를 담고(비워 두면 항목 전체), 답하는 화면용 함수가 돌려준다", async () => {
+    const c = await person(alice, "한질문");
+    const t = await askFor(alice, c, 30, ["scent"]);
+    const [r] = (await pool.query("select * from request_for_answer($1)", [t.hash])).rows;
+    assert.deepEqual(r.questions, ["scent"]);
+    assert.deepEqual(r.sections, ["favorites"]);
+    assert.equal(r.state, "active");
+    const plain = await askFor(alice, c, 7, null);
+    assert.equal((await pool.query("select * from request_for_answer($1)", [plain.hash])).rows[0].questions, null);
+    await rejects(askFor(alice, c, 7, []), /invites_questions_check/);
+    await rejects(askFor(alice, c, 7, ["a", "b", "c", "d"]), /invites_questions_check/);
+  });
+
+  test("질문 링크에 답하면 그 항목 칸에 들어가고 링크는 쓰인 것이 된다", async () => {
+    const c = await person(alice, "답하는 한질문");
+    const t = await askFor(alice, c, 30, ["scent"]);
+    await answer(t.hash, { favorites: { v: 1, data: {} } });
+    assert.equal((await pool.query("select * from request_for_answer($1)", [t.hash])).rows[0].state, "used");
+  });
+});

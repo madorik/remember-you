@@ -1,8 +1,52 @@
 // 초대 링크·코드. 토큰은 해시만 저장하고, 링크가 안 열릴 때(앱을 새로 깔았을 때 등)를 위해 짧은 코드도 같이 준다.
 // Web Crypto만 써서 브라우저·Node 둘 다에서 돈다.
 
-export const INVITE_TTL_DAYS = 7;
+import { SECTIONS_BY_IMPORTANCE, type Section } from "./card";
+import { QUESTIONS, QUESTION_SECTION, type DailyQuestion } from "./questions";
+
+/** 물어보기 링크가 열려 있는 날수 */
+export const INVITE_TTL_DAYS = 30;
+/** DB 제약이 아직 8일이던 때(0033 마이그레이션 전)의 링크 기간. 새 제약이 적용되기 전에는 이 기간으로 물러난다 */
+export const INVITE_TTL_FALLBACK_DAYS = 7;
+/** 내 기록 공유 링크(/s/…)가 열려 있는 날수: 건강·사이즈 같은 값이 담겨 물어보기 링크보다 짧게 둔다 */
+export const SHARE_TTL_DAYS = 7;
 export type InviteKind = "share" | "request";
+
+/** 물어보기에서 처음부터 골라 두는 항목 수(받는 사람이 부담 없게). 나머지는 직접 더 고를 수 있다 */
+export const ASK_DEFAULT_TOPICS = 3;
+
+/**
+ * 아직 안 적힌 항목(missing) 중 중요한 것부터(생일·못 먹는 것 …) 최대 limit개. 그 사람이든 새 사람이든 같은 규칙.
+ * 비어 있는 게 없으면 빈 배열(부르는 쪽이 기본 항목으로 대신한다)
+ */
+export function defaultAskTopics(missing: readonly Section[], limit: number = ASK_DEFAULT_TOPICS): Section[] {
+  return SECTIONS_BY_IMPORTANCE.filter((s) => missing.includes(s)).slice(0, limit);
+}
+
+/** 항목마다 받는 사람이 답하는 데 드는 대략의 초 */
+const ASK_SECONDS: Record<Section, number> = { dates: 10, safety: 20, taste: 20, gifts: 20, sizes: 20, favorites: 30, culture: 25, life: 20, pets: 20 };
+
+/** 고른 항목들에 받는 사람이 답하는 데 드는 대략의 분(1분 이상) */
+export function askMinutes(topics: readonly Section[]): number {
+  const seconds = topics.reduce((sum, s) => sum + (ASK_SECONDS[s] ?? 20), 0);
+  return Math.max(1, Math.ceil(seconds / 60));
+}
+
+/** 물어보기 링크에 담긴 질문 id(오늘의 질문 중 하나). 모르는 것·겹치는 것은 버리고 최대 max개 */
+export function sanitizeQuestionIds(v: unknown, max = 1): DailyQuestion["id"][] {
+  const out: DailyQuestion["id"][] = [];
+  for (const x of Array.isArray(v) ? v : []) {
+    const q = QUESTIONS.find((y) => y.id === x);
+    if (q && !out.includes(q.id)) out.push(q.id);
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
+/** 질문들의 답이 들어갈 항목(겹침 없이, 중요도 순) */
+export function questionSections(ids: readonly DailyQuestion["id"][]): Section[] {
+  return SECTIONS_BY_IMPORTANCE.filter((s) => ids.some((id) => QUESTION_SECTION[id] === s));
+}
 
 // 헷갈리는 글자(0 O 1 I L)는 뺐다
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";

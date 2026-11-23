@@ -1,5 +1,5 @@
 import "server-only";
-import { SECTIONS, type Section } from "@readme/core";
+import { SECTIONS, defaultAskTopics, sanitizeQuestionIds, type Section } from "@readme/core";
 import { notFound } from "next/navigation";
 import { aiConfigured } from "@/lib/ai";
 import { displayName, listOpenInvites, listPeople, requireSession } from "@/lib/data";
@@ -36,7 +36,10 @@ export async function loadRequest({ searchParams }: PageInput): Promise<RequestD
   const s = await requireSession();
   // 홈의 크리스마스 물어보기(?xmas=1)에서 왔으면 선물 쪽을 먼저 묻고 메시지도 크리스마스로
   const xmas = !!searchParams.xmas;
-  const defaults: Section[] = xmas ? ["taste", "gifts", "favorites"] : ["dates", "safety", "gifts"];
+  // 반려동물은 키우는 사람만 해당돼서 처음부터 고르지 않는다(직접 고를 수 있다)
+  const askable = SECTIONS.filter((x) => x !== "pets");
+  // 기본으로 골라 두는 항목은 누구에게든 같은 규칙: 아직 안 적힌 것 중 중요한 것부터 3개(새 사람은 전부 안 적힌 셈)
+  const defaults: Section[] = xmas ? ["taste", "gifts", "favorites"] : defaultAskTopics(askable);
   // 찾기에 쓸 사람들(즐겨찾기 먼저). 사람마다 아직 안 적힌 항목
   const people = [...(await listPeople(s))]
     .sort((a, b) => Number(b.favorite) - Number(a.favorite))
@@ -46,14 +49,26 @@ export async function loadRequest({ searchParams }: PageInput): Promise<RequestD
       tag: p.nickname && p.nickname !== (p.name || displayName(p)) ? p.nickname : "",
       label: displayName(p),
       avatar: p.avatar,
-      // 반려동물은 키우는 사람만 해당돼서 처음부터 고르지 않는다(직접 고를 수 있다)
-      missing: SECTIONS.filter((x) => !p.card[x] && x !== "pets"),
+      missing: askable.filter((x) => !p.card[x]),
     }));
   const fixed = searchParams.to ? (people.find((p) => p.id === searchParams.to) ?? null) : null;
   const focus = SECTIONS.find((x) => x === searchParams.topic) ?? null;
+  const question = sanitizeQuestionIds([searchParams.q])[0] ?? null;
   // 체험(?tour=)이면 마지막 단계: 말로 적기가 있으면 둘째, 없으면(AI 꺼짐) 첫째이자 마지막
   const total = tourTotal();
-  return { locale: s.profile.locale, people, fixed, initialName: (searchParams.name ?? "").slice(0, 40), defaults, xmas, initialMessage: xmas ? makeT(s.profile.locale)("request.xmasMessage") : "", focus, tour: searchParams.tour ? { n: total, total } : null };
+  return {
+    locale: s.profile.locale,
+    people,
+    fixed,
+    initialName: (searchParams.name ?? "").slice(0, 40),
+    defaults,
+    xmas,
+    initialMessage: xmas ? makeT(s.profile.locale)("request.xmasMessage") : "",
+    focus,
+    question,
+    webPushKey: s.profile.pushEnabled ? webPushPublicKey() : null,
+    tour: searchParams.tour ? { n: total, total } : null,
+  };
 }
 
 /** 말로 적기: 말하면(또는 적으면) 누구의 어느 칸인지 나눠서 바로 넣는다. 없는 사람은 새로, 맞는 칸이 없으면 메모로 */

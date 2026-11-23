@@ -29,6 +29,6 @@ export interface PersonData {
   /** 아직 안 본 답이 있다(화면을 열면 읽은 것으로) */
   answered: boolean;
   /** 물어보고 답을 기다리는 중인 링크 */
-  waiting: { inviteId: string } | null;
+  waiting: { inviteId: string; /** 보낸 날이 1일째 */ days: number } | null;
   ai: boolean;
 }

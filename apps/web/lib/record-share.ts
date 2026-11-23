@@ -1,6 +1,6 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
-import { INVITE_TTL_DAYS, hashToken, sanitizeAvatar, pickSections, sanitizeSection, isSection, isEmptySection, type AvatarConfig, type PartialCard, type Section } from "@readme/core";
+import { SHARE_TTL_DAYS, hashToken, sanitizeAvatar, pickSections, sanitizeSection, isSection, isEmptySection, type AvatarConfig, type PartialCard, type Section } from "@readme/core";
 import { asSystem, systemOne } from "./db";
 import { aad, open, seal } from "./crypto";
 import { absoluteUrl } from "./site";
@@ -77,7 +77,7 @@ export async function createRecordShare(userId: string, record: SharedRecord, se
       const row = await q.one(
         `insert into record_shares (token_hash, user_id, payload, max_claims, expires_at)
          values ($1, $2, $3, $4, now() + make_interval(days => $5)) on conflict do nothing returning token_hash`,
-        [hash, userId, JSON.stringify(payload), SHARE_MAX_CLAIMS, INVITE_TTL_DAYS],
+        [hash, userId, JSON.stringify(payload), SHARE_MAX_CLAIMS, SHARE_TTL_DAYS],
       );
       return !!row;
     });

@@ -25,7 +25,8 @@ export async function loadPerson({ params, searchParams: sp }: PageInput): Promi
     s.tx((q) => listFolders(q, s.user.id)),
     s.tx((q) => unreadAnswers(q, s.user.id, p.contactId)),
   ]);
-  const waiting = p.asking?.state === "active" ? { inviteId: p.asking.inviteId } : null;
+  // 답을 기다린 날수: 보낸 날이 1일째
+  const waiting = p.asking?.state === "active" ? { inviteId: p.asking.inviteId, days: Math.max(1, Math.floor((Date.now() - new Date(p.asking.createdAt).getTime()) / 86_400_000) + 1) } : null;
   return {
     locale,
     back,
