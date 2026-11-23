@@ -47,7 +47,16 @@ cd ../../.. && node apps/mobile/scripts/store/release.mjs apps/mobile/android/ap
 설정 파일 `google-services.json`·`GoogleService-Info.plist`와 서버 발송 키 `firebase-admin.json`은 저장소 밖 `~/.readme/`에 있고(저장소에는 넣지 않는다, .gitignore),
 Vercel 운영에 `FCM_PROJECT_ID`·`FCM_CLIENT_EMAIL`·`FCM_PRIVATE_KEY`(줄바꿈은 `\n`)를 넣었다.
 첫 푸시 빌드는 0.3.0(versionCode 8). 웹은 versionCode 8 미만 앱에서는 푸시를 등록하지 않는다(설정 없이 빌드한 앱은 등록하면 멈춘다, `PUSH_MIN_ANDROID_BUILD`).
-서버 푸시는 답장처럼 기기가 모르는 것만 보낸다(생일 알림은 기기 로컬 알림). iOS는 Firebase Messaging과 APNs 키(Apple)가 아직이라 등록하지 않는다.
+서버 푸시는 답장처럼 기기가 모르는 것만 보낸다(생일 알림은 기기 로컬 알림). 알림 허락은 앱을 켜자마자 묻지 않고, 답장을 기다릴 만한 때(`askReplyAlerts()`, apps/web/components/native.tsx)에 묻는다. 이미 허락한 기기만 앱을 열 때 토큰을 다시 등록한다.
+
+#### iOS 푸시(코드는 준비됨, 아래 손일을 해야 켜진다)
+iOS 앱은 Firebase 없이 Capacitor 푸시 플러그인이 주는 **APNs 기기 토큰**을 쓰고, 서버(`apps/web/lib/push.ts`의 `sendApns`)가 애플에 직접 보낸다(토큰이 16진수 64자 이상이면 APNs, 콜론이 든 FCM 토큰이면 FCM으로 가린다).
+1. Apple Developer → Keys → **APNs 인증 키(.p8)** 를 하나 만든다(Apple Push Notifications service). 키 ID·팀 ID를 적어 두고 .p8은 `~/.readme/`에만 둔다(저장소에 넣지 않는다).
+2. Xcode → App 타깃 → Signing & Capabilities → **+ Capability → Push Notifications**. App.entitlements에 `aps-environment`가 생기고 App ID·프로비저닝 프로필이 갱신된다(자동 서명이면 알아서).
+3. `apps/web/components/native.tsx`의 `PUSH_MIN_IOS_BUILD`를 이 푸시 capability를 넣은 첫 빌드 번호로 맞춘다(그보다 낮은 iOS 판은 알림 허락을 묻지도 않는다). 새 iOS 빌드를 만들어 심사에 낸다.
+4. Vercel 운영 환경 변수: `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_PRIVATE_KEY`(.p8 내용, 줄바꿈은 `\n`). 앱스토어·TestFlight 빌드는 기본(production) 그대로, Xcode로 직접 올린 개발 빌드를 시험하려면 `APNS_ENV=sandbox`. `APNS_TOPIC`은 기본이 번들 ID `kr.readme.app`.
+   이 세 값이 있어야 앱이 iOS에서 알림 허락을 묻는다(없으면 iOS는 푸시를 아예 시도하지 않는다).
+(Firebase Messaging을 iOS 앱에 넣는 길은 쓰지 않는다. 넣으면 FCM 토큰이 와서 기존 FCM 발송으로도 가지만 SDK·GoogleService-Info.plist·AppDelegate 연결이 더 필요하다.)
 
 ## 3. 앱 콘텐츠(정책) 답
 
@@ -117,4 +126,4 @@ Vercel 운영에 `FCM_PROJECT_ID`·`FCM_CLIENT_EMAIL`·`FCM_PRIVATE_KEY`(줄바�
 - 개인정보: 이름·이메일·건강(알레르기)·기타 사용자 콘텐츠·사용자 ID·기기 ID(앱 기능·분석), 제품 상호 작용(분석). 모두 사용자와 연결, 추적 안 함. 처리방침 /privacy-policy, 지원 /support.
 - 심사 4.8: 애플로 로그인(Services ID kr.readme.app.web, 키 SKH7CXH449는 ~/.readme). 심사 메모: 로그인 없이 '데모로 둘러보기', 기기 기능(로컬 알림·음성 인식·Face ID·공유창), 계정 삭제, 쿠팡 제휴 고지.
 - 심사 연락처: 이름 MinGyun Jeong, 이메일 watalabs.help@gmail.com, 전화는 Apple 개발자 계정 번호.
-- iOS 푸시는 아직: APNs 키 + 앱에 Firebase Messaging(GoogleService-Info.plist는 ~/.readme)을 넣어야 FCM 토큰을 받는다. 웹은 iOS에서 푸시 등록을 하지 않는다.
+- iOS 푸시: 코드는 들어 있고(AppDelegate 토큰 전달, 서버 APNs 발송) APNs 키 + Xcode Push Notifications capability + 서버 환경 변수가 아직이다(위 '푸시' 절의 iOS 손일).

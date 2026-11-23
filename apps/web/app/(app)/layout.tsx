@@ -10,7 +10,7 @@ import { SwipeTabs } from "@/components/SwipeTabs";
 import { aiConfigured } from "@/lib/ai";
 import { listPeople, requireSession, todayFor } from "@/lib/data";
 import { eventsFor } from "@/lib/events";
-import { pushConfigured } from "@/lib/push";
+import { apnsConfigured, pushConfigured } from "@/lib/push";
 import { holidayLocalReminders, localReminders } from "@/lib/reminders";
 
 // 로그인 + 온보딩까지 마친 사람만. 앱이면 생일 알림 예약·앱 잠금을 붙인다
@@ -44,6 +44,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         appLock={s.profile.appLock}
         reminders={reminders}
         pushEnabled={pushConfigured() && s.profile.pushEnabled}
+        iosPushEnabled={apnsConfigured() && s.profile.pushEnabled}
         nativeUa={nativeUa}
         labels={{ title: translate(locale, "lock.title"), appName: translate(locale, "app.name"), unlock: translate(locale, "lock.unlock") }}
       />
