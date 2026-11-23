@@ -1,10 +1,10 @@
-import { QUESTIONS, SECTIONS_BY_IMPORTANCE, askMinutes, sanitizeSections, translate } from "@readme/core";
+import { SECTIONS_BY_IMPORTANCE, sanitizeSections, translate } from "@readme/core";
 import { Wordmark } from "@/components/chrome";
 import { TornTape } from "@/components/TornTape";
 import { getSession, readCard } from "@/lib/data";
 import { makeT, requestLocale } from "@/lib/i18n";
 import { readAskOnce } from "@/lib/ask";
-import { ogMetadata, previewLocale, siteDescription } from "@/lib/og";
+import { ogMetadata, requestPreview } from "@/lib/og";
 import { submitAnswer, submitQuestionAnswer } from "@/app/actions/request";
 import { AnswerForm } from "@/components/AnswerForm";
 import { AnswerQuestion } from "@/components/AnswerQuestion";
@@ -28,13 +28,9 @@ export async function generateMetadata({ params }: { params: Promise<{ token: st
   // 화면과 같은 읽기를 나눠 쓴다(요청 안에서 DB는 한 번만)
   const ask = await readAskOnce(token).catch(() => null);
   const from = ask?.row.inviter_name?.trim();
-  const lang = previewLocale(locale, from);
-  const title = from ? translate(lang, "og.requestTitle", { name: from }) : translate(lang, "request.title");
-  if (!ask || ask.row.state !== "active") return ogMetadata(lang, title);
-  const asked = QUESTIONS.find((x) => x.id === ask.questions[0]);
-  const sections = sanitizeSections(ask.row.sections);
-  const description = asked ? asked.prompt[lang] : sections.length ? translate(lang, "og.requestDesc", { n: sections.length, min: askMinutes(sections) }) : siteDescription(lang);
-  return ogMetadata(lang, title, description);
+  const active = ask && ask.row.state === "active";
+  const { lang, title, description } = requestPreview(locale, from, { question: active ? (ask.questions[0] ?? null) : null, sections: active ? sanitizeSections(ask.row.sections) : [] });
+  return active ? ogMetadata(lang, title, description) : ogMetadata(lang, title);
 }
 
 // 물어보기에 답하는 화면(로그인 없이 열린다). 답은 물어본 사람의 기록에 들어간다(그 뒤로는 그 사람이 고친다)

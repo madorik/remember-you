@@ -101,6 +101,8 @@ export interface RequestData {
   focus: Section | null;
   /** 오늘의 질문 하나만 묻는다(?q=): 받는 사람은 그 질문의 보기만 보고, 답은 그 칸에 들어간다 */
   question: DailyQuestion["id"] | null;
+  /** 물어보는 사람(나): 엽서의 From과 링크 미리보기의 '○○님이 궁금해해요'에 쓴다. 이름이 비어 있으면 ""(미리보기는 앱 이름 없이 제목만) */
+  sender: { name: string; avatar: AvatarConfig };
   /** 브라우저 푸시 공개 키(알림이 꺼져 있거나 서버에 키가 없으면 null: 링크를 만든 뒤 '답장 오면 알려 드릴까요?'를 숨긴다) */
   webPushKey: string | null;
   tour: TourInfo | null;

@@ -13,7 +13,11 @@ import { SectionIcon } from "@/components/SectionIcon";
 import { TagChip } from "@/components/PersonRow";
 import { ReplyAlert } from "@/components/ReplyAlert";
 import { LinkField, ShareButtons } from "@/components/ShareButtons";
+import { Stamp, Star } from "@/components/diary";
+import { requestPreview } from "@/lib/og";
 import { matchesPerson } from "@/lib/search";
+import { SITE_URL } from "@/lib/site";
+import { AIRMAIL, FacePolaroid, LinkPreview, PostMark, PostageStamp, SpeechBubble } from "./RequestParts";
 
 const INITIAL: InviteState = { url: null, text: "", error: null };
 
@@ -45,6 +49,7 @@ export function RequestForm({
   initialMessage = "",
   focus = null,
   question = null,
+  sender,
   webPushKey = null,
   tour = false,
 }: {
@@ -58,6 +63,8 @@ export function RequestForm({
   focus?: Section | null;
   /** 오늘의 질문 하나만 묻는다(?q=) */
   question?: DailyQuestion["id"] | null;
+  /** 물어보는 사람(나): 엽서의 From과 링크 미리보기 */
+  sender: { name: string; avatar: AvatarConfig };
   webPushKey?: string | null;
   tour?: boolean;
 }) {
@@ -118,6 +125,8 @@ export function RequestForm({
     }
   };
   const shareText = message.trim() ? `${state.text}\n${message.trim()}` : state.text;
+  // 폴라로이드에 담을 얼굴: 아는 사람이면 그 얼굴, 새 이름이면 첫 글자, 아직 아무도 없으면 비어 있다
+  const who0 = target ? { avatar: target.kind === "person" ? target.person.avatar : null, label: name } : null;
 
   const topicLabel = (x: Section) => t(`request.topic.${x}` as "request.topic.dates");
 
@@ -125,33 +134,30 @@ export function RequestForm({
   if (state.url) {
     return (
       <div className="flex flex-1 flex-col">
-        <section className="card relative mx-4 mt-9 px-3 py-[16.2px]">
-          <div className="flex items-center gap-[16.2px]">
-            {/* 폴라로이드(시안): 남색 선 + 흰 바탕, 안에 얼굴(없으면 편지 든 캐릭터), 위에 분홍 테이프 */}
-            <figure className="relative m-0 flex shrink-0 -rotate-[4deg] flex-col items-center border border-edge bg-white px-[5.4px] pb-[16.2px] pt-[5.4px]">
-              <TornTape color="pink" w={58} h={20} rotate={-6} className="-top-[11.7px] left-[16.2px]" />
-              <span className="flex h-[88.2px] w-[88.2px] items-center justify-center overflow-hidden bg-white">
-                {target?.kind === "person" ? <Avatar config={target.person.avatar} size={92} label={target.person.label} decorative /> : <Mascot pose={6} size={84} />}
-              </span>
-              <figcaption className="sr-only">{name.trim()}</figcaption>
-            </figure>
-            <div className="min-w-0 flex-1">
-              <h2 className="hand-written !font-normal text-[21.1px] leading-[1.15]">{t("request.ready", { name: name.trim() })}</h2>
-              <ul className="mt-2.5 flex flex-wrap gap-x-2 gap-y-1.5">
-                {question ? (
-                  <li className="hand flex min-h-[27px] items-center rounded-full border border-edge bg-[#e4ecfa] px-2.5 py-1 text-[13px] leading-[1.2]">{QUESTIONS.find((x) => x.id === question)?.prompt[locale]}</li>
-                ) : (
-                  SECTIONS_BY_IMPORTANCE.filter((x) => topics.includes(x)).map((x) => (
-                    <li key={x} className="hand flex h-[27px] items-center rounded-full border border-edge bg-[#e4ecfa] px-2.5 text-[13px] leading-none">
-                      {topicLabel(x)}
-                    </li>
-                  ))
-                )}
-              </ul>
-            </div>
+        <section className="card relative mx-4 mt-7 flex flex-col items-center px-3.5 pb-4 pt-5">
+          <TornTape color="pink" w={66} h={21} rotate={-38} className="-left-[15px] top-[8px]" />
+          <Stamp size={68} fontSize={19} className="right-3 top-3 bg-sky-soft">
+            <span className="whitespace-pre-line text-center leading-[1.15]">{t("request.stampReady").replace(" ", "\n")}</span>
+          </Stamp>
+          {/* 폴라로이드(시안): 남색 선 + 흰 바탕, 안에 얼굴(새 이름이면 첫 글자), 옆에서 웃는 캐릭터 */}
+          <div className="flex items-end gap-1">
+            <FacePolaroid who={who0} photo={98} rotate={-4} />
+            <Mascot pose={11} size={92} className="mb-1" />
           </div>
+          <h2 className="hand-written mt-3.5 text-center !font-normal text-[21.1px] leading-[1.15]">{t("request.ready", { name: name.trim() })}</h2>
+          <ul className="mt-3 flex flex-wrap justify-center gap-x-2 gap-y-1.5">
+            {question ? (
+              <li className="hand flex min-h-[27px] items-center rounded-full border border-edge bg-[#e4ecfa] px-2.5 py-1 text-[13px] leading-[1.2]">{QUESTIONS.find((x) => x.id === question)?.prompt[locale]}</li>
+            ) : (
+              SECTIONS_BY_IMPORTANCE.filter((x) => topics.includes(x)).map((x) => (
+                <li key={x} className="hand flex h-[27px] items-center rounded-full border border-edge bg-[#e4ecfa] px-2.5 text-[13px] leading-none">
+                  {topicLabel(x)}
+                </li>
+              ))
+            )}
+          </ul>
         </section>
-        <section className="card relative mx-4 mt-9 flex flex-col px-3.5 pb-3.5 pt-2.5">
+        <section className="card relative mx-4 mt-3.5 flex flex-col px-3.5 pb-3.5 pt-2.5">
           <div className="flex min-h-[30.6px] items-center">
             <h3 className="scribble text-[19.4px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
               {t("request.message")}
@@ -172,7 +178,7 @@ export function RequestForm({
         </section>
         <ReplyAlert locale={locale} publicKey={webPushKey} />
         <div className="bottom-bar mt-auto flex flex-col gap-2 bg-bg px-4 pt-4">
-          <ShareButtons locale={locale} url={state.url} text={shareText} sendLabel={t("request.send")} />
+          <ShareButtons locale={locale} url={state.url} text={shareText} sendLabel={t("request.send")} big />
           {/* 체험의 끝: 링크를 만들었으면 시작하기로 마치고 홈으로 */}
           {tour ? (
             <form action={leaveTour}>
@@ -192,6 +198,10 @@ export function RequestForm({
   const h2 = "hand scribble text-[19.4px] leading-none";
   const mint = { "--scribble": "#5dbb9a" } as React.CSSProperties;
 
+  // 링크를 받는 사람이 메신저에서 보는 미리보기(/r/<토큰>의 링크 미리보기와 같은 함수)
+  const preview = requestPreview(locale, sender.name || undefined, { question, sections: topics });
+  const host = new URL(SITE_URL).host;
+
   return (
     <form action={action} className="flex flex-1 flex-col">
       <input type="hidden" name="sections" value={JSON.stringify(topics)} />
@@ -199,86 +209,88 @@ export function RequestForm({
       {target?.kind === "person" ? <input type="hidden" name="to" value={target.person.id} /> : null}
       <input type="hidden" name="name" value={name} />
 
-      {fixed ? null : (
-        <section className="card relative mx-4 mt-5 flex flex-col px-3.5 pb-3.5 pt-2.5">
-          <TornTape color="pink" w={66} h={21} rotate={6} className="-top-3 right-6" />
-          <div className="flex min-h-[30.6px] items-center">
-            <label htmlFor="request-who" className={h2} style={mint}>
-              {t("request.who")}
-            </label>
-          </div>
-          {who ? (
-            <div className="mt-2.5 flex items-center">
-              <span className="flex h-9 min-w-0 items-center gap-1.5 rounded-full border border-edge bg-sky pl-[4.5px] pr-1 text-[12.6px]">
-                {who.kind === "person" ? (
-                  <Avatar config={who.person.avatar} size={26} label={who.person.label} />
-                ) : (
-                  <span className="flex h-[23.4px] w-[23.4px] shrink-0 items-center justify-center rounded-full bg-white">
-                    <Icon name="personAdd" size={15} strokeWidth={2} />
-                  </span>
-                )}
-                <span className="truncate">{name}</span>
-                {who.kind === "new" ? <TagChip>{t("voice.newPerson")}</TagChip> : null}
-                <button
-                  type="button"
-                  aria-label={t("request.whoAgain")}
-                  onClick={() => {
-                    setWho(null);
-                    setQuery("");
-                    setTopics(topicsFor(null));
-                  }}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center"
-                >
-                  <Icon name="close" size={14} strokeWidth={2.2} />
-                </button>
-              </span>
-            </div>
-          ) : (
-            <>
-              <div className="relative mt-2.5">
-                <svg aria-hidden="true" viewBox="0 0 24 24" width="16.2" height="16.2" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" className="pointer-events-none absolute left-[13.5px] top-[15.3px] text-muted">
-                  <circle cx="11" cy="11" r="7" />
-                  <path d="M20 20l-4-4" />
-                </svg>
-                <input
-                  id="request-who"
-                  type="search"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onKeyDown={onNameKey}
-                  maxLength={40}
-                  enterKeyHint="go"
-                  placeholder={t(people.length ? "people.search" : "request.whoPlaceholder")}
-                  className="field !pl-[37.8px] [&::-webkit-search-cancel-button]:appearance-none"
-                />
+      {/* 받는 사람: 폴라로이드 + 이름 + 편지 든 캐릭터의 한마디. 정해져 있지 않으면 아래에서 찾아 고른다 */}
+      <section className="card relative mx-4 mt-6 px-3.5 pb-3.5 pt-4">
+        <TornTape color="pink" w={66} h={21} rotate={-38} className="-left-[15px] top-[8px]" />
+        <div className="flex items-center gap-3.5">
+          <FacePolaroid who={who0} photo={72} rotate={-4} />
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            {name ? (
+              <div className="flex min-h-[27px] items-center gap-1.5 pr-8">
+                <span className="hand-written min-w-0 truncate text-[24px] leading-[1.15]">{name}</span>
+                {target?.kind === "new" ? <TagChip>{t("voice.newPerson")}</TagChip> : null}
               </div>
-              {matches.length || (q && !exact) ? (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {matches.map((p) => (
-                    <button key={p.id} type="button" onClick={() => choose(p)} className={chip}>
-                      <Avatar config={p.avatar} size={26} label={p.label} />
-                      {p.label}
-                    </button>
-                  ))}
-                  {q && !exact ? (
-                    <button
-                      type="button"
-                      onClick={chooseNew}
-                      className={`flex h-9 items-center gap-1.5 rounded-full border pl-3 pr-3.5 text-[12.6px] ${typedNew ? "border-edge bg-sky text-ink" : "border-dashed border-edge text-accent"}`}
-                    >
-                      <Icon name="personAdd" size={15} strokeWidth={2} />
-                      {q}
-                      <TagChip>{t("voice.newPerson")}</TagChip>
-                    </button>
-                  ) : null}
-                </div>
-              ) : null}
-            </>
-          )}
-        </section>
-      )}
+            ) : null}
+            <div className="flex items-center gap-2.5">
+              <SpeechBubble>{name ? t("request.bubbleTo", { name }) : t("request.bubbleWho")}</SpeechBubble>
+              <Mascot pose={6} size={66} />
+            </div>
+          </div>
+        </div>
+        {who && !fixed ? (
+          <button
+            type="button"
+            aria-label={t("request.whoAgain")}
+            onClick={() => {
+              setWho(null);
+              setQuery("");
+              setTopics(topicsFor(null));
+            }}
+            className="absolute right-0.5 top-0.5 flex h-11 w-11 items-center justify-center"
+          >
+            <Icon name="close" size={15} strokeWidth={2.2} />
+          </button>
+        ) : null}
+        {fixed || who ? null : (
+          <div className="mt-3.5 border-t border-dashed border-edge pt-2.5">
+            <div className="flex min-h-[30.6px] items-center">
+              <label htmlFor="request-who" className={h2} style={mint}>
+                {t("request.who")}
+              </label>
+            </div>
+            <div className="relative mt-2.5">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="16.2" height="16.2" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" className="pointer-events-none absolute left-[13.5px] top-[15.3px] text-muted">
+                <circle cx="11" cy="11" r="7" />
+                <path d="M20 20l-4-4" />
+              </svg>
+              <input
+                id="request-who"
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={onNameKey}
+                maxLength={40}
+                enterKeyHint="go"
+                placeholder={t(people.length ? "people.search" : "request.whoPlaceholder")}
+                className="field !pl-[37.8px] [&::-webkit-search-cancel-button]:appearance-none"
+              />
+            </div>
+            {matches.length || (q && !exact) ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {matches.map((p) => (
+                  <button key={p.id} type="button" onClick={() => choose(p)} className={chip}>
+                    <Avatar config={p.avatar} size={26} label={p.label} />
+                    {p.label}
+                  </button>
+                ))}
+                {q && !exact ? (
+                  <button
+                    type="button"
+                    onClick={chooseNew}
+                    className={`flex h-9 items-center gap-1.5 rounded-full border pl-3 pr-3.5 text-[12.6px] ${typedNew ? "border-edge bg-sky text-ink" : "border-dashed border-edge text-accent"}`}
+                  >
+                    <Icon name="personAdd" size={15} strokeWidth={2} />
+                    {q}
+                    <TagChip>{t("voice.newPerson")}</TagChip>
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        )}
+      </section>
 
-      <section className={`card relative mx-4 px-3.5 pb-3.5 pt-2.5 ${fixed ? "mt-5" : "mt-3.5"}`}>
+      <section className="card relative mx-4 mt-3.5 px-3.5 pb-3.5 pt-2.5">
         <div className="flex min-h-[30.6px] items-center justify-between gap-2">
           <h2 className={h2} style={mint}>
             {t("request.topics")}
@@ -292,13 +304,14 @@ export function RequestForm({
           )}
         </div>
         {question ? (
-          // 오늘의 질문 하나만 묻는 물어보기: 항목 대신 그 질문 하나
-          <div className="mt-2 flex items-center gap-2.5 rounded-xl border-[2.5px] border-ink bg-[#e4ecfa] px-3 py-2.5">
-            <SectionIcon section={QUESTION_SECTION[question]} size={30} outline />
-            <span className="min-w-0 flex-1 text-[13.5px] leading-[1.4]">{aboutPrompt(question, name, locale)}</span>
+          // 오늘의 질문 하나만 묻는 물어보기: 항목 대신 그 질문 하나(눈에 띄는 카드)
+          <div className="relative mt-3 flex items-center gap-3 rounded-[14px] border-[2.5px] border-ink bg-[#e4ecfa] px-3.5 py-4">
+            <Star size={22} rotate={14} className="-right-2 -top-3" />
+            <SectionIcon section={QUESTION_SECTION[question]} size={46} outline />
+            <span className="min-w-0 flex-1 text-[15px] leading-[1.45]">{aboutPrompt(question, name, locale)}</span>
           </div>
         ) : (
-          <div className="mt-2 grid grid-cols-3 gap-2">
+          <div className="mt-2.5 grid grid-cols-3 gap-2">
             {SECTIONS_BY_IMPORTANCE.map((x) => {
               const on = topics.includes(x);
               return (
@@ -307,9 +320,9 @@ export function RequestForm({
                   type="button"
                   aria-pressed={on}
                   onClick={() => setTopics(on ? topics.filter((y) => y !== x) : SECTIONS.filter((y) => y === x || topics.includes(y)))}
-                  className={`relative flex h-[52.2px] flex-col items-center justify-center gap-[2.7px] rounded-xl text-[10.8px] leading-none ${on ? "border-[2.5px] border-ink bg-[#e4ecfa]" : "border border-edge bg-white"}`}
+                  className={`relative flex h-[90px] flex-col items-center justify-center gap-2 rounded-[14px] text-[13.5px] leading-none ${on ? "border-[2.5px] border-ink bg-[#e4ecfa]" : "border border-edge bg-white"}`}
                 >
-                  <SectionIcon section={x} size={30} outline />
+                  <SectionIcon section={x} size={44} outline />
                   {topicLabel(x)}
                   {on ? (
                     <span aria-hidden="true" className="absolute -right-[4.5px] -top-[6.3px] flex h-5 w-5 items-center justify-center rounded-full border border-edge bg-sky text-ink">
@@ -323,33 +336,53 @@ export function RequestForm({
         )}
       </section>
 
-      <section className="card relative mx-4 mt-3.5 flex flex-col px-3.5 pb-3 pt-2.5">
-        <div className="flex min-h-[30.6px] items-center">
-          <label htmlFor="request-message" className={h2} style={mint}>
-            {t("request.message")}
-          </label>
+      {/* 같이 보낼 말: 우표 붙은 엽서. To·From 사이 줄 노트에 적는다 */}
+      <section className="relative mx-4 mt-3.5 overflow-hidden rounded-[10px] border border-edge bg-[#FFFDF6]">
+        <div aria-hidden="true" className="h-[6px] border-b border-edge" style={{ backgroundImage: AIRMAIL }} />
+        <div className="relative px-3.5 pb-3 pt-3">
+          <PostageStamp className="right-3 top-3" />
+          <PostMark className="right-[64px] top-4" />
+          <div className="flex min-h-[48px] items-end pr-[64px]">
+            <p className="hand-written flex h-[30px] min-w-0 flex-1 items-end truncate border-b border-dashed border-edge text-[19px] leading-none">
+              <span className="truncate">{t("request.postTo", { name: name.trim() || "" })}</span>
+            </p>
+          </div>
+          <textarea
+            id="request-message"
+            name="message"
+            aria-label={t("request.message")}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            rows={3}
+            maxLength={300}
+            placeholder={t("request.messagePlaceholder")}
+            className="hand-written mt-1.5 h-[81px] w-full resize-none border-0 bg-transparent p-0 text-[17.8px] leading-[27px] outline-none placeholder:font-sans placeholder:text-[13.5px] placeholder:text-muted [background-image:repeating-linear-gradient(180deg,transparent_0_26px,#d5e1f3_26px_27px)]"
+          />
+          {sender.name ? <p className="hand-written mt-1.5 truncate text-right text-[18px] leading-[1.2]">{t("request.postFrom", { name: sender.name })}</p> : null}
         </div>
-        <textarea
-          id="request-message"
-          name="message"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          rows={2}
-          maxLength={300}
-          placeholder={t("request.messagePlaceholder")}
-          className="hand-written mt-1 h-[54px] w-full resize-none border-0 bg-transparent p-0 text-[17.8px] leading-[27px] outline-none placeholder:font-sans placeholder:text-[13.5px] placeholder:text-muted [background-image:repeating-linear-gradient(180deg,transparent_0_26px,#d5e1f3_26px_27px)]"
-        />
       </section>
 
-      <div className="bottom-bar mt-auto flex flex-col items-end gap-2 bg-bg px-4 pt-4">
+      {/* 받는 사람이 메신저에서 보는 모양 */}
+      <section className="card relative mx-4 mt-3.5 px-3.5 pb-3.5 pt-2.5">
+        <div className="flex min-h-[30.6px] items-center">
+          <p className={h2} style={mint}>
+            {name ? t("request.preview", { name }) : t("request.previewAnon")}
+          </p>
+        </div>
+        <div className="mt-2.5">
+          <LinkPreview avatar={sender.avatar} name={sender.name} title={preview.title} description={preview.description} host={host} />
+        </div>
+      </section>
+
+      <div className="bottom-bar mt-auto flex flex-col gap-2 bg-bg px-4 pt-4">
         {state.error ? (
           <p role="alert" className="w-full px-1 text-[12.6px] text-red">
             {t(state.error === "pickOne" ? "request.pickOne" : name.trim() ? "common.error" : "request.needName")}
           </p>
         ) : null}
         {reason ? <p className="w-full px-1 text-[12.6px] text-muted">{t(reason)}</p> : null}
-        <button disabled={pending || !!reason} className="inline-flex h-11 items-center gap-[4.5px] rounded-full border border-edge bg-sky pl-2.5 pr-3.5 text-[14.4px] disabled:border-ink/[0.22] disabled:bg-[#e8e1cf] disabled:text-[#5a5f78]">
-          <Icon name="link" size={17} strokeWidth={1.7} />
+        <button disabled={pending || !!reason} className="hand inline-flex h-[48px] w-full items-center justify-center gap-1.5 rounded-full border border-edge bg-sky px-4 text-[18px] disabled:border-ink/[0.22] disabled:bg-[#e8e1cf] disabled:text-[#5a5f78]">
+          <Icon name="link" size={19} strokeWidth={1.7} />
           {t("request.make")}
         </button>
       </div>

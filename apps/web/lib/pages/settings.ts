@@ -66,6 +66,7 @@ export async function loadRequest({ searchParams }: PageInput): Promise<RequestD
     initialMessage: xmas ? makeT(s.profile.locale)("request.xmasMessage") : "",
     focus,
     question,
+    sender: { name: s.profile.displayName.trim(), avatar: s.profile.avatar },
     webPushKey: s.profile.pushEnabled ? webPushPublicKey() : null,
     tour: searchParams.tour ? { n: total, total } : null,
   };

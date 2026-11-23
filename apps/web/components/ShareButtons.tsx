@@ -79,7 +79,7 @@ export function LinkField({ url, label }: { url: string; label: string }) {
 }
 
 /** 링크 보내기: 휴대폰 공유창(카카오톡·문자·메일 등 어떤 앱이든) · 링크 복사. 공유창이 없으면 복사한다 */
-export function ShareButtons({ locale, url, text, sendLabel }: { locale: Locale; url: string; text: string; sendLabel?: string }) {
+export function ShareButtons({ locale, url, text, sendLabel, big = false }: { locale: Locale; url: string; text: string; sendLabel?: string; /** 아래 막대에 가득 차는 큰 단추(48px) */ big?: boolean }) {
   const t = (k: Parameters<typeof translate>[1]) => translate(locale, k);
   // 복사했어요/복사하지 못했어요는 2초만 보이고 처음 글자로 돌아온다
   const [copied, flash] = useFlash<"ok" | "failed">();
@@ -87,18 +87,22 @@ export function ShareButtons({ locale, url, text, sendLabel }: { locale: Locale;
   const copy = async () => flash((await copyText(`${text}\n${url}`)) ? "ok" : "failed");
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2">
+    <div className={big ? "flex w-full items-center gap-2" : "flex flex-wrap items-center justify-center gap-2"}>
       <button
         type="button"
         onClick={async () => {
           if (!(await nativeShare(text, url))) await copy();
         }}
-        className="inline-flex h-11 items-center gap-1.5 rounded-full border border-edge bg-sky pl-3 pr-3.5 text-[13.5px]"
+        className={big ? "inline-flex h-[48px] min-w-0 flex-[1.15] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-edge bg-sky px-3 text-[15.3px]" : "inline-flex h-11 items-center gap-1.5 rounded-full border border-edge bg-sky pl-3 pr-3.5 text-[13.5px]"}
       >
         <Icon name="share" size={17} strokeWidth={1.7} />
         {sendLabel ?? t("common.send")}
       </button>
-      <button type="button" onClick={copy} className="inline-flex h-11 items-center gap-1.5 rounded-full border border-edge bg-sky-soft pl-3 pr-3.5 text-[13.5px]">
+      <button
+        type="button"
+        onClick={copy}
+        className={big ? "inline-flex h-[48px] min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-edge bg-sky-soft px-3 text-[15.3px]" : "inline-flex h-11 items-center gap-1.5 rounded-full border border-edge bg-sky-soft pl-3 pr-3.5 text-[13.5px]"}
+      >
         <Icon name={copied === "ok" ? "check" : "link"} size={17} strokeWidth={1.7} />
         {copied === "ok" ? t("common.copied") : copied === "failed" ? t("common.copyFailed") : t("common.copyLink")}
       </button>

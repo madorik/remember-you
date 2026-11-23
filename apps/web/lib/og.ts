@@ -1,4 +1,4 @@
-import { BRAND, type Locale } from "@readme/core";
+import { BRAND, QUESTIONS, askMinutes, translate, type DailyQuestion, type Locale, type Section } from "@readme/core";
 import type { Metadata } from "next";
 
 // 링크 미리보기(카카오톡·문자·메신저): 제목·설명·이미지(public/og-v2.png, 1200×630)
@@ -24,4 +24,16 @@ export function ogMetadata(locale: Locale, title: string, description = siteDesc
     openGraph: { type: "website", siteName: BRAND[locale].name, title, description, locale: locale === "ko" ? "ko_KR" : "en_US", images: [{ ...OG_IMAGE, alt: BRAND[locale].title }] },
     twitter: { card: "summary_large_image", title, description, images: [OG_IMAGE.url] },
   };
+}
+
+/**
+ * 물어보기 링크(/r/<토큰>)를 메신저에 붙였을 때 보이는 제목·설명. 제목은 보낸 사람 말투로("○○님이 궁금해해요"), 설명은 이 링크가 무엇을 묻는지("로그인 없이 3가지, 1분이면 돼요", 한 질문이면 그 질문 자체).
+ * /r/<토큰>의 링크 미리보기(generateMetadata)와 물어보기 화면의 '이렇게 받아요' 미리보기가 같이 쓴다. from은 보낸 사람 이름(없으면 undefined)
+ */
+export function requestPreview(locale: Locale, from: string | undefined, ask: { question: DailyQuestion["id"] | null; sections: Section[] }): { lang: Locale; title: string; description: string } {
+  const lang = previewLocale(locale, from);
+  const title = from ? translate(lang, "og.requestTitle", { name: from }) : translate(lang, "request.title");
+  const asked = QUESTIONS.find((x) => x.id === ask.question);
+  const description = asked ? asked.prompt[lang] : ask.sections.length ? translate(lang, "og.requestDesc", { n: ask.sections.length, min: askMinutes(ask.sections) }) : siteDescription(lang);
+  return { lang, title, description };
 }
