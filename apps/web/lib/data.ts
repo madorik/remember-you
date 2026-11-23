@@ -240,6 +240,8 @@ export interface Person {
   askOff: boolean;
   /** 사람 상세 화면을 연 날 수 */
   viewDays: number;
+  /** 주소록에 더한 때(ISO). 방금 더한 사람을 오늘의 질문에 올리는 데 쓴다 */
+  createdAt: string;
 }
 
 /** 사람 한 줄(주소록 + 이어진 사람 프로필 + 내 기록 + 가장 최근 물어보기 + 든 폴더) */
@@ -250,6 +252,7 @@ type PersonRow = {
   favorite: boolean;
   ask_off: boolean;
   view_days: number;
+  created_at: Date;
   avatar: unknown;
   p_id: string | null;
   p_display_name: string | null;
@@ -273,7 +276,7 @@ async function loadPeople(q: Q, me: string, opts: { contactId?: string; cards?: 
   // 한 클라이언트(트랜잭션)에서 Promise.all로 여러 쿼리를 보내도 pg가 줄 세워 하나씩 보내므로, 왕복 한 번짜리 쿼리 하나로 모은다.
   // 물어보기는 사람마다 가장 최근 한 줄, 폴더는 들어간 순서대로. RLS는 조인한 표마다 그대로 적용된다
   const rows = await q<PersonRow>(
-    `select c.id, c.person_id, c.nickname, c.favorite, c.ask_off, c.view_days, c.avatar,
+    `select c.id, c.person_id, c.nickname, c.favorite, c.ask_off, c.view_days, c.created_at, c.avatar,
             p.id as p_id, p.display_name as p_display_name, p.avatar as p_avatar,
             ${withCards ? "cc.sections" : "null::jsonb"} as cc_sections, cc.answered as cc_answered, cc.updated_at as cc_updated_at,
             a.id as a_id, a.sections as a_sections, a.expires_at as a_expires_at, a.used_at as a_used_at, a.canceled_at as a_canceled_at,
@@ -317,6 +320,7 @@ async function loadPeople(q: Q, me: string, opts: { contactId?: string; cards?: 
       favorite: c.favorite === true,
       askOff: c.ask_off === true,
       viewDays: Number(c.view_days) || 0,
+      createdAt: iso(c.created_at) ?? new Date(0).toISOString(),
     };
   });
 }

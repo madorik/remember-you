@@ -33,6 +33,8 @@ import {
   questionsLeft,
   questionsUsedToday,
   isCloseEnough,
+  isRecentlyAdded,
+  RECENT_PERSON_DAYS,
   CLOSE_VIEW_DAYS,
   DAILY_QUESTION_LIMIT,
   QUESTION_SECTION,
@@ -196,6 +198,19 @@ test("오늘의 질문: 가까운 사람에게만(가족·연인 폴더, 즐겨�
   assert.equal(isCloseEnough({ ...base, viewDays: CLOSE_VIEW_DAYS - 1 }), false);
   assert.equal(isCloseEnough({ ...base, viewDays: CLOSE_VIEW_DAYS }), true);
   assert.equal(isCloseEnough({ askOff: true, favorite: true, closeFolder: true, viewDays: 99 }), false, "다시 묻지 않기가 이긴다");
+  assert.equal(isCloseEnough({ ...base, recent: true }), true, "방금 더한 사람(말로 적다가 생긴 사람)은 폴더가 없어도 묻는다");
+  assert.equal(isCloseEnough({ ...base, askOff: true, recent: true }), false, "방금 더한 사람도 다시 묻지 않기는 뺀다");
+});
+
+test("오늘의 질문: 더한 지 14일 안 된 사람만 '방금 더한 사람'", () => {
+  const now = Date.parse("2026-11-23T12:00:00Z");
+  const ago = (days: number) => new Date(now - days * 86_400_000).toISOString();
+  assert.equal(isRecentlyAdded(ago(0), now), true);
+  assert.equal(isRecentlyAdded(ago(RECENT_PERSON_DAYS - 1), now), true);
+  assert.equal(isRecentlyAdded(ago(RECENT_PERSON_DAYS), now), false);
+  assert.equal(isRecentlyAdded(ago(-1), now), false, "미래 날짜는 아니다");
+  assert.equal(isRecentlyAdded(null, now), false);
+  assert.equal(isRecentlyAdded("모르는 값", now), false);
 });
 
 test("오늘의 질문: 남은 칸이 하나뿐인데 이미 하나 처리했으면 같은 질문을 또 묻지 않고, 물어보기는 그 질문의 항목 하나로", () => {
