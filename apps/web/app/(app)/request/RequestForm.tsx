@@ -13,7 +13,7 @@ import { CuteTopicIcon } from "@/components/CuteTopicIcon";
 import { SectionIcon } from "@/components/SectionIcon";
 import { TagChip } from "@/components/PersonRow";
 import { ReplyAlert } from "@/components/ReplyAlert";
-import { canShare, copyTextLater, shareLink } from "@/components/ShareButtons";
+import { canShare, shareLink } from "@/components/ShareButtons";
 import { Star } from "@/components/diary";
 import { u } from "@/lib/ui-scale";
 import { matchesPerson } from "@/lib/search";
@@ -22,9 +22,9 @@ import { FacePolaroid, SpeechBubble } from "./RequestParts";
 
 const INITIAL: InviteState = { url: null, text: "", error: null };
 
-/** 누른 단추: 물어보기(공유창) · 링크 복사 */
-type Act = "share" | "copy";
 type Link = { url: string; text: string };
+/** 아래에 잠깐 뜨는 알림: 물어봤어요 · 그 밖의 한 줄(보낼 수 없는 까닭·실패) */
+type Toast = { kind: "asked" } | { kind: "notice"; text: string };
 
 export interface AskPerson {
   id: string;
@@ -83,17 +83,18 @@ export function RequestForm({
   const [query, setQuery] = useState("");
   const [topics, setTopics] = useState<Section[]>(topicsFor(fixedPerson));
   const formRef = useRef<HTMLFormElement>(null);
-  // 만든 링크(같은 사람·같은 항목이면 한 번만 만든다: 물어보기·링크 복사·공유 팝업이 모두 이걸 쓴다. 사람이나 항목을 바꾸면 다음에 새로 만든다 — 앞 링크는 그대로 열린다)
+  const whoRef = useRef<HTMLInputElement>(null);
+  const startRef = useRef<HTMLButtonElement>(null);
+  // 만든 링크(같은 사람·같은 항목이면 한 번만 만든다: 머리말 공유 아이콘·공유 팝업이 모두 이걸 쓴다. 사람이나 항목을 바꾸면 다음에 새로 만든다 — 앞 링크는 그대로 열린다)
   const stored = useRef<{ sig: string; link: Link } | null>(null);
   const creating = useRef<{ sig: string; promise: Promise<InviteState> } | null>(null);
   const busy = useRef(false);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<InviteState["error"]>(null);
   // 링크를 만들었다(체험 끝 단추·체험 기록용). 보내지 못했거나 공유창을 못 열면 우리 공유 팝업이 뜬다
   const [made, setMade] = useState(false);
   const [sheet, setSheet] = useState<Link | null>(null);
-  // 보냈거나 복사한 뒤 잠깐 뜨는 아래 알림, 처음 한 번은 '답장 오면 알려 드릴까요?'도 곁들인다
-  const [toast, setToast] = useState<"asked" | "copied" | null>(null);
+  // 보낸 뒤(또 못 보내는 까닭을 알릴 때) 잠깐 뜨는 아래 알림, 보낸 뒤 처음 한 번은 '답장 오면 알려 드릴까요?'도 곁들인다
+  const [toast, setToast] = useState<Toast | null>(null);
   const [alertOffer, setAlertOffer] = useState(false);
   const offered = useRef(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -150,7 +151,7 @@ export function RequestForm({
 
   const topicLabel = (x: Section) => t(`request.topic.${x}` as "request.topic.dates");
 
-  // 물어보기가 막혀 있는 까닭(짧게)
+  // 아직 못 보내는 까닭(짧게): 공유 아이콘을 누르면 이 글을 알린다
   const reason = pending ? null : !name.trim() ? (q && !typedNew ? "request.pickWho" : "request.needName") : !topics.length ? "request.pickOne" : null;
 
   // 체험의 끝(시작하기): 마쳤다고 알리고 홈으로(서버가 이동시킨다)
@@ -161,6 +162,10 @@ export function RequestForm({
     f.set("source", "ask");
     startLeaving(() => leaveTour(f));
   };
+  // 체험이면 링크를 만든 순간 '시작하기'가 폼 맨 아래에 생기니 눈에 들어오게 가져온다
+  useEffect(() => {
+    if (tour && made) startRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [tour, made]);
   // 같은 사람·같은 항목인지(바뀌면 앞서 만든 링크는 두고 다음에 새로 만든다)
   const sig = JSON.stringify([target?.kind === "person" ? target.person.id : null, name, topics, question]);
   const sigRef = useRef(sig);
@@ -169,7 +174,7 @@ export function RequestForm({
   });
   const mine = (): Link | null => (stored.current?.sig === sigRef.current ? stored.current.link : null);
 
-  // 링크는 같은 사람·항목이면 한 번만 만든다(두 번 눌러도, 물어보기와 링크 복사를 번갈아 눌러도 같은 링크). 서버 동작은 예전 '링크 만들기'와 같다
+  // 링크는 같은 사람·항목이면 한 번만 만든다(두 번 눌러도, 공유창이 막혀 팝업에서 다시 눌러도 같은 링크). 서버 동작은 예전 '링크 만들기'와 같다
   const create = (s: string): Promise<InviteState> => {
     if (creating.current?.sig === s) return creating.current.promise;
     const promise: Promise<InviteState> = (async () => {
@@ -187,7 +192,7 @@ export function RequestForm({
   };
   const keep = (r: InviteState, s: string): Link | null => {
     if (!r.url) {
-      setError(r.error ?? "common");
+      notice(t(r.error === "pickOne" ? "request.pickOne" : name.trim() ? "common.error" : "request.needName"), 4000);
       return null;
     }
     const link = { url: r.url, text: r.text };
@@ -195,10 +200,14 @@ export function RequestForm({
     setMade(true);
     return link;
   };
-  const flash = (kind: "asked" | "copied") => {
-    setToast(kind);
+  const showToast = (next: Toast, ms: number) => {
+    setToast(next);
     clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 2200);
+    toastTimer.current = setTimeout(() => setToast(null), ms);
+  };
+  const notice = (text: string, ms = 2600) => showToast({ kind: "notice", text }, ms);
+  const flash = () => {
+    showToast({ kind: "asked" }, 2200);
     // 답장 알림은 처음 한 번만 슬쩍 권한다(공유 팝업을 열었다면 팝업 맨 아래에 이미 있었다)
     if (offered.current) return;
     offered.current = true;
@@ -211,79 +220,46 @@ export function RequestForm({
     setSheet(link);
   };
   /**
-   * 물어보기(공유창) · 링크 복사. 눌러 링크를 만든 다음 곧바로 보낸다. 화면은 그대로 두고 '물어봤어요'·'링크를 복사했어요'만 잠깐 알린다.
+   * 머리말의 공유 아이콘: 눌러 링크를 만든 다음 곧바로 보낸다. 화면은 그대로 두고 '물어봤어요'만 잠깐 알린다.
    * 링크는 서버에서 만들어져 오래 걸릴 수 있어서 브라우저의 '방금 눌렀다'는 허락이 지나기 쉽다:
-   *  - 복사는 클립보드 쓰기를 누르는 순간 시작하고 글은 약속으로 넘긴다(사파리도 통과). 안 되면 만든 뒤 일반 복사로 한 번 더
    *  - 공유창은 만든 뒤에 연다. 브라우저가 막으면(NotAllowedError)·공유창이 없는 곳(PC)이면 우리 공유 팝업을 띄운다(거기 단추를 누르면 바로 열린다)
-   *  - 복사가 막혀도 공유 팝업
    */
-  const run = async (act: Act) => {
+  const run = async () => {
     if (busy.current) return;
     busy.current = true;
     setPending(true);
-    setError(null);
     setToast(null);
     const s = sigRef.current;
     try {
-      const have = mine();
-      if (act === "share") {
-        const link = have ?? keep(await create(s), s);
-        // 만드는 동안 사람·항목을 바꿨으면 그 링크는 보내지 않는다
-        if (!link || sigRef.current !== s) return;
-        if (!canShare()) return openSheet(link);
-        const res = await shareLink(link.text, link.url);
-        if (res === "shared") flash("asked");
-        else if (res !== "closed") openSheet(link);
-        return;
-      }
-      const created = have ? Promise.resolve<InviteState>({ ...have, error: null }) : create(s);
-      const ok = await copyTextLater(
-        created.then((r) => {
-          if (!r.url) throw new Error("not created");
-          return `${r.text}\n${r.url}`;
-        }),
-      );
-      const link = have ?? keep(await created, s);
+      const link = mine() ?? keep(await create(s), s);
+      // 만드는 동안 사람·항목을 바꿨으면 그 링크는 보내지 않는다
       if (!link || sigRef.current !== s) return;
-      if (ok) flash("copied");
-      else openSheet(link);
+      if (!canShare()) return openSheet(link);
+      const res = await shareLink(link.text, link.url);
+      if (res === "shared") flash();
+      else if (res !== "closed") openSheet(link);
     } finally {
       busy.current = false;
       setPending(false);
     }
   };
-
-  // 누르면 바로 만들어 보내는 두 단추(보낸 뒤에도 다시 보내려고 그대로 둔다). 높이 48px
-  const actions = (
-    <div className="flex w-full items-center gap-2">
-      {(
-        [
-          { act: "share", icon: "share", label: t("request.askNow"), tone: "bg-sky" },
-          { act: "copy", icon: toast === "copied" ? "check" : "copy", label: t("common.copyLink"), tone: "bg-white" },
-        ] as const
-      ).map((b) => (
-        <button
-          key={b.act}
-          type="button"
-          onClick={() => void run(b.act)}
-          disabled={pending || !!reason}
-          aria-busy={pending}
-          className={`hand inline-flex h-[48px] min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-edge px-3 text-[18px] disabled:border-ink/[0.22] disabled:bg-[#e8e1cf] disabled:text-[#5a5f78] ${b.tone}`}
-        >
-          <Icon name={b.icon} size={19} strokeWidth={1.7} />
-          {b.label}
-        </button>
-      ))}
-    </div>
-  );
-  // 물어봤어요 · 링크를 복사했어요(+ 처음 한 번 답장 알림): 아래 막대 바로 위에 잠깐 뜬다(단추 자리를 밀지 않게 떠 있다)
+  // 공유 아이콘은 늘 눌린다: 아직 못 보내면 까닭을 알리고(사람이 없으면 '누구에게' 칸으로), 보낼 수 있으면 만들어 보낸다
+  const onShare = () => {
+    if (reason) {
+      notice(t(reason));
+      if (!name.trim()) whoRef.current?.focus();
+      return;
+    }
+    void run();
+  };
+  // 보냈어요 · 못 보내는 까닭(+ 처음 한 번 답장 알림): 하단 메뉴 바로 위에 잠깐 뜬다(아래에 붙은 단추가 없으니 화면에 떠 있다)
   const status = (
-    <div className="pointer-events-none absolute inset-x-0 bottom-full flex flex-col items-center gap-2 px-4 pb-2">
-      <div role="status" aria-live="polite">
+    <div className="pointer-events-none fixed inset-x-0 z-[60] flex flex-col items-center gap-2 px-4" style={{ bottom: "calc(var(--above-tab) + 8px)" }}>
+      <div role="status" aria-live="polite" className="max-w-full">
         {toast ? (
-          <span className="flex min-h-10 items-center gap-1.5 rounded-2xl bg-ink px-3.5 text-[14px] text-white shadow-[0_8px_24px_rgba(31,35,64,0.28)]">
-            <Icon name="check" size={16} strokeWidth={2.2} className="shrink-0 text-sky" />
-            {toast === "asked" ? t("request.asked") : t("common.copied")}
+          <span className="flex min-h-10 items-center gap-1.5 rounded-2xl bg-ink px-3.5 py-1.5 text-[14px] text-white shadow-[0_8px_24px_rgba(31,35,64,0.28)]">
+            {toast.kind === "asked" ? <Icon name="check" size={16} strokeWidth={2.2} className="shrink-0 text-sky" /> : null}
+            {toast.kind === "asked" ? t("request.asked") : toast.text}
           </span>
         ) : null}
       </div>
@@ -353,6 +329,7 @@ export function RequestForm({
               </svg>
               <input
                 id="request-who"
+                ref={whoRef}
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -396,17 +373,16 @@ export function RequestForm({
           <span className="flex items-center gap-2">
             {/* 많이 고르면 받는 사람이 드는 시간만 슬쩍 보여 준다(기본 3개 안쪽에서는 숨김) */}
             {!question && topics.length > ASK_DEFAULT_TOPICS ? <span className="text-[11.7px] text-muted">{t("request.burden", { n: askMinutes(topics) })}</span> : null}
-            {/* 아래 '물어보기' 단추와 같다: 링크를 만들어(한 번만) 공유창을 연다 */}
+            {/* 보내는 단 하나의 길(주 동작): 링크를 만들어(한 번만) 공유창을 연다. 아직 못 보내면 눌렀을 때 까닭을 알린다 */}
             <button
               type="button"
               aria-label={t("request.share")}
               aria-busy={pending}
-              disabled={pending || !!reason}
-              onClick={() => void run("share")}
-              className="-my-[7px] -mr-2.5 flex h-11 w-11 shrink-0 items-center justify-center disabled:opacity-40"
+              onClick={onShare}
+              className={`-my-[7px] -mr-2.5 flex h-[44px] w-[44px] shrink-0 items-center justify-center ${reason || pending ? "opacity-60" : ""}`}
             >
-              <span className="flex h-[32px] w-[32px] items-center justify-center rounded-full border border-edge bg-sky">
-                <Icon name="share" size={17} strokeWidth={1.7} />
+              <span className="flex h-[40px] w-[40px] items-center justify-center rounded-full border border-edge bg-sky">
+                <Icon name="share" size={21} strokeWidth={1.8} />
               </span>
             </button>
           </span>
@@ -488,22 +464,17 @@ export function RequestForm({
         )}
       </section>
 
-      <div className="bottom-bar mt-auto flex flex-col gap-2 bg-bg px-4 pt-4">
-        {error ? (
-          <p role="alert" className="w-full px-1 text-[12.6px] text-red">
-            {t(error === "pickOne" ? "request.pickOne" : name.trim() ? "common.error" : "request.needName")}
-          </p>
-        ) : null}
-        {reason ? <p className="w-full px-1 text-[12.6px] text-muted">{t(reason)}</p> : null}
-        {status}
-        {actions}
-        {/* 체험의 끝: 링크를 만들었으면 시작하기로 마치고 홈으로 */}
-        {tour && made ? (
-          <button type="button" disabled={leaving} onClick={endTour} className="btn-outline btn-outline-lift w-full">
+      {/* 체험의 끝: 링크를 만들었으면 시작하기로 마치고 홈으로 */}
+      {tour && made ? (
+        <div className="mx-4 mt-3.5">
+          <button ref={startRef} type="button" disabled={leaving} onClick={endTour} className="btn-outline btn-outline-lift w-full">
             {t("tour.start")}
           </button>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
+      {/* 아래에 붙는 단추가 없으니 마지막 카드가 하단 메뉴에 가리지 않게 화면 끝 여백 */}
+      <div className="page-end" />
+      {status}
       {sheet ? (
         <AskShareSheet
           locale={locale}
@@ -514,7 +485,7 @@ export function RequestForm({
           onClose={() => setSheet(null)}
           onShared={() => {
             setSheet(null);
-            flash("asked");
+            flash();
           }}
         />
       ) : null}
