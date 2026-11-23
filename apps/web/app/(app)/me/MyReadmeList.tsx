@@ -2,9 +2,9 @@
 
 import type { Locale, PartialCard, Section } from "@readme/core";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { Heart, SKY_STAR, Squiggle, Sparkle, Star, Tape } from "@/components/diary";
 import { Icon } from "@/components/marks";
 import { SectionIcon } from "@/components/SectionIcon";
+import { TornTape } from "@/components/TornTape";
 
 // 편집기(여덟 가지)는 항목을 펼칠 때만 쓴다. 따로 받아 오고, 목록이 뜨면 바로 미리 받아 둬서 누를 때 기다리지 않게
 const loadForm = () => import("@/components/editors/SectionForm").then((m) => ({ default: m.SectionForm }));
@@ -75,8 +75,8 @@ export function MyReadmeList({
   }, [open, initialOpen]);
 
   return (
-    <div className="relative mx-4 mt-5">
-    <ul className="card flex flex-col px-4">
+    <div className="relative mx-4 mt-6">
+    <ul className="card flex flex-col px-3.5 py-1.5">
       {rows.map(({ section, title, sub }) => {
         const isOpen = open === section;
         return (
@@ -85,7 +85,7 @@ export function MyReadmeList({
             ref={(el) => {
               items.current[section] = el;
             }}
-            className="border-t border-dashed border-rule first:border-t-0"
+            className="border-t-[1.5px] border-dashed border-ink/20 first:border-t-0"
             style={{ scrollMarginTop: stickyTop }}
           >
             <button
@@ -93,16 +93,15 @@ export function MyReadmeList({
               aria-expanded={isOpen}
               aria-controls={`edit-${section}`}
               onClick={() => setOpen(isOpen ? null : section)}
-              className={`flex min-h-[72px] w-full items-center gap-3 py-3 text-left ${isOpen ? "sticky z-20 bg-paper" : ""}`}
+              className={`flex min-h-12 w-full items-center gap-2.5 py-1.5 text-left ${isOpen ? "sticky z-20 bg-white" : ""}`}
               style={isOpen ? { top: stickyTop } : undefined}
             >
-              <SectionIcon section={section} size={44} />
-              <span className="flex min-w-0 flex-1 flex-col gap-px">
-                <span className="text-[20px] leading-[1.25]">{title}</span>
-                <span className="text-[15px] leading-[1.35] text-muted">{sub}</span>
+              <SectionIcon section={section} size={36} />
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className={`hand text-[23px] leading-[1.1] ${section === "safety" ? "text-red" : ""}`}>{title}</span>
+                <span className="text-[12px] text-muted">{sub}</span>
               </span>
-              {/* 누르면 고친다는 건 다들 알아서 접혀 있을 때는 아무것도 없이, 펼치면 접기 화살표만 */}
-              {isOpen ? <Icon name="chevron" size={18} className="shrink-0 -rotate-90 text-muted" /> : null}
+              <Icon name="chevron" size={15} strokeWidth={2} className={`shrink-0 text-muted ${isOpen ? "-rotate-90" : ""}`} />
             </button>
             {isOpen ? (
               <div id={`edit-${section}`} className="pt-3">
@@ -115,12 +114,8 @@ export function MyReadmeList({
         );
       })}
     </ul>
-    <Tape color="pink" className="-left-2.5 -top-1.5" />
-    <Tape color="mint" className="-bottom-1 -right-2.5" />
-    <Heart size={26} rotate={16} className="-right-[9px] top-[150px]" />
-    <Star size={20} rotate={-12} color={SKY_STAR} className="-left-2 top-96" />
-    <Squiggle w={54} width={2.4} className="-bottom-2 left-9" />
-    <Sparkle size={18} className="bottom-[74px] right-2" />
+    <TornTape color="pink" w={72} h={22} rotate={-6} className="-top-3 left-5" />
+    <TornTape color="mint" w={60} h={18} rotate={5} className="-bottom-2.5 right-[22px]" />
     </div>
   );
 }

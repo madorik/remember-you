@@ -4,7 +4,7 @@ import { PETS_MAX, PET_KINDS, type Locale, type Pet, type PetsData } from "@read
 import { useState } from "react";
 import { Icon } from "../marks";
 import { useLatest, useUndoToast } from "../UndoToast";
-import { CircleOption, SectionHeading, TextField, joinList, splitList, useT } from "./shared";
+import { ADD_PILL, CircleOption, SectionHeading, TextField, joinList, splitList, useT } from "./shared";
 
 const blank = (): Pet => ({ name: "", kind: null, breed: "", treats: [], note: "" });
 
@@ -41,7 +41,7 @@ export function PetsEditor({ value, onChange, locale }: { value: PetsData; onCha
         </div>
       ) : null}
       {pets.map((p, i) => (
-        <section key={i} className="flex flex-col gap-4 border-t border-rule pt-4">
+        <section key={i} className="flex flex-col gap-4 border-t-[1.5px] border-dashed border-ink/20 pt-4">
           <div className="flex items-end gap-2">
             <div className="min-w-0 flex-1">
               <TextField label={t("pets.name")} value={p.name} onChange={(v) => set(i, { name: v })} placeholder={t("pets.namePlaceholder")} />
@@ -59,7 +59,7 @@ export function PetsEditor({ value, onChange, locale }: { value: PetsData; onCha
             <SectionHeading>{t("pets.kind")}</SectionHeading>
             <div className="flex flex-wrap gap-2 pt-1">
               {PET_KINDS.map((k) => (
-                <CircleOption key={k.code} label={k.label[locale]} color="ink" on={p.kind === k.code} onToggle={() => set(i, { kind: p.kind === k.code ? null : k.code })} textClass="!text-[18px] whitespace-nowrap" />
+                <CircleOption key={k.code} label={k.label[locale]} color="ink" on={p.kind === k.code} onToggle={() => set(i, { kind: p.kind === k.code ? null : k.code })} textClass="whitespace-nowrap" />
               ))}
             </div>
           </div>
@@ -83,7 +83,7 @@ export function PetsEditor({ value, onChange, locale }: { value: PetsData; onCha
             onChange({ pets: [...pets, blank()], none: false });
             setTreats((x) => [...x, ""]);
           }}
-          className="pill self-start"
+          className={ADD_PILL}
         >
           <Icon name="plus" size={17} />
           {t("pets.add")}

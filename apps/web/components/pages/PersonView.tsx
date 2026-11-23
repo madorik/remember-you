@@ -1,30 +1,69 @@
-import { formatMonthDay, parseYmd, SECTIONS_BY_IMPORTANCE } from "@readme/core";
+import { formatMonthDay, formatSpec, milestoneOf, monthName, nextOccurrence, parseYmd, SECTIONS_BY_IMPORTANCE, weekdayLong, yearsAt, type DateSpec, type Locale, type YMD } from "@readme/core";
 import Link from "@/components/AppLink";
 import { AskOnButton } from "@/app/(app)/people/[id]/AskOnButton";
 import { FavoriteStar } from "@/app/(app)/people/[id]/FavoriteStar";
 import { NotesButton } from "@/app/(app)/people/[id]/NotesButton";
 import { PersonFolders } from "@/app/(app)/people/[id]/PersonFolders";
+import { PersonMenu } from "@/app/(app)/people/[id]/PersonMenu";
 import { ViewBeacon } from "@/app/(app)/people/[id]/ViewBeacon";
 import { QuickNote } from "@/app/(app)/people/[id]/QuickNote";
 import { TagEditor } from "@/app/(app)/people/[id]/TagEditor";
 import { cancelInvite } from "@/app/actions/request";
 import { Avatar } from "@/components/Avatar";
-import { TopBar } from "@/components/chrome";
-import { Heart, Sparkle, SKY_STAR, Squiggle, Star, Tape } from "@/components/diary";
 import { Icon } from "@/components/marks";
-import { RemovePersonButton } from "@/components/RemovePersonButton";
-import { SectionBody } from "@/components/SectionBody";
+import { Mascot } from "@/components/Mascot";
+import { sectionSummary } from "@/components/SectionSummary";
 import { SectionIcon } from "@/components/SectionIcon";
 import { ReviewMoment } from "@/components/ReviewAsk";
 import { SeeAnswers } from "@/components/SeeAnswers";
+import { TornTape } from "@/components/TornTape";
+import type { T } from "@/lib/i18n";
 import type { PersonData } from "@/lib/pages/person.data";
 import { makeT } from "@/lib/t";
 
+/** 한 번에 보여 줄 '기억해 둔 것' 줄 수(나머지는 'N개 더 보기'로 고치는 화면에서) */
+const SHOWN = 5;
+const DAY_LEFT = "font-hand font-bold tracking-[-0.12em] text-[#A8481A]";
+
+/** 한 장 뜯어 쓰는 작은 달력: 위 망고 띠에 달, 아래 큰 날(시안). 위에 고리 두 개 */
+function CalendarLeaf({ m, d, locale }: { m: number; d: number; locale: Locale }) {
+  return (
+    <span aria-hidden="true" className="relative block h-[54px] w-[46px] shrink-0">
+      <span className="absolute left-0 top-[3px] flex h-[51px] w-[46px] flex-col overflow-hidden rounded-[9px] border-[1.5px] border-ink bg-white">
+        <span className="flex h-4 shrink-0 items-center justify-center border-b-[1.5px] border-ink bg-sky text-[11px] leading-none">{monthName(m, locale)}</span>
+        <span className="hand flex flex-1 items-center justify-center text-[31px] leading-none">{d}</span>
+      </span>
+      <span className="absolute left-2 top-0 h-[9px] w-1 rounded-[3px] bg-ink" />
+      <span className="absolute left-[34px] top-0 h-[9px] w-1 rounded-[3px] bg-ink" />
+    </span>
+  );
+}
+
+function dayLeft(daysUntil: number, t: T) {
+  return daysUntil === 0 ? t("start.today") : `D-${daysUntil}`;
+}
+
+/** 다음 날짜가 아직 안 정해진(연도만 있는 등) 날짜도 이름 옆에 적을 말 */
+function whenText(spec: DateSpec, date: YMD, locale: Locale) {
+  return spec.calendar === "lunar" ? formatSpec(spec, locale) : formatMonthDay(date, locale);
+}
+
 export function PersonView({ locale, back, today, person: p, name, notes, folders, answered, waiting, ai }: PersonData) {
   const t = makeT(locale);
-  // 적어 둔 항목만(중요한 순서)
-  const filled = SECTIONS_BY_IMPORTANCE.map((section) => ({ section, body: SectionBody({ section, card: p.card, today, locale, t }) })).filter((x) => x.body != null);
-  // 보낼 수 있는 글(적어 둔 항목만). 선물 칸의 '해주고 싶은 선물'은 몰래 준비하는 것이라 뺀다
+  // 적어 둔 항목만(중요한 순서). 생일·기념일은 위 날짜 카드에 따로
+  const filled = SECTIONS_BY_IMPORTANCE.filter((section) => section !== "dates")
+    .map((section) => ({ section, line: sectionSummary(section, p.card, locale, t) }))
+    .filter((x) => x.line != null);
+  const shown = filled.slice(0, SHOWN);
+  const hidden = filled.length - shown.length;
+  const birthday = p.card.dates?.birthday ?? null;
+  const nextBirthday = birthday ? nextOccurrence(birthday, today) : null;
+  const milestone = birthday && nextBirthday ? milestoneOf(yearsAt(birthday, nextBirthday.date)) : null;
+  const birthdayTitle = milestone ? (locale === "ko" ? `${milestone.ko} ${t("dates.birthday")}` : milestone.en) : t("dates.birthday");
+  const anniversaries = (p.card.dates?.anniversaries ?? []).slice(0, 3);
+  const hasDates = !!birthday || anniversaries.length > 0;
+  const editDates = `/people/${p.contactId}/edit?open=dates`;
+  const displayName = p.name || name;
 
   return (
     <>
@@ -32,56 +71,49 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
       {/* 물어본 답장을 확인하는 순간이 가장 좋을 때: 답을 읽을 틈을 두고 스토어 리뷰 부탁(앱에서만, 며칠 써 본 사람에게만).
           열자마자 읽음 처리로 화면이 다시 그려져 answered가 false가 되니, 조건부로 붙이지 않고 늘 붙여 둔다 */}
       <ReviewMoment source="answer" delay={4000} armed={answered} />
-      <TopBar
-        back={back}
-        label={t("common.back")}
-        right={
-          <div className="flex items-center gap-2 pr-1.5">
-            {/* 사람 기록 공유하기는 개인정보 우려로 껐다(2026-11-21). 내 기록만 링크로 보낸다(나 화면 위쪽) */}
-            {/* 사람들에서 지우기: 누르면 누구를 지우는지 한 번 더 묻고, 지우면 사람들 화면으로 */}
-            <RemovePersonButton
-              variant="icon"
-              contactId={p.contactId}
-              labels={{
+      {/* 위 줄: 뒤로 … 즐겨찾기 별 · ··· 메뉴(물어보기 · 선물 고르기 · 지우기). 사람 기록 공유하기는 개인정보 우려로 껐다(2026-11-21) */}
+      <div className="flex h-11 items-center justify-between pl-1.5 pr-2">
+        <Link href={back} prefetch={false} aria-label={t("common.back")} className="flex h-11 w-11 items-center justify-center">
+          <Icon name="back" size={26} strokeWidth={2} />
+        </Link>
+        <div className="flex items-center gap-0.5">
+          <FavoriteStar contactId={p.contactId} initial={p.favorite} label={t("person.favorite")} />
+          <PersonMenu
+            contactId={p.contactId}
+            labels={{
+              more: t("person.moreMenu"),
+              ask: t("person.askMore"),
+              gift: t("person.pickGift"),
+              remove: t("common.delete"),
+              sheet: {
                 open: t("person.remove"),
-                title: t("person.removeTitle", { name: p.name || name }),
-                body: t("person.removeBody", { name: p.name || name }),
+                title: t("person.removeTitle", { name: displayName }),
+                body: t("person.removeBody", { name: displayName }),
                 remove: t("common.delete"),
                 cancel: t("common.cancel"),
                 close: t("common.close"),
-              }}
-            />
-            <FavoriteStar contactId={p.contactId} initial={p.favorite} label={t("person.favorite")} />
-          </div>
-        }
-      />
+              },
+            }}
+          />
+        </div>
+      </div>
 
       <ViewBeacon contactId={p.contactId} />
       {p.askOff ? (
-        <div className="px-6 pt-3">
+        <div className="px-4 pt-2">
           <AskOnButton contactId={p.contactId} label={t("person.askOn")} />
         </div>
       ) : null}
 
-      <div className="relative flex items-start gap-5 px-6 pt-4">
-        {/* 얼굴을 누르면 내 프로필처럼 그 사람의 얼굴·부르는 말을 꾸민다. 폴라로이드 한 장 */}
-        <Link
-          href={`/people/${p.contactId}/profile`}
-          className="relative block shrink-0 -rotate-3 bg-white px-[7px] pb-5 pt-[7px] shadow-[0_1px_2px_rgb(31_35_64/0.12),0_8px_16px_-10px_rgb(31_35_64/0.5)]"
-        >
-          <span className="flex h-[86px] w-[86px] items-center justify-center bg-[#fff1cc]">
-            <Avatar config={p.avatar} size={80} label={t("avatar.of", { name: p.name || name })} />
-          </span>
-          <Tape color="mango" w={48} h={18} rotate={-6} alpha={0.62} className="-top-[9px] left-[22px]" />
+      {/* 프로필 카드: 폴라로이드 얼굴(누르면 얼굴·부르는 말 꾸미기) · 이름(형광펜) · 든 폴더 · 모서리에 큰 하트 든 캐릭터 */}
+      <section aria-label={displayName} className="card relative mx-4 mt-3 flex items-center gap-4 py-3.5 pl-4 pr-3.5">
+        <TornTape color="pink" w={74} h={22} rotate={7} className="-top-3 right-[26px]" />
+        <Link href={`/people/${p.contactId}/profile`} aria-label={t("me.face")} className="block shrink-0 -rotate-3 border-[1.5px] border-ink bg-white px-1.5 pb-[18px] pt-1.5">
+          <Avatar config={p.avatar} size={80} label={t("avatar.of", { name: displayName })} />
         </Link>
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex items-center">
-            {/* 긴 이름은 두 줄까지 */}
-            <h1 className="hl line-clamp-2 min-w-0 break-words px-1 text-[40px] leading-[1.15]">{p.name || name}</h1>
-            <Link href={`/people/${p.contactId}/profile`} aria-label={t("me.face")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted active:bg-fill">
-              <Icon name="pencil" size={19} strokeWidth={1.9} />
-            </Link>
-          </div>
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-2.5 pb-1">
+          {/* 긴 이름은 두 줄까지 */}
+          <h1 className="hl line-clamp-2 min-w-0 max-w-full break-words px-0.5 text-[48px] leading-none">{displayName}</h1>
           {/* 앱 사용자와 이어진 사람은 내가 단 태그도 이름 밑에서 바로 고친다 */}
           {p.personId ? (
             <TagEditor
@@ -100,59 +132,78 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
               }}
             />
           ) : null}
-          {/* 든 폴더(여러 개) + 폴더 고르기, 같은 줄 오른쪽 끝에 나만 보는 메모(누르면 아래에서 올라오는 시트에서 보고 적는다) */}
-          <div className="flex items-start gap-2">
-            <div className="min-w-0 flex-1">
-              <PersonFolders
-                contactId={p.contactId}
-                name={name}
-                folders={folders}
-                mine={p.folderIds}
-                labels={{
-                  put: t("folder.put"),
-                  removeFrom: t("folder.removeFrom", { name: "{name}" }),
-                  removed: t("folder.removed"),
-                  title: t("folder.of", { name: "{name}" }),
-                  done: t("folder.done"),
-                  newFolder: t("folder.new"),
-                  namePlaceholder: t("folder.namePlaceholder"),
-                  create: t("folder.create"),
-                  count: t("folder.count", { n: "{n}" }),
-                  close: t("common.close"),
-                  error: t("common.error"),
-                }}
-              />
-            </div>
-            <NotesButton
-              contactId={p.contactId}
-              notes={notes.map((n) => ({ id: n.id, body: n.body, when: n.label || formatMonthDay(parseYmd(n.createdAt.slice(0, 10)) ?? today, locale) }))}
-              labels={{
-                button: t("person.memo"),
-                title: t("person.notes"),
-                add: t("person.addNote"),
-                placeholder: t("person.noteBodyPlaceholder"),
-                body: t("person.noteBody"),
-                del: t("common.delete"),
-                close: t("common.close"),
-              }}
-            />
-          </div>
+          {/* 든 폴더(여러 개) + 폴더 고르기 */}
+          <PersonFolders
+            contactId={p.contactId}
+            name={name}
+            folders={folders}
+            mine={p.folderIds}
+            labels={{
+              put: t("folder.put"),
+              removeFrom: t("folder.removeFrom", { name: "{name}" }),
+              removed: t("folder.removed"),
+              title: t("folder.of", { name: "{name}" }),
+              done: t("folder.done"),
+              newFolder: t("folder.new"),
+              namePlaceholder: t("folder.namePlaceholder"),
+              create: t("folder.create"),
+              count: t("folder.count", { n: "{n}" }),
+              close: t("common.close"),
+              error: t("common.error"),
+            }}
+          />
         </div>
-        <Heart size={22} rotate={14} className="right-6 top-2" />
-        <Heart size={24} rotate={-14} className="left-[92px] top-[98px]" />
-      </div>
+        <Mascot pose={4} size={46} className="absolute bottom-1 right-1.5" />
+      </section>
 
       {/* 물어보고 답을 기다리는 중: 아직 아무도 안 연 링크는 여기서 취소한다 */}
       {waiting ? (
-        <div className="mx-6 mt-5 flex min-h-[52px] items-center gap-2.5 rounded-[10px] bg-sky-soft pl-4 pr-1.5">
+        <div className="mx-4 mt-3 flex min-h-12 items-center gap-2.5 rounded-[14px] border-[1.5px] border-ink bg-sky-soft pl-4 pr-1.5">
           <Icon name="link" size={17} strokeWidth={2} className="shrink-0 text-accent" />
-          <span className="min-w-0 flex-1 text-[17px]">{t("home.waiting")}</span>
+          <span className="min-w-0 flex-1 text-[14px]">{t("home.waiting")}</span>
           <form action={cancelInvite}>
             <input type="hidden" name="id" value={waiting.inviteId} />
             <input type="hidden" name="back" value={`/people/${p.contactId}`} />
-            <button className="flex min-h-11 items-center px-2.5 text-[17px] text-red">{t("privacy.linkCancel")}</button>
+            <button className="flex min-h-11 items-center px-2.5 text-[14px] text-red">{t("privacy.linkCancel")}</button>
           </form>
         </div>
+      ) : null}
+
+      {/* 생일·기념일: 작은 달력 + 며칠 남았는지. 눌러서 고친다 */}
+      {hasDates ? (
+        <section aria-label={t("section.dates")} className="card mx-4 mt-3 flex flex-col gap-2 px-3 pb-2 pt-2.5">
+          {birthday ? (
+            <Link href={editDates} className="flex items-center gap-2.5">
+              <CalendarLeaf m={nextBirthday ? nextBirthday.date.m : birthday.month} d={nextBirthday ? nextBirthday.date.d : birthday.day} locale={locale} />
+              <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
+                <span className="text-[12px] text-muted">
+                  {nextBirthday
+                    ? [birthday.calendar === "lunar" ? formatSpec(birthday, locale) : null, weekdayLong(nextBirthday.date, locale)].filter(Boolean).join(" · ")
+                    : formatSpec(birthday, locale)}
+                </span>
+                <span className="hand whitespace-nowrap text-[24px] leading-none">
+                  {birthdayTitle}
+                  {nextBirthday ? <span className={`${DAY_LEFT} ml-1.5`}>{dayLeft(nextBirthday.daysUntil, t)}</span> : null}
+                </span>
+              </span>
+            </Link>
+          ) : null}
+          {anniversaries.map((a, i) => {
+            const next = nextOccurrence(a.spec, today);
+            return (
+              <Link key={i} href={editDates} className={`flex h-[30px] items-center gap-2 pt-1.5 text-[13px] text-muted ${birthday || i ? "border-t-[1.5px] border-dashed border-ink/20" : ""}`}>
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                  <rect x="3.5" y="5" width="17" height="15.5" rx="3" />
+                  <path d="M3.5 10h17M8 3v4M16 3v4" />
+                </svg>
+                <span className="min-w-0 flex-1 truncate">
+                  {a.label} · {next ? whenText(a.spec, next.date, locale) : formatSpec(a.spec, locale)}
+                </span>
+                {next ? <span className={`${DAY_LEFT} text-[18px]`}>{dayLeft(next.daysUntil, t)}</span> : null}
+              </Link>
+            );
+          })}
+        </section>
       ) : null}
 
       {ai ? (
@@ -178,52 +229,67 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
         />
       ) : null}
 
-      {/* 기억해 둔 것: 적어 둔 항목만 미리 보기. 연필(수정)을 누르면 모든 항목을 고치는 화면, 항목을 누르면 그 항목이 펼쳐진 채로 */}
-      <section aria-labelledby="mine-title" className="relative mx-4 mt-3.5 flex flex-col">
-        <div className="flex min-h-11 items-center justify-between pl-2">
-          <h2 id="mine-title" className="text-[22px]">
+      {/* 기억해 둔 것: 적어 둔 항목을 한 줄씩 미리 보기. 연필(수정)을 누르면 모든 항목을 고치는 화면, 줄을 누르면 그 항목이 펼쳐진 채로. 제목 옆에 나만 보는 메모 */}
+      <section aria-labelledby="mine-title" className="card relative mx-4 mt-3 flex flex-col px-3.5 pb-1 pt-1.5">
+        <div className="flex h-10 items-center justify-between">
+          <h2 id="mine-title" className="scribble text-[26px] leading-none [--scribble:#5dbb9a]">
             {t("person.mineList")}
           </h2>
-          <Link href={`/people/${p.contactId}/edit`} aria-label={t("me.edit")} className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 active:bg-fill">
-            <Icon name="pencil" size={21} strokeWidth={1.9} />
-          </Link>
+          <span className="flex items-center gap-0.5">
+            <NotesButton
+              contactId={p.contactId}
+              notes={notes.map((n) => ({ id: n.id, body: n.body, when: n.label || formatMonthDay(parseYmd(n.createdAt.slice(0, 10)) ?? today, locale) }))}
+              labels={{
+                button: t("person.memo"),
+                title: t("person.notes"),
+                add: t("person.addNote"),
+                placeholder: t("person.noteBodyPlaceholder"),
+                body: t("person.noteBody"),
+                del: t("common.delete"),
+                close: t("common.close"),
+              }}
+            />
+            <Link href={`/people/${p.contactId}/edit`} aria-label={t("me.edit")} className="-mr-2.5 flex h-11 w-11 items-center justify-center">
+              <Icon name="pencil" size={20} strokeWidth={1.8} />
+            </Link>
+          </span>
         </div>
-        {filled.length ? (
-          <div className="card relative mt-1 px-4">
-            <Tape color="pink" rotate={34} className="-right-2.5 -top-1.5" />
-            <ul className="flex flex-col">
-            {filled.map(({ section, body }) => (
-              <li key={section} className="border-t border-dashed border-rule first:border-t-0">
-                <Link href={`/people/${p.contactId}/edit?open=${section}`} className="flex min-h-[56px] items-center gap-3 pt-2">
-                  <SectionIcon section={section} size={40} />
-                  <span className={`min-w-0 flex-1 text-[20px] ${section === "safety" ? "text-red" : ""}`}>{t(`section.${section}` as "section.safety")}</span>
-                  <Icon name="chevron" size={17} className="shrink-0 text-muted" />
+        {shown.length ? (
+          <ul className="mt-1 flex flex-col">
+            {shown.map(({ section, line }) => {
+              const warn = section === "safety";
+              return (
+                <li key={section} className="border-t-[1.5px] border-dashed border-ink/20">
+                  <Link href={`/people/${p.contactId}/edit?open=${section}`} aria-label={`${t(`section.${section}` as "section.safety")}: ${[line!.lead, line!.text].filter(Boolean).join(" · ")}`} className="flex h-[42px] items-center gap-2.5">
+                    <SectionIcon section={section} size={30} />
+                    <span className={`w-16 shrink-0 text-[12px] leading-[1.2] ${warn ? "text-red" : "text-muted"}`}>{t(`person.short.${section}` as "person.short.safety")}</span>
+                    <span className="hand-written min-w-0 flex-1 truncate text-[23px] leading-[1.1]">
+                      {line!.lead ? <span className="text-red">{line!.lead}</span> : null}
+                      {line!.lead && line!.text ? " · " : null}
+                      {line!.text}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+            {hidden > 0 ? (
+              <li className="border-t-[1.5px] border-dashed border-ink/20">
+                <Link href={`/people/${p.contactId}/edit`} className="flex h-[38px] items-center justify-center gap-0.5 text-[13px] text-muted">
+                  {t("person.moreItems", { n: hidden })}
+                  <Icon name="chevron" size={13} strokeWidth={2} />
                 </Link>
-                <div className="pb-3.5 pt-1">{body}</div>
               </li>
-            ))}
-            </ul>
-            <Star size={20} rotate={-12} color={SKY_STAR} className="-left-[7px] top-44" />
-            <Squiggle w={54} width={2.4} className="-bottom-2 left-[30px]" />
-            <Sparkle size={18} className="bottom-[60px] right-2" />
-          </div>
+            ) : null}
+          </ul>
         ) : (
-          <Link href={`/people/${p.contactId}/edit?open=dates`} className="card mt-1 flex min-h-[72px] items-center justify-center gap-1.5 text-[19px] text-accent">
-            <Icon name="plus" size={17} strokeWidth={2.4} />
+          <Link href={editDates} className="mt-1 flex min-h-14 items-center justify-center gap-1.5 border-t-[1.5px] border-dashed border-ink/20 text-[16px] text-accent">
+            <Icon name="plus" size={16} strokeWidth={2.4} />
             {t("person.write")}
           </Link>
         )}
       </section>
 
-      <div className="h-6" />
-      <div className="bottom-bar mt-auto grid grid-cols-2 gap-2.5 bg-bg px-6 pt-4">
-        <Link href={`/request?to=${encodeURIComponent(p.contactId)}`} className="btn-outline btn-outline-lift">
-          {t("person.askMore")}
-        </Link>
-        <Link href={`/people/${p.contactId}/reminder`} className="btn-primary">
-          {t("person.pickGift")}
-        </Link>
-      </div>
+      <div className="page-end" />
     </>
   );
 }

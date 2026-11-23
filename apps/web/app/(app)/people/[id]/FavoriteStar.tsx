@@ -3,9 +3,9 @@
 import { useState, useTransition } from "react";
 import { setFavorite } from "@/app/actions/people";
 
-const STAR = "M12 3.6l2.55 5.2 5.7.82-4.13 4.03.98 5.69L12 16.66l-5.1 2.68.98-5.69L3.75 9.62l5.7-.82z";
+const STAR = "M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z";
 
-/** 사람 화면 오른쪽 위 그룹 오른쪽 별: 누르면 즐겨찾기(사람들 맨 위에 고정). 프로필(얼굴·이름) 쪽에는 두지 않는다 */
+/** 사람 화면 오른쪽 위 별(··· 왼쪽): 누르면 즐겨찾기(사람들 맨 위에 고정, 켜면 망고). 프로필(얼굴·이름) 쪽에는 두지 않는다 */
 export function FavoriteStar({ contactId, initial, label }: { contactId: string; initial: boolean; label: string }) {
   const [on, setOn] = useState(initial);
   const [pending, start] = useTransition();
@@ -23,10 +23,10 @@ export function FavoriteStar({ contactId, initial, label }: { contactId: string;
           if (!r.ok) setOn(!next);
         });
       }}
-      className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full shadow-[inset_0_0_0_1.5px_var(--color-edge)] active:scale-95 ${on ? "bg-[#fff0c9]" : "bg-white"}`}
+      className="relative flex h-11 w-11 shrink-0 items-center justify-center active:scale-95"
     >
-      <svg aria-hidden="true" width={22} height={22} viewBox="0 0 24 24" className={on ? "text-ink" : "text-muted"}>
-        <path d={STAR} fill={on ? "var(--color-sky)" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <svg aria-hidden="true" width={25} height={25} viewBox="0 0 24 24">
+        <path d={STAR} fill={on ? "#FFC23D" : "none"} stroke="#1F2340" strokeWidth="1.5" strokeLinejoin="round" />
       </svg>
     </button>
   );

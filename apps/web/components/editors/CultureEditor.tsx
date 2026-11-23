@@ -14,11 +14,11 @@ export function CultureEditor({ value, onChange, locale }: { value: CultureData;
   };
   const chips = (key: CodeKey, label: string, list: CatalogItem[]) => (
     <div className="flex flex-col gap-1">
-      <span className="text-[16px]">{label}</span>
+      <span className="hand text-[21px] leading-none">{label}</span>
       <div className="flex flex-wrap gap-2 pt-1">
-        <CircleOption label={NONE_LABEL[locale]} on={(value[key] ?? []).includes(NONE)} color="ink" onToggle={() => toggle(key, NONE)} textClass="!text-[18px] whitespace-nowrap" />
+        <CircleOption label={NONE_LABEL[locale]} on={(value[key] ?? []).includes(NONE)} color="ink" onToggle={() => toggle(key, NONE)} textClass="whitespace-nowrap" />
         {list.map((i) => (
-          <CircleOption key={i.code} label={i.label[locale]} on={(value[key] ?? []).includes(i.code)} color="ink" onToggle={() => toggle(key, i.code)} textClass="!text-[18px] whitespace-nowrap" />
+          <CircleOption key={i.code} label={i.label[locale]} on={(value[key] ?? []).includes(i.code)} color="ink" onToggle={() => toggle(key, i.code)} textClass="whitespace-nowrap" />
         ))}
       </div>
     </div>
@@ -28,7 +28,7 @@ export function CultureEditor({ value, onChange, locale }: { value: CultureData;
   );
   const group = (title: string, children: React.ReactNode) => (
     <section className="flex flex-col gap-4">
-      <div className="border-b border-rule pb-1.5">
+      <div className="border-b-[1.5px] border-dashed border-ink/20 pb-1.5">
         <SectionHeading>{title}</SectionHeading>
       </div>
       {children}

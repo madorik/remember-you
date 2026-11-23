@@ -1,9 +1,8 @@
 import { SECTIONS_BY_IMPORTANCE } from "@readme/core";
 import Link from "@/components/AppLink";
 import { MyReadmeList } from "@/app/(app)/me/MyReadmeList";
-import { TopBar } from "@/components/chrome";
-import { NameChip, Star } from "@/components/diary";
 import { Icon } from "@/components/marks";
+import { PersonNameChip } from "@/components/PersonNameChip";
 import type { PersonEditData } from "@/lib/pages/person-edit.data";
 import { makeT } from "@/lib/t";
 
@@ -12,24 +11,20 @@ export function PersonEditView({ locale, contactId, name, avatar, card, ai, open
   const t = makeT(locale);
   return (
     <div className="page-end flex flex-1 flex-col">
-      <TopBar
-        back={`/people/${contactId}`}
-        label={t("common.back")}
-        right={
-          ai ? (
-            <Link href={`/import?to=${contactId}`} className="flex min-h-11 items-center gap-1 px-3 text-[19px] text-accent">
-              <Icon name="pencil" size={18} strokeWidth={2} />
-              {t("import.open")}
-            </Link>
-          ) : undefined
-        }
-      />
-      <div className="relative px-6 pt-1.5">
-        <NameChip avatar={avatar} name={name} />
-        <div>
-          <h1 className="hl mt-2.5 inline-block px-1 text-[36px] leading-[1.2]">{t("person.mineList")}</h1>
-        </div>
-        <Star size={22} rotate={14} className="right-11 top-[52px]" />
+      <div className="flex h-12 items-center justify-between pl-1.5 pr-2.5">
+        <Link href={`/people/${contactId}`} prefetch={false} aria-label={t("common.back")} className="flex h-11 w-11 items-center justify-center">
+          <Icon name="back" size={26} strokeWidth={2} />
+        </Link>
+        {ai ? (
+          <Link href={`/import?to=${contactId}`} className="flex h-8 items-center gap-[5px] rounded-full border-[1.5px] border-ink bg-sky-soft pl-2.5 pr-3.5 text-[13px]">
+            <Icon name="pencil" size={16} strokeWidth={1.7} />
+            {t("import.open")}
+          </Link>
+        ) : null}
+      </div>
+      <div className="flex flex-col gap-2 px-5">
+        <PersonNameChip avatar={avatar} name={name} />
+        <h1 className="scribble self-start text-[41px] leading-none">{t("person.mineList")}</h1>
       </div>
       <MyReadmeList
         rows={SECTIONS_BY_IMPORTANCE.map((section) => ({

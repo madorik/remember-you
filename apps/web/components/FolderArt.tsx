@@ -2,56 +2,56 @@ import type { AvatarConfig } from "@readme/core";
 import { COLOR_FILL, ICON_PATH, type FolderColor, type FolderIcon } from "@/lib/folders";
 import { Avatar } from "./Avatar";
 
-// 폴더 그림: 남색 선 + 파스텔 색(항목 아이콘과 같은 결). 뒤판 → 들어 있는 사람 얼굴(없으면 빈 종이) → 앞주머니 + 모양 순서로 겹쳐서
-// 얼굴이 주머니 위로 빼꼼 보인다. 서버·화면이 같이 쓴다
+// 폴더 그림(플래너 시안): 뒤판(탭 달린) → 들어 있는 사람 얼굴(앞에서 셋까지, 없으면 빈 종이) → 앞주머니 순서로 겹쳐서 얼굴이 주머니 위로 빼꼼 보인다.
+// 크기는 폭 기준(높이는 폭의 0.78). 시안의 66px(사람들 칸)과 120px(폴더 화면)가 같은 비율이다. 서버·화면이 같이 쓴다
 
 const INK = "#1F2340";
-const BACK = "M7 13a5 5 0 0 1 5-5h14.5a4 4 0 0 1 3 1.4L33.4 13H60a5 5 0 0 1 5 5v28a5 5 0 0 1-5 5H12a5 5 0 0 1-5-5z";
-const FRONT = "M5 25a4 4 0 0 1 4-4h54a4 4 0 0 1 4 4l-1.6 21.4A5 5 0 0 1 60.4 51H11.6a5 5 0 0 1-5-4.6z";
 
 export function FolderArt({
   icon,
   color,
-  size = 77,
+  size = 66,
   faces,
+  showIcon = false,
 }: {
   icon: FolderIcon;
   color: FolderColor;
-  /** 폭(px). 높이는 72:56 */
+  /** 폭(px). 높이는 폭의 0.78 */
   size?: number;
   /** 들어 있는 사람 얼굴(앞에서 셋까지). 없거나 비면 빈 종이 */
   faces?: { key: string; avatar: AvatarConfig | null; label: string }[];
+  /** 앞주머니 가운데에 고른 모양 그림(폴더 만들기·고치기 미리보기에서만) */
+  showIcon?: boolean;
 }) {
   const fill = COLOR_FILL[color];
-  // 화면에서 선 굵기가 비슷하게(작을수록 뷰박스 안에서는 굵게)
-  const sw = Math.max(1.5, Math.min(3, 140 / size));
+  const h = Math.round(size * 0.78);
   const shown = (faces ?? []).slice(0, 3);
-  const face = Math.round(size * 0.31);
+  const face = Math.round(size * 0.34);
+  const tabH = Math.min(16, Math.round(size * 0.24));
+  const pocket = Math.round(h * 0.52);
+  const line = size < 50 ? 1.2 : 1.5;
   return (
-    <span aria-hidden="true" className="relative block shrink-0" style={{ width: size, height: Math.round((size * 56) / 72) }}>
-      <svg viewBox="0 0 72 56" className="absolute inset-0 h-full w-full overflow-visible">
-        <path d={BACK} fill={fill.back} stroke={INK} strokeWidth={sw} strokeLinejoin="round" />
-        {shown.length ? null : (
-          <>
-            <rect x="13" y="13.5" width="46" height="20" rx="2.5" fill="#fff" stroke={INK} strokeWidth={sw * 0.8} />
-            <path d="M18 19h22M18 24h14" stroke="#E4E6EE" strokeWidth={sw} strokeLinecap="round" />
-          </>
-        )}
-      </svg>
+    <span aria-hidden="true" className="relative block shrink-0" style={{ width: size, height: h }}>
+      <span
+        className="absolute box-border border-b-0"
+        style={{ left: Math.round(size * 0.1), top: 0, width: Math.round(size * 0.42), height: tabH, borderRadius: "8px 8px 0 0", border: `${line}px solid ${INK}`, borderBottom: 0, background: fill.back }}
+      />
+      <span className="absolute box-border" style={{ left: 0, right: 0, bottom: 0, top: Math.round(tabH * 0.75), borderRadius: 10, border: `${line}px solid ${INK}`, background: fill.back }} />
       {shown.length ? (
-        <span className="absolute inset-x-0 flex justify-center" style={{ top: Math.round(size * 0.055) - 4 }}>
-          {shown.map((f, i) => (
-            <span key={f.key} className="rounded-full shadow-[0_0_0_1.5px_#fff]" style={{ marginLeft: i ? -Math.round(face * 0.36) : 0 }}>
-              <Avatar config={f.avatar} size={face} label={f.label} />
-            </span>
-          ))}
-        </span>
+        shown.map((f, i) => (
+          <span key={f.key} className="absolute" style={{ left: Math.round(size * (0.1 + i * 0.25)), top: Math.round(h * 0.2) }}>
+            <Avatar config={f.avatar} size={face} label={f.label} />
+          </span>
+        ))
+      ) : (
+        <span className="absolute box-border bg-white" style={{ left: Math.round(size * 0.14), right: Math.round(size * 0.14), top: Math.round(h * 0.22), height: Math.round(h * 0.3), borderRadius: 4, border: `${line}px solid ${INK}` }} />
+      )}
+      <span className="absolute box-border" style={{ left: 0, right: 0, bottom: 0, height: pocket, borderRadius: 10, border: `${line}px solid ${INK}`, background: fill.front }} />
+      {showIcon ? (
+        <svg viewBox="27.5 28 17 17" width={Math.round(size * 0.22)} height={Math.round(size * 0.22)} className="absolute block" style={{ left: "50%", bottom: Math.round(pocket / 2 - size * 0.11), marginLeft: -Math.round(size * 0.11) }}>
+          <path d={ICON_PATH[icon]} fill="#fff" stroke={INK} strokeWidth="1.1" strokeLinejoin="round" strokeLinecap="round" />
+        </svg>
       ) : null}
-      <svg viewBox="0 0 72 56" className="absolute inset-0 h-full w-full overflow-visible">
-        <path d={FRONT} fill={fill.front} stroke={INK} strokeWidth={sw} strokeLinejoin="round" />
-        <path d="M11 26.5h50" stroke="#fff" strokeOpacity="0.6" strokeWidth={sw} strokeLinecap="round" />
-        <path d={ICON_PATH[icon]} fill="#fff" stroke={INK} strokeWidth={sw * 0.8} strokeLinejoin="round" strokeLinecap="round" />
-      </svg>
     </span>
   );
 }

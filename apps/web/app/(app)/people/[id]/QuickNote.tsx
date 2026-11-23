@@ -3,8 +3,9 @@
 import { useState, useTransition } from "react";
 import { captureNote, saveCapture, undoCapture, type CaptureDraftLine, type CaptureState } from "@/app/actions/capture";
 import { CaptureBadge, struck, type CaptureBadgeLabels } from "@/components/CaptureBadge";
-import { MarginLine, Tape } from "@/components/diary";
+import { MarginLine } from "@/components/diary";
 import { Icon } from "@/components/marks";
+import { TornTape } from "@/components/TornTape";
 
 /**
  * 그 사람 화면 맨 위 한 줄: 적으면 AI가 이 사람 이야기로 맞는 칸을 찾아 더하고("해바라기 좋아함"), 바꾸고("신발 245로 바뀌었어"),
@@ -51,9 +52,9 @@ export function QuickNote({
   const error = result?.error === "ai_off" ? labels.aiOff : result?.error === "nothing" ? labels.nothing : result?.error === "limit" ? labels.limit : result?.error ? labels.failed : null;
 
   return (
-    <div className="card ruled relative mx-4 mt-[22px] flex flex-col pb-3 pl-[42px] pr-3 pt-3">
+    <div className="card ruled relative mx-4 mt-3 flex flex-col pb-2 pl-[42px] pr-3 pt-2">
       <MarginLine />
-      <Tape color="mint" w={74} h={22} rotate={-8} alpha={0.55} vertical className="-top-2.5 left-3.5" />
+      <TornTape color="mint" w={60} h={18} rotate={-8} className="-top-2.5 left-3.5" />
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -75,13 +76,13 @@ export function QuickNote({
           enterKeyHint="send"
           placeholder={labels.placeholder}
           aria-label={labels.placeholder}
-          className="max-h-36 min-h-12 min-w-0 flex-1 resize-none border-0 border-b-[1.5px] border-dashed border-ink bg-transparent px-0.5 py-[11px] text-[19px] leading-[1.3] outline-none [field-sizing:content] placeholder:text-muted"
+          className="max-h-36 min-h-11 min-w-0 flex-1 resize-none border-0 border-b-[1.5px] border-dashed border-ink/40 bg-transparent px-0.5 py-[9px] text-[15px] leading-[1.3] outline-none [field-sizing:content] placeholder:text-muted"
         />
         <button
           type="submit"
           aria-label={labels.save}
           disabled={!text.trim() || pending}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sky text-ink shadow-[inset_0_0_0_1.5px_var(--color-ink)] transition-colors disabled:bg-fill disabled:text-muted"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-[1.5px] border-ink bg-sky text-ink transition-colors disabled:bg-fill disabled:text-muted"
         >
           {pending ? <span className="h-[18px] w-[18px] animate-spin rounded-full border-[2.5px] border-current border-t-transparent" /> : <Icon name="up" size={20} strokeWidth={2.4} />}
         </button>

@@ -14,7 +14,6 @@ import { SafetyEditor } from "@/components/editors/SafetyEditor";
 import { SizesEditor } from "@/components/editors/SizesEditor";
 import { TasteEditor } from "@/components/editors/TasteEditor";
 import { useT } from "@/components/editors/shared";
-import { Heart, MarginLine, Squiggle, SKY_STAR, Star, Tape } from "@/components/diary";
 import { Icon } from "@/components/marks";
 
 // 저장 상태 줄이 붙을 아래 위치: 하단 메뉴가 늘 떠 있으니 그 바로 위, 키보드가 뜨면 키보드 위
@@ -42,6 +41,7 @@ export function SectionForm<S extends Section>({
   inline = false,
   autoSave = false,
   stickTo = ABOVE_TAB_BAR,
+  header,
 }: {
   section: S;
   initial: CardData[S] | null;
@@ -51,6 +51,8 @@ export function SectionForm<S extends Section>({
   autoSave?: boolean;
   /** inline일 때 저장 상태 줄이 붙을 아래 위치(기본: 하단 메뉴·키보드 바로 위) */
   stickTo?: string;
+  /** 있으면 form 맨 위에 그린다(머리 줄 + 제목, 안에 SaveButton). 이때 아래 저장 단추는 없다(플래너 시안의 고치기 화면) */
+  header?: React.ReactNode;
 }) {
   const t = useT(locale);
   const save = contactId ? savePersonSection : saveSection;
@@ -98,16 +100,7 @@ export function SectionForm<S extends Section>({
   };
 
   const editors = (
-    <div className={inline ? "pt-1" : "card ruled relative mx-4 mt-[22px] pb-6 pl-10 pr-5 pt-[26px] [background-position:0_18px]"}>
-      {inline ? null : (
-        <>
-          <MarginLine left={26} />
-          <Tape color="mango" w={100} h={24} rotate={-3} alpha={0.62} className="-top-[11px] left-1/2 -ml-[50px]" />
-          <Heart size={26} rotate={16} className="-right-[9px] top-[120px]" />
-          <Star size={20} rotate={-12} color={SKY_STAR} className="-left-2 top-[330px]" />
-          <Squiggle w={54} width={2.4} className="-bottom-2 right-9" />
-        </>
-      )}
+    <div className={inline ? "pt-1" : `card relative mx-4 mt-5 px-3.5 pb-3.5 ${section === "safety" || section === "dates" ? "pt-0.5" : "pt-3"}`}>
       {section === "safety" ? <SafetyEditor value={value as CardData["safety"]} onChange={change} locale={locale} /> : null}
       {section === "taste" ? <TasteEditor value={value as CardData["taste"]} onChange={change} locale={locale} /> : null}
       {section === "sizes" ? <SizesEditor value={value as CardData["sizes"]} onChange={change} locale={locale} /> : null}
@@ -125,12 +118,12 @@ export function SectionForm<S extends Section>({
       <div className="flex flex-col" onBlur={() => flush.current()}>
         {editors}
         {/* 저장 상태는 저장 중·저장됨·실패일 때만. 쓰는 법 설명은 두지 않는다 */}
-        <div className={`sticky z-10 min-h-11 items-center bg-paper pb-3 pt-3 ${status === "idle" ? "hidden" : "flex"}`} style={{ bottom: stickTo }}>
-          <p role="status" aria-live="polite" className={`flex items-center gap-1.5 text-[17px] ${status === "error" ? "text-red" : status === "saved" ? "text-ok" : "text-muted"}`}>
+        <div className={`sticky z-10 min-h-11 items-center justify-center bg-paper pb-3 pt-3 ${status === "idle" ? "hidden" : "flex"}`} style={{ bottom: stickTo }}>
+          <p role="status" aria-live="polite" className={`flex items-center gap-1 text-[12px] ${status === "error" ? "text-red" : "text-muted"}`}>
             {status === "saving" ? t("me.saving") : null}
             {status === "saved" ? (
               <>
-                <Icon name="check" size={15} strokeWidth={2.4} />
+                <Icon name="check" size={14} strokeWidth={2.4} className="text-[#5DBB9A]" />
                 {t("me.saved")}
               </>
             ) : null}
@@ -143,7 +136,7 @@ export function SectionForm<S extends Section>({
                 unsaved.current = true;
                 flush.current();
               }}
-              className="ml-auto flex min-h-11 items-center px-2 text-[18px] text-accent"
+              className="ml-3 flex min-h-11 items-center px-2 text-[14px] text-accent"
             >
               {t("me.retry")}
             </button>
@@ -164,25 +157,42 @@ export function SectionForm<S extends Section>({
       <input type="hidden" name="section" value={section} />
       {contactId ? <input type="hidden" name="contactId" value={contactId} /> : null}
       <input type="hidden" name="data" value={JSON.stringify(value)} />
+      {header}
       {editors}
-      <div
-        className={inline ? "sticky z-10 flex flex-col gap-2 bg-paper pb-3 pt-4" : "bottom-bar mt-auto flex flex-col gap-2 bg-bg px-6 pt-3.5"}
-        style={inline ? { bottom: stickTo } : undefined}
-      >
-        {state.saved && !dirty ? (
-          <p role="status" className="text-[17px] text-ok">
-            {t("me.saved")}
-          </p>
-        ) : null}
-        {state.error ? (
-          <p role="alert" className="text-[17px] text-red">
-            {t("common.error")}
-          </p>
-        ) : null}
-        <button disabled={pending} className="btn-primary">
-          {t("common.save")}
-        </button>
-      </div>
+      {header ? (
+        <div className="page-end flex min-h-11 flex-col items-center justify-center gap-1 pt-3">
+          {state.saved && !dirty ? (
+            <p role="status" className="flex items-center gap-1 text-[12px] text-muted">
+              <Icon name="check" size={14} strokeWidth={2.4} className="text-[#5DBB9A]" />
+              {t("me.saved")}
+            </p>
+          ) : null}
+          {state.error ? (
+            <p role="alert" className="text-[13px] text-red">
+              {t("common.error")}
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <div
+          className={inline ? "sticky z-10 flex flex-col gap-2 bg-paper pb-3 pt-4" : "bottom-bar mt-auto flex flex-col gap-2 bg-bg px-6 pt-3.5"}
+          style={inline ? { bottom: stickTo } : undefined}
+        >
+          {state.saved && !dirty ? (
+            <p role="status" className="text-[15px] text-ok">
+              {t("me.saved")}
+            </p>
+          ) : null}
+          {state.error ? (
+            <p role="alert" className="text-[15px] text-red">
+              {t("common.error")}
+            </p>
+          ) : null}
+          <button disabled={pending} className="btn-primary">
+            {t("common.save")}
+          </button>
+        </div>
+      )}
     </form>
   );
 }

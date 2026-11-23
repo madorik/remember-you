@@ -28,6 +28,12 @@ async function remember(who: string, ctx: BrowserContext) {
   sessions[who] = await ctx.storageState();
 }
 
+/** 사람 화면 오른쪽 위 ··· 메뉴에서 항목을 누른다(물어보기 · 선물 고르기 · 지우기) */
+async function personMenu(page: import("@playwright/test").Page, item: "물어보기" | "선물 고르기" | "지우기") {
+  await page.getByRole("button", { name: "더 보기" }).click();
+  await page.getByRole("menuitem", { name: item }).click();
+}
+
 /** 물어볼 항목을 모두 끄고 고른 것만 켠다 */
 async function onlyTopics(page: import("@playwright/test").Page, names: string[]) {
   const on = page.locator("form button[aria-pressed=true]");
@@ -208,7 +214,7 @@ test("물어보기(새 사람) → 앱 없이 웹에서 답하기 → 답이 내
   await expect(page.getByText(`${solar.m}.${solar.d}`).first()).toBeVisible();
   await page.getByRole("link", { name: /아빠/ }).click();
   // 굴은 '못 먹는 것'으로 답했다
-  await expect(page.getByRole("listitem").filter({ has: page.getByRole("link", { name: /알레르기와 못 먹는 음식/ }) }).getByText("굴", { exact: true })).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ has: page.getByRole("link", { name: /알레르기와 못 먹는 음식/ }) }).getByText(/굴/)).toBeVisible();
   await shot(page, "07-person-answered");
   await page.goto("/home");
   // 다 읽었으니 종에는 숫자가 없고, 열어도 새 알림이 없다
@@ -303,9 +309,10 @@ test("받은 답도 내가 고친다", async ({ browser }) => {
   // 수정 화면에는 비어 있는 항목도 다 있다
   await expect(page.getByRole("button", { name: /^사이즈/ })).toBeVisible();
   await page.goto(personUrl);
-  await expect(page.getByText("땅콩", { exact: true })).toBeVisible();
-  await expect(page.getByText("굴", { exact: true })).toBeVisible();
-  await page.getByRole("link", { name: "선물 고르기" }).click();
+  // 사람 화면은 항목마다 한 줄 요약(알레르기는 '땅콩 알레르기'처럼 붉게)
+  await expect(page.getByText(/땅콩/)).toBeVisible();
+  await expect(page.getByText(/굴/)).toBeVisible();
+  await personMenu(page, "선물 고르기");
   await shot(page, "09-reminder");
 });
 
@@ -315,7 +322,7 @@ test("아는 사람에게 다시 물어보기: 내 기록 값이 미리 채워�
   await page.getByRole("link", { name: /아빠/ }).click();
   await page.waitForURL(/\/people\/[0-9a-f-]{36}$/);
   const personUrl = new URL(page.url()).pathname;
-  await page.getByRole("link", { name: "물어보기", exact: true }).click();
+  await personMenu(page, "물어보기");
   await expect(page.getByRole("heading", { name: "아빠에게 물어보기" })).toBeVisible();
   await expect(page.getByText("누구에게 물어볼까요?")).toHaveCount(0);
   // 아직 안 적힌 항목이 먼저 골라져 있다(생일·알레르기는 적혀 있다)
@@ -361,7 +368,7 @@ test("아는 사람에게 다시 물어보기: 내 기록 값이 미리 채워�
   await expect(page.getByText("답장을 기다리고 있어요")).toHaveCount(0);
 
   // 또 물어보고 사람 화면에서 취소하면, 링크가 더는 열리지 않는다
-  await page.getByRole("link", { name: "물어보기", exact: true }).click();
+  await personMenu(page, "물어보기");
   await onlyTopics(page, ["선물"]);
   const canceled = await makeLink(page);
   await page.goto(personUrl);
@@ -490,7 +497,7 @@ test("직접 적어 두기: 물어보지 않아도 적어 두면 나만 보고, 
 
   await jisu.goto(personUrl);
   await expect(jisu.getByRole("link", { name: /알레르기와 못 먹는 음식/ })).toBeVisible();
-  await expect(jisu.getByText("땅콩", { exact: true })).toBeVisible();
+  await expect(jisu.getByText(/땅콩/)).toBeVisible();
   await shot(jisu, "14-mine-person");
   await jisu.goto("/people");
   await expect(jisu.getByRole("link", { name: /할머니.*7일 남음/ })).toBeVisible();
@@ -508,17 +515,17 @@ test("직접 적어 두기: 물어보지 않아도 적어 두면 나만 보고, 
   await doyun.goto(personUrl);
   await expect(doyun.getByText("할머니")).toHaveCount(0);
 
-  // 지우기는 사람 화면 위 줄 오른쪽(즐겨찾기 별 옆 휴지통) 한 곳뿐(프로필 고치기에는 없다). 누르면 확인 시트가 뜨고, 취소하면 그대로, 지우면 목록에서 사라진다
+  // 지우기는 사람 화면 위 줄 오른쪽 ··· 메뉴의 한 곳뿐(프로필 고치기에는 없다). 누르면 확인 시트가 뜨고, 취소하면 그대로, 지우면 목록에서 사라진다
   await jisu.goto(personUrl);
   await jisu.getByRole("link", { name: "프로필 수정" }).click();
   await expect(jisu.getByText("사람들에서 지우기", { exact: true })).toHaveCount(0);
   await jisu.goto(personUrl);
-  await jisu.getByRole("button", { name: "사람들에서 지우기" }).click();
+  await personMenu(jisu, "지우기");
   await expect(jisu.getByRole("dialog", { name: "할머니를 지울까요?" })).toBeVisible();
   await jisu.getByRole("button", { name: "취소", exact: true }).click();
   await expect(jisu.getByRole("dialog")).toHaveCount(0);
   await expect(jisu).toHaveURL(personUrl);
-  await jisu.getByRole("button", { name: "사람들에서 지우기" }).click();
+  await personMenu(jisu, "지우기");
   await jisu.getByRole("button", { name: "지우기", exact: true }).last().click();
   await expect(jisu).toHaveURL(/\/people$/);
   await expect(jisu.getByRole("link", { name: /할머니/ })).toHaveCount(0);
@@ -908,10 +915,10 @@ test("데모로 둘러보기: 샘플 사람들이 들어 있고, 데모 계정�
   await page.goto("/home");
   await page.getByRole("link", { name: /아내/ }).first().click();
   await expect(page.getByRole("link", { name: /알레르기와 못 먹는 음식/ })).toBeVisible();
-  await expect(page.getByText("새우", { exact: true })).toBeVisible();
+  await expect(page.getByText(/새우/)).toBeVisible();
 
   // 선물 고르기 → 이런 선물은 어때요: 가격대 넷, 아내(연인)는 5만원대가 먼저 열리고, 누르면 쿠팡 파트너스 링크
-  await page.getByRole("link", { name: "선물 고르기" }).click();
+  await personMenu(page, "선물 고르기");
   // 날을 짚지 않고 열면 생일이라고 단정하지 않는다: 제목은 '○○에게 줄 선물'
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("아내에게 줄 선물");
   await expect(page.getByRole("heading", { level: 1 })).not.toContainText("생일");
