@@ -2,8 +2,6 @@ import { SECTIONS, type Section } from "@readme/core";
 import Link from "@/components/AppLink";
 import { leaveTour } from "@/app/actions/tour";
 import { VoiceCapture } from "@/app/(app)/voice/VoiceCapture";
-import { TopBar } from "@/components/chrome";
-import { Heart, Star } from "@/components/diary";
 import { Icon } from "@/components/marks";
 import type { VoiceData } from "@/lib/pages/types";
 import { makeT } from "@/lib/t";
@@ -14,39 +12,40 @@ export function VoiceView({ locale, people, tour }: VoiceData) {
   return (
     <div className="flex flex-1 flex-col">
       {/* 가입 직후 체험이면 닫기 대신 오른쪽 위 '건너뛰기'(체험을 접고 홈으로) */}
-      <TopBar
-        close={tour ? undefined : "/home"}
-        label={t("common.close")}
-        right={
-          tour ? (
-            <form action={leaveTour}>
-              <input type="hidden" name="kind" value="skip" />
-              <input type="hidden" name="source" value="voice" />
-              <button className="flex min-h-11 items-center px-3 text-[19px] text-muted">{t("common.skip")}</button>
-            </form>
-          ) : (
-            // 가운데 구슬에서도: 적어 둔 메모를 통째로 가져오기(쓰기·말하기)
-            <Link href="/import" className="flex min-h-11 items-center gap-1 px-3 text-[19px] text-accent">
-              <Icon name="pencil" size={18} strokeWidth={2} />
-              {t("import.open")}
-            </Link>
-          )
-        }
-      />
+      <div className="flex h-12 shrink-0 items-center justify-between pl-1.5 pr-2.5">
+        {tour ? (
+          <span className="w-11" />
+        ) : (
+          <Link href="/home" prefetch={false} aria-label={t("common.close")} className="flex h-11 w-11 items-center justify-center">
+            <Icon name="close" size={22} strokeWidth={1.8} />
+          </Link>
+        )}
+        {tour ? (
+          <form action={leaveTour}>
+            <input type="hidden" name="kind" value="skip" />
+            <input type="hidden" name="source" value="voice" />
+            <button className="flex min-h-11 items-center px-3 text-[14px] text-muted">{t("common.skip")}</button>
+          </form>
+        ) : (
+          // 가운데 구슬에서도: 적어 둔 메모를 통째로 가져오기(쓰기·말하기)
+          <Link href="/import" className="inline-flex h-8 items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-sky-soft px-3.5 text-[13px] [html[data-draft]_&]:hidden">
+            <Icon name="pencil" size={16} strokeWidth={1.8} />
+            {t("import.open")}
+          </Link>
+        )}
+      </div>
       {/* 키보드가 뜨면(적는 동안) 제목은 숨겨 적는 칸과 사람 줄이 한 화면에. 체험이면 제목 대신 아래 안내(이렇게 말해보세요) */}
       {tour ? null : (
-        <div className="relative px-6 pt-2 text-center [html[data-kb]_&]:hidden">
-          <h1 className="text-[34px] leading-[1.25]">
+        <div className="px-6 pt-5 text-center [html[data-draft]_&]:hidden [html[data-kb]_&]:hidden">
+          <h1 className="text-[34px] leading-[1.2]">
             {t("voice.headline")
               .split("\n")
               .map((line, i, all) => (
                 <span key={i} className="block">
-                  {i === all.length - 1 ? <span className="hl px-1">{line}</span> : line}
+                  {i === all.length - 1 ? <span className="hl">{line}</span> : line}
                 </span>
               ))}
           </h1>
-          <Star size={22} rotate={14} className="right-[42px] top-0.5" />
-          <Heart size={22} rotate={-14} className="left-[38px] top-[54px]" />
         </div>
       )}
       <VoiceCapture

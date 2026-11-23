@@ -1,7 +1,7 @@
 import { SECTIONS_BY_IMPORTANCE } from "@readme/core";
 import Link from "@/components/AppLink";
 import { Avatar } from "@/components/Avatar";
-import { Heart, SKY_STAR, Squiggle, Star, Tape } from "@/components/diary";
+import { TornTape } from "@/components/TornTape";
 import { Icon } from "@/components/marks";
 import { SectionBody } from "@/components/SectionBody";
 import { SectionIcon } from "@/components/SectionIcon";
@@ -20,67 +20,63 @@ export function MeView({ locale, name, avatar, card, today }: MeData) {
 
   return (
     <>
-      <div className="relative flex items-center gap-[22px] pb-1 pl-[26px] pr-4 pt-[26px]">
-        <Link
-          href="/me/avatar"
-          className="relative block shrink-0 -rotate-3 bg-white px-[7px] pb-5 pt-[7px] shadow-[0_1px_2px_rgb(31_35_64/0.12),0_8px_16px_-10px_rgb(31_35_64/0.5)]"
-        >
-          <span className="flex h-[86px] w-[86px] items-center justify-center bg-[#f1ecff]">
-            <Avatar config={avatar} size={80} label={t("avatar.of", { name })} />
-          </span>
-          <Tape color="pink" w={48} h={18} rotate={-6} className="-top-[9px] left-[22px]" />
-        </Link>
-        <div className="flex min-w-0 items-center">
-          <h1 className="hl truncate px-1 text-[40px] leading-[1.15]">{name}</h1>
-          <Link href="/me/avatar" aria-label={t("me.face")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted active:bg-fill">
-            <Icon name="pencil" size={19} strokeWidth={1.9} />
-          </Link>
-        </div>
-        {/* 화면 위 오른쪽: 내 기록 링크로 보내기 */}
+      {/* 위 줄: 오른쪽에 내 기록 링크로 보내기(시안은 테두리 없는 아이콘) */}
+      <div className="flex h-12 shrink-0 items-center justify-end pr-2.5">
         <ShareMyRecord
           parts={shareable}
-          className="absolute right-2.5 top-1.5"
+          className="!bg-transparent !text-ink !shadow-none"
           labels={{ open: t("share.record"), title: t("share.recordTitle"), send: t("share.send"), shared: t("share.done"), copied: t("share.copied"), failed: t("share.failed"), busy: t("share.busy"), text: t("share.linkText"), close: t("common.close") }}
         />
-        <Star size={22} rotate={14} className="right-[72px] top-9" />
-        <Heart size={24} rotate={-14} className="left-[100px] top-28" />
       </div>
 
-      <section aria-labelledby="me-title" className="relative mx-4 mt-[18px] flex flex-col">
-        <div className="flex min-h-11 items-center justify-between pl-2">
-          <h2 id="me-title" className="text-[22px]">
-            {t("me.title")}
-          </h2>
-          <div className="flex items-center gap-1">
-            <Link href="/me/edit" aria-label={t("me.edit")} className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 active:bg-fill">
-              <Icon name="pencil" size={21} strokeWidth={1.9} />
+      <div className="relative flex items-center gap-4 px-5 pt-1">
+        <Link href="/me/avatar" className="relative block shrink-0 -rotate-3 border-[1.5px] border-ink bg-white px-1.5 pb-[18px] pt-1.5">
+          <span className="flex h-[86px] w-[86px] items-center justify-center overflow-hidden bg-[#f1ecfd]">
+            <Avatar config={avatar} size={80} label={t("avatar.of", { name })} />
+          </span>
+          <TornTape color="pink" w={56} h={17} rotate={-8} className="-top-3 left-[18px]" />
+        </Link>
+        <div className="flex min-w-0 flex-1 items-center gap-0.5">
+          <h1 className="min-w-0 truncate text-[48px] leading-none">
+            <span className="hl">{name}</span>
+          </h1>
+          <Link href="/me/avatar" aria-label={t("me.face")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full active:bg-fill">
+            <Icon name="pencil" size={19} strokeWidth={1.8} />
+          </Link>
+        </div>
+      </div>
+
+      <section aria-labelledby="me-title" className="relative mx-4 mt-8 flex flex-col">
+        <div className="card relative flex flex-col px-3.5 pb-3 pt-2.5">
+          <TornTape color="mint" w={68} h={21} rotate={6} className="-top-3 right-6" />
+          <div className="flex min-h-[34px] items-center justify-between gap-2">
+            <h2 id="me-title" className="scribble text-[24px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
+              {t("me.title")}
+            </h2>
+            <Link href="/me/edit" aria-label={t("me.edit")} className="flex h-11 w-11 items-center justify-center rounded-full active:bg-fill">
+              <Icon name="pencil" size={19} strokeWidth={1.8} />
             </Link>
           </div>
-        </div>
-        {filled.length ? (
-          <div className="card relative mt-1 px-4">
-            <Tape color="mint" className="-left-2.5 -top-1.5" />
-            <ul className="flex flex-col">
-            {filled.map(({ section, body }) => (
-              <li key={section} className="border-t border-dashed border-rule first:border-t-0">
-                <Link href={`/me/edit?open=${section}`} className="flex min-h-[56px] items-center gap-3 pt-2">
-                  <SectionIcon section={section} size={40} />
-                  <span className={`min-w-0 flex-1 text-[20px] ${section === "safety" ? "text-red" : ""}`}>{t(`section.${section}`)}</span>
-                  <Icon name="chevron" size={18} className="shrink-0 text-muted" />
-                </Link>
-                <div className="pb-3.5 pt-1">{body}</div>
-              </li>
-            ))}
+          {filled.length ? (
+            <ul className="mt-1.5 flex flex-col">
+              {filled.map(({ section, body }) => (
+                <li key={section} className="border-t-[1.5px] border-dashed border-ink/[0.18] first:border-t-0">
+                  <Link href={`/me/edit?open=${section}`} className="flex min-h-10 items-center gap-2.5">
+                    <SectionIcon section={section} size={34} outline />
+                    <span className={`hand min-w-0 flex-1 text-[23px] leading-[1.1] ${section === "safety" ? "text-red" : ""}`}>{t(`section.${section}`)}</span>
+                    <Icon name="chevron" size={15} strokeWidth={2} className="shrink-0 text-muted" />
+                  </Link>
+                  <div className="pb-2.5 pl-[44px]">{body}</div>
+                </li>
+              ))}
             </ul>
-            <Star size={20} rotate={12} color={SKY_STAR} className="-right-1.5 top-[210px]" />
-            <Squiggle w={54} width={2.4} color="#F59BAE" className="-bottom-2 right-[30px]" />
-          </div>
-        ) : (
-          <Link href="/me/edit" className="card mt-1 flex min-h-[72px] items-center justify-center gap-1.5 text-[19px] text-accent">
-            <Icon name="plus" size={17} strokeWidth={2.4} />
-            {t("person.write")}
-          </Link>
-        )}
+          ) : (
+            <Link href="/me/edit" className="hand mt-1 flex min-h-[72px] items-center justify-center gap-1.5 text-[24px]">
+              <Icon name="plus" size={17} strokeWidth={2.4} />
+              {t("person.write")}
+            </Link>
+          )}
+        </div>
       </section>
 
       <div className="h-8" />

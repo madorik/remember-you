@@ -69,7 +69,7 @@ export function ShareMyRecord({
           closeLabel={labels.close}
           onClose={close}
           footer={
-            <button type="button" onClick={send} disabled={status === "busy" || !picked.length} aria-live="polite" className="btn-primary w-full !text-[20px] disabled:opacity-50">
+            <button type="button" onClick={send} disabled={status === "busy" || !picked.length} aria-live="polite" className="btn-primary w-full disabled:opacity-50">
               {label}
             </button>
           }
@@ -78,12 +78,12 @@ export function ShareMyRecord({
             {parts.map((p) => {
               const on = picked.includes(p.section);
               return (
-                <li key={p.section} className="border-t border-dashed border-rule first:border-t-0">
+                <li key={p.section} className="border-t-[1.5px] border-dashed border-ink/[0.18] first:border-t-0">
                   <button type="button" aria-pressed={on} onClick={() => toggle(p.section)} className="flex min-h-[56px] w-full items-center gap-3 py-2 text-left">
                     <DrawnCheck on={on} />
                     <span className="flex min-w-0 flex-1 flex-col">
-                      <span className="truncate text-[19px]">{p.title}</span>
-                      <span className="truncate text-[15px] text-muted">{p.lines[0]}</span>
+                      <span className="hand truncate text-[22px] leading-[1.15]">{p.title}</span>
+                      <span className="truncate text-[12px] text-muted">{p.lines[0]}</span>
                     </span>
                   </button>
                 </li>

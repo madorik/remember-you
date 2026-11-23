@@ -5,11 +5,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { setLocale } from "@/app/actions/auth";
 import { AuthButtons } from "@/components/AuthButtons";
-import { LegalLinks, Wordmark } from "@/components/chrome";
-import { Squiggle, Star, SKY_STAR } from "@/components/diary";
+import { Wordmark } from "@/components/chrome";
 import { FaqList } from "@/components/Faq";
 import { JsonLd } from "@/components/JsonLd";
-import { HeroHeadline, LoginHero } from "@/components/LoginHero";
+import { HeroHeadline, LoginHero, StartLegal } from "@/components/LoginHero";
 import { PROVIDERS } from "@/lib/auth";
 import { getSession } from "@/lib/data";
 import { demoEnabled } from "@/lib/demo-core";
@@ -76,11 +75,11 @@ export default async function Start({ searchParams }: { searchParams: Promise<{ 
       />
       {/* 큰 로고의 U 위 점이 글줄 위로 5px쯤 나온다. 상태바·화면 위 끝에 붙어 잘리지 않게 위를 비워 둔다 */}
       <div className="flex items-center justify-between pl-5 pr-2 pt-4">
-        <Wordmark size={35} locale={locale} />
+        <Wordmark size={24} locale={locale} />
         <form action={setLocale}>
           <input type="hidden" name="locale" value={locale === "ko" ? "en" : "ko"} />
           <input type="hidden" name="back" value={rawNext ? `/?next=${encodeURIComponent(next)}` : "/"} />
-          <button className="flex min-h-11 items-center px-2.5 text-[19px] underline underline-offset-4">{t("lang.other")}</button>
+          <button className="flex min-h-11 items-center px-2.5 text-[13px] underline underline-offset-4">{t("lang.other")}</button>
         </form>
       </div>
 
@@ -91,16 +90,14 @@ export default async function Start({ searchParams }: { searchParams: Promise<{ 
 
       <section className="relative flex flex-col gap-3 px-6">
         <HeroHeadline text={t("start.headline")} />
-        <p className="hero-rise whitespace-pre-line text-[20px] leading-[1.5] text-muted" style={{ animationDelay: "0.3s" }}>
+        <p className="hero-rise whitespace-pre-line text-[15px] leading-[1.6]" style={{ animationDelay: "0.3s" }}>
           {t("start.body")}
         </p>
-        <Star size={22} rotate={12} color={SKY_STAR} className="right-[34px] top-[22px]" />
-        <Squiggle w={58} className="right-9 top-[84px]" />
       </section>
 
       <div className="px-6 pt-7">
         <AuthButtons locale={locale} next={next} google={PROVIDERS.google} apple={PROVIDERS.apple} demo={demoEnabled()} />
-        <LegalLinks locale={locale} t={t} />
+        <StartLegal locale={locale} />
       </div>
 
       {web ? (

@@ -29,7 +29,7 @@ export function ErrorScreen({ retry, locale, wrap = false }: { retry: () => void
   const body = (
     <div role="alert" className="page-end flex flex-1 flex-col items-center justify-center gap-5 px-6 text-center">
       <Mascot pose={9} size={108} />
-      <h1 className="headline text-[24px]">{t("error.title")}</h1>
+      <h1 className="text-[30px] leading-[1.2]">{t("error.title")}</h1>
       <div className="flex w-full max-w-[320px] flex-col gap-2.5 pt-1">
         <button type="button" onClick={retry} className="btn-primary w-full">
           {t("error.retry")}

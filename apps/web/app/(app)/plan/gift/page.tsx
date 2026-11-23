@@ -20,7 +20,7 @@ export default async function PlanGift({ searchParams }: { searchParams: Promise
         row: (p, name, next) => (
           <PicksStage compact lines={[1, 2, 3, 4].map((n) => t(`picks.loading.${n}` as "picks.loading.1", { name }))} shout={t("picks.shout")}>
             <Suspense fallback={<PicksPending />}>
-              <GiftPicks s={s} person={p} occasion={next ? { kind: next.kind, label: next.label ?? "", daysUntil: next.daysUntil } : null} today={data.today} max={2} pad="px-5" title={false} />
+              <GiftPicks s={s} person={p} occasion={next ? { kind: next.kind, label: next.label ?? "", daysUntil: next.daysUntil } : null} today={data.today} max={2} pad="px-3.5" title={false} />
             </Suspense>
           </PicksStage>
         ),

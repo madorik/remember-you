@@ -1,6 +1,6 @@
 import { sanitizeSections, translate } from "@readme/core";
 import { Wordmark } from "@/components/chrome";
-import { Heart, Squiggle, Star, SKY_STAR, Tape } from "@/components/diary";
+import { TornTape } from "@/components/TornTape";
 import { getSession, readCard } from "@/lib/data";
 import { makeT, requestLocale } from "@/lib/i18n";
 import { readAskOnce } from "@/lib/ask";
@@ -40,9 +40,9 @@ export default async function AnswerPage({ params }: { params: Promise<{ token: 
   const from = row.inviter_name || translate(locale, "app.name");
 
   const header = (
-    <div className="flex min-h-11 items-center justify-between px-5">
-      <Wordmark size={26} locale={locale} />
-      <span className="rounded-full border-[1.5px] border-dashed border-ink bg-paper px-3 pb-1 pt-[3px] text-[15px] text-muted [transform:rotate(2deg)]">{t("answer.noInstall")}</span>
+    <div className="flex min-h-12 items-center justify-between px-5">
+      <Wordmark size={24} locale={locale} />
+      <span className="rounded-full border-[1.5px] border-dashed border-ink/40 bg-paper px-3 py-1 text-[12px] text-ink [transform:rotate(-2deg)]">{t("answer.noInstall")}</span>
     </div>
   );
 
@@ -70,12 +70,9 @@ export default async function AnswerPage({ params }: { params: Promise<{ token: 
   return (
     <main className="screen">
       {header}
-      <section className="card relative mx-4 mt-10 px-6 pb-[34px] pt-9 [transform:rotate(-0.7deg)]">
-        <Tape color="pink" w={108} h={26} rotate={-3} alpha={0.6} className="-top-[13px] left-1/2 -ml-[54px]" />
-        <p className="text-[28px] leading-[1.4]">{t(key)}</p>
-        <Star size={24} rotate={14} color={SKY_STAR} className="-right-2 top-[22px]" />
-        <Heart size={26} rotate={-14} className="-bottom-2.5 -left-2" />
-        <Squiggle w={56} className="-bottom-[7px] right-7" />
+      <section className="card relative mx-4 mt-10 px-5 pb-8 pt-8">
+        <TornTape color="pink" w={66} h={21} rotate={6} className="-top-3 right-6" />
+        <p className="hand text-[28px] leading-[1.3]">{t(key)}</p>
       </section>
     </main>
   );

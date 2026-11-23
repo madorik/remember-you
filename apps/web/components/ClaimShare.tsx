@@ -6,7 +6,10 @@ import { useState } from "react";
 import { claimSharedRecord, type ClaimResult } from "@/app/actions/share";
 import type { SharePart } from "@/lib/share-record";
 import { Avatar } from "./Avatar";
-import { Heart, Squiggle, Star, Tape } from "./diary";
+import { TornTape } from "./TornTape";
+import { Icon } from "./marks";
+import { Mascot } from "./Mascot";
+import { SectionIcon } from "./SectionIcon";
 
 export interface ClaimPerson {
   id: string;
@@ -18,11 +21,11 @@ export interface ClaimPerson {
 
 type FailReason = Extract<ClaimResult, { ok: false }>["reason"];
 
-/** 하나만 고르는 칸의 동그라미(여러 개 고르는 칸은 DrawnCheck의 네모) */
+/** 하나만 고르는 칸의 동그라미(시안: 22px 흰 바탕 + 남색 선, 고르면 안에 남색 점) */
 function RadioMark({ on }: { on: boolean }) {
   return (
-    <span aria-hidden="true" className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-[1.8px] border-ink transition-colors ${on ? "bg-sky" : "bg-white"}`}>
-      {on ? <span className="h-3 w-3 rounded-full bg-ink" /> : null}
+    <span aria-hidden="true" className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border-[1.5px] border-ink bg-white">
+      {on ? <span className="h-[11px] w-[11px] rounded-full bg-ink" /> : null}
     </span>
   );
 }
@@ -85,83 +88,93 @@ export function ClaimShare({
   };
 
   const row = (key: string, on: boolean, onPick: () => void, content: React.ReactNode) => (
-    <button key={key} type="button" role="radio" aria-checked={on} onClick={onPick} className="flex min-h-[60px] w-full items-center gap-3 border-t border-dashed border-rule py-2 text-left first:border-t-0">
+    <button key={key} type="button" role="radio" aria-checked={on} onClick={onPick} className="flex min-h-[47px] w-full items-center gap-3 border-t-[1.5px] border-dashed border-ink/[0.18] py-2 text-left first:border-t-0">
       <RadioMark on={on} />
       {content}
     </button>
   );
 
+  // 제목은 첫 낱말(누가)에만 형광펜, 나머지는 다음 줄로
+  const [lead, ...rest] = labels.title.split(" ");
   return (
     <>
-      <div className="flex items-center gap-4 px-6 pb-1 pt-5">
-        <Avatar config={avatar} size={64} label={labels.avatarOf.replace("{name}", from)} />
-        <h1 className="hl min-w-0 text-[30px] leading-[1.25]">{labels.title}</h1>
+      <div className="flex items-center gap-4 px-5 pb-1 pt-3">
+        <Avatar config={avatar} size={60} label={labels.avatarOf.replace("{name}", from)} />
+        <h1 className="min-w-0 flex-1 text-[34px] leading-[1.15]">
+          <span className="hl">{lead}</span>
+          {rest.length ? (
+            <>
+              <br />
+              {rest.join(" ")}
+            </>
+          ) : null}
+        </h1>
+        <Mascot pose={9} size={66} className="shrink-0" />
       </div>
 
       {/* 받은 내용(로그인한 사람에게만 보인다) */}
-      <section className="card relative mx-4 mt-5 px-4 pb-1">
-        <Tape color="mint" className="-left-2.5 -top-1.5" />
+      <section className="card relative mx-4 mt-7 px-3.5 py-1">
+        <TornTape color="mint" w={66} h={21} rotate={6} className="-top-3 right-6" />
         <ul className="flex flex-col">
           {parts.map((p) => (
-            <li key={p.section} className="border-t border-dashed border-rule py-3 first:border-t-0">
-              <p className="text-[19px]">{p.title}</p>
-              <ul className="mt-1 flex flex-col gap-0.5">
+            <li key={p.section} className="flex items-center gap-2.5 border-t-[1.5px] border-dashed border-ink/[0.18] py-2 first:border-t-0">
+              <SectionIcon section={p.section as Parameters<typeof SectionIcon>[0]["section"]} size={30} outline />
+              <span className="flex min-w-0 flex-1 flex-col">
                 {p.lines.map((line, i) => (
-                  <li key={i} className="break-words text-[17px] text-ink-2">
+                  <span key={i} className={`hand-written break-words text-[24px] leading-[1.15] ${p.section === "safety" ? "text-red" : ""}`}>
                     {line}
-                  </li>
+                  </span>
                 ))}
-              </ul>
+                <span className="text-[12px] text-muted">{p.title}</span>
+              </span>
             </li>
           ))}
         </ul>
-        <Star size={20} rotate={12} className="-right-1.5 top-6" />
       </section>
 
       {/* 어디에 저장할까요 */}
-      <section className="relative mx-4 mb-4 mt-6">
-        <h2 id="claim-where" className="pl-2 text-[22px]">
+      <section className="card relative mx-4 mb-4 mt-7 px-3.5 pb-1 pt-2.5">
+        <h2 id="claim-where" className="hand scribble text-[24px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
           {labels.where}
         </h2>
-        <div role="radiogroup" aria-labelledby="claim-where" className="card relative mt-2 px-4">
-          {row("new", target === "new", () => setTarget("new"), <span className="min-w-0 flex-1 truncate text-[20px]">{labels.newPerson}</span>)}
-          {people.length ? <p className="border-t border-dashed border-rule pb-1 pt-3 text-[15px] text-muted">{labels.people}</p> : null}
+        <div role="radiogroup" aria-labelledby="claim-where" className="relative mt-4">
+          {row("new", target === "new", () => setTarget("new"), <span className="min-w-0 flex-1 truncate text-[15px]">{labels.newPerson}</span>)}
+          {people.length ? <p className="border-t-[1.5px] border-dashed border-ink/[0.18] pb-1 pt-3 text-[12px] text-muted">{labels.people}</p> : null}
           {people.map((p) =>
             row(
               p.id,
               target === p.id,
               () => setTarget(p.id),
               <>
-                <Avatar config={p.avatar} size={36} label={labels.avatarOf.replace("{name}", p.name)} decorative />
-                <span className="min-w-0 flex-1 truncate text-[20px]">{p.name}</span>
+                <Avatar config={p.avatar} size={30} label={labels.avatarOf.replace("{name}", p.name)} decorative />
+                <span className="hand-written min-w-0 flex-1 truncate text-[24px] leading-[1.15]">{p.name}</span>
               </>,
             ),
           )}
-          <Heart size={22} rotate={-14} className="-bottom-2 -left-2" />
         </div>
       </section>
 
       {/* 이미 적어 둔 값이 있으면 */}
       {asks ? (
-        <section className="relative mx-4 mb-4 mt-6">
-          <h2 id="claim-conflict" className="pl-2 text-[22px]">
+        <section className="card relative mx-4 mb-4 mt-6 px-3.5 pb-1 pt-2.5">
+          <h2 id="claim-conflict" className="hand scribble text-[24px] leading-none" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
             {labels.conflict}
           </h2>
-          <div role="radiogroup" aria-labelledby="claim-conflict" className="card relative mt-2 px-4">
-            {row("keep", mode === "keep", () => setMode("keep"), <span className="min-w-0 flex-1 text-[19px] leading-[1.35]">{labels.keep}</span>)}
-            {row("overwrite", mode === "overwrite", () => setMode("overwrite"), <span className="min-w-0 flex-1 text-[19px] leading-[1.35]">{labels.overwrite}</span>)}
-            <Squiggle w={54} width={2.4} color="#F59BAE" className="-bottom-2 right-[30px]" />
+          <div role="radiogroup" aria-labelledby="claim-conflict" className="relative mt-4">
+            {row("keep", mode === "keep", () => setMode("keep"), <span className="min-w-0 flex-1 text-[15px] leading-[1.35]">{labels.keep}</span>)}
+            {row("overwrite", mode === "overwrite", () => setMode("overwrite"), <span className="min-w-0 flex-1 text-[15px] leading-[1.35]">{labels.overwrite}</span>)}
           </div>
         </section>
       ) : null}
 
-      <div className="bottom-bar mt-auto flex flex-col gap-2 bg-bg px-4 pt-4">
+      <div className="bottom-bar mt-auto flex flex-col items-end gap-2 bg-bg px-4 pt-4">
         {error ? (
-          <p role="alert" className="px-1 text-[17px] text-red">
+          <p role="alert" className="w-full px-1 text-[14px] text-red">
             {labels.errors[error]}
           </p>
         ) : null}
-        <button type="button" onClick={save} disabled={pending} className="btn-primary !min-h-[58px] w-full !text-[22px] disabled:opacity-60">
+        <button type="button" onClick={save} disabled={pending} className="inline-flex h-[46px] items-center gap-1.5 rounded-full border-[1.5px] border-ink bg-sky pl-3 pr-3.5 text-[16px] disabled:opacity-60">
+          <Icon name="check" size={17} strokeWidth={1.8} />
           {labels.save}
         </button>
       </div>

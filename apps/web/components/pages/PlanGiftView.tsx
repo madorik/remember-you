@@ -1,8 +1,7 @@
 import { COLORS, METALS, PATTERNS, STYLES, describeShoe, describeTop, labelOf, type UpcomingEvent } from "@readme/core";
 import Link from "@/components/AppLink";
 import { Avatar } from "@/components/Avatar";
-import { TopBar } from "@/components/chrome";
-import { Heart, SKY_STAR, Squiggle, Star, Tape } from "@/components/diary";
+import { TornTape } from "@/components/TornTape";
 import { Icon } from "@/components/marks";
 import type { Person } from "@/lib/data";
 import { eventName, eventsFor } from "@/lib/events";
@@ -53,61 +52,44 @@ export function PlanGiftView({ locale, today, people, back, picksOn, picks }: Pl
   // 선물 힌트는 글로 만들어 내보내지 않는다(취향·사이즈 같은 사람 정보가 그대로 나가는 길이라 공유하기를 뺐다, 2026-11-21)
   return (
     <div className="page-end flex flex-1 flex-col">
-      <TopBar back={back} label={t("common.back")} />
-      <div className="relative px-6 pt-1.5">
-        <h1 className="hl inline-block px-1 text-[34px] leading-[1.2]">{t("plan.giftTitle")}</h1>
-        <Star size={22} rotate={14} className="left-[154px] top-0.5" />
+      <div className="flex h-12 shrink-0 items-center gap-0.5 pl-1.5 pr-4">
+        <Link href={back} prefetch={false} aria-label={t("common.back")} className="flex h-11 w-11 shrink-0 items-center justify-center">
+          <Icon name="back" size={24} />
+        </Link>
+        <h1 className="min-w-0 truncate text-[34px] leading-none">{t("plan.giftTitle")}</h1>
       </div>
-      <div className="flex flex-col gap-7 px-4 pt-[26px]">
+      <div className="flex flex-col gap-6 px-4 pt-6">
         {people.map((p, idx) => {
           const name = displayName(p);
           const next = eventsFor([p], today)[0];
           const rows = hints(p);
           return (
-            <section key={p.contactId} className={`card relative flex flex-col px-5 pb-3.5 pt-[26px] ${idx % 2 ? "rotate-[0.4deg]" : "-rotate-[0.4deg]"}`}>
-              {idx % 2 ? (
-                <>
-                  <Tape color="pink" className="-left-2.5 -top-1.5" />
-                  <Tape color="mint" className="-bottom-1 -right-2.5" />
-                </>
-              ) : (
-                <Tape color="mango" w={108} h={26} rotate={-3} alpha={0.62} className="-top-[13px] left-1/2 -ml-[54px]" />
-              )}
-              <div className="flex min-h-14 items-center gap-3">
-                <Avatar config={p.avatar} size={54} label={t("avatar.of", { name })} />
+            <section key={p.contactId} className={`card relative flex flex-col px-3.5 pb-1.5 pt-3.5 ${idx % 2 ? "rotate-[0.4deg]" : "-rotate-[0.4deg]"}`}>
+              <TornTape color={idx % 2 ? "mint" : "pink"} w={66} h={21} rotate={-6} className="-top-3 left-[22px]" />
+              <div className="flex min-h-[52px] items-center gap-3">
+                <Avatar config={p.avatar} size={49} label={t("avatar.of", { name })} />
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-[26px] leading-[1.2]">{name}</span>
-                  {next ? <span className={`text-[17px] ${next.daysUntil <= 30 ? "text-accent" : "text-muted"}`}>{t("plan.nextDate", { event: eventName(next, t, locale), n: next.daysUntil })}</span> : null}
+                  <span className="hand-written truncate text-[29px] leading-[1.15]">{name}</span>
+                  {next ? <span className={`text-[12px] ${next.daysUntil <= 30 ? "text-accent" : "text-muted"}`}>{t("plan.nextDate", { event: eventName(next, t, locale), n: next.daysUntil })}</span> : null}
                 </div>
-                <Link href={`/people/${p.contactId}/reminder`} className="flex min-h-11 items-center gap-px pl-2 text-[17px] text-muted">
+                <Link href={`/people/${p.contactId}/reminder`} className="flex min-h-11 items-center gap-px pl-2 text-[13px] text-muted">
                   {t("plan.seeHints")}
-                  <Icon name="chevron" size={18} />
+                  <Icon name="chevron" size={13} strokeWidth={2} />
                 </Link>
               </div>
-              <div className="mt-2.5">
+              <div className="mt-1">
                 {rows.length ? (
                   rows.map((r) => (
-                    <div key={r.label} className="flex gap-3 border-t border-dashed border-rule-strong pb-3 pt-[11px]">
-                      <span className="w-[84px] shrink-0 text-[16px] leading-[1.5] text-muted">{r.label}</span>
-                      <span className={`min-w-0 flex-1 text-[20px] leading-[1.4] ${r.strike ? "text-muted line-through decoration-red decoration-2" : ""}`}>{r.value}</span>
+                    <div key={r.label} className="flex items-center gap-2.5 border-t-[1.5px] border-dashed border-ink/[0.18] py-2.5">
+                      <span className="w-[96px] shrink-0 text-[12px] leading-[1.3] text-muted">{r.label}</span>
+                      <span className={`hand-written min-w-0 flex-1 text-[22px] leading-[1.2] ${r.strike ? "text-red line-through decoration-2" : ""}`}>{r.value}</span>
                     </div>
                   ))
                 ) : (
-                  <p className="border-t border-dashed border-rule-strong py-3 text-[17px] text-muted">{t("plan.giftNone")}</p>
+                  <p className="border-t-[1.5px] border-dashed border-ink/[0.18] py-3 text-[14px] text-muted">{t("plan.giftNone")}</p>
                 )}
               </div>
-              {picksOn && picks ? <div className="-mx-5 border-t border-dashed border-rule-strong pb-2">{picks.row(p, name, next)}</div> : null}
-              {idx % 2 ? (
-                <>
-                  <Star size={20} rotate={-12} color="#FFC23D" className="-top-2.5 right-[70px]" />
-                  <Squiggle w={54} width={2.4} color="#F59BAE" className="-bottom-[9px] left-6" />
-                </>
-              ) : (
-                <>
-                  <Heart size={28} rotate={16} className="-right-[9px] top-11" />
-                  <Star size={20} rotate={-12} color={SKY_STAR} className="-left-2 top-[190px]" />
-                </>
-              )}
+              {picksOn && picks ? <div className="-mx-3.5 border-t-[1.5px] border-dashed border-ink/[0.18] pb-2">{picks.row(p, name, next)}</div> : null}
             </section>
           );
         })}

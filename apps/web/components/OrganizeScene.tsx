@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Heart, MarginLine, Sparkle, Star, Tape } from "@/components/diary";
+import { Sparkle, Star } from "@/components/diary";
+import { TornTape } from "@/components/TornTape";
 import { Icon } from "@/components/marks";
 
 /** 단계가 바뀌는 시간(ms). 마지막 단계에서는 멈춰 기다린다 */
@@ -43,11 +44,9 @@ export function OrganizeScene({ text, steps }: { text: string; steps: string[] }
   return (
     <div className="organize page-end flex flex-1 flex-col items-center justify-center px-4" data-step={step}>
       {/* 적은 문장 */}
-      <section aria-hidden="true" className="card ruled relative w-full -rotate-[0.6deg] pb-3.5 pl-10 pr-5 pt-4 [background-position:0_16px]">
-        <MarginLine left={26} />
-        <Tape color="mango" w={92} h={22} rotate={-3} alpha={0.62} className="-top-2.5 left-1/2 -ml-[46px]" />
-        <p className="line-clamp-3 text-[21px] leading-8">{text}</p>
-        <Heart size={22} rotate={16} className="-right-2 top-[26px]" />
+      <section aria-hidden="true" className="card relative w-full px-3.5 py-3">
+        <TornTape color="pink" w={72} h={22} rotate={-6} className="-top-3 left-5" />
+        <p className="hand-written line-clamp-3 text-[24px] leading-[30px] [background-image:repeating-linear-gradient(180deg,transparent_0_29px,#d5e1f3_29px_30px)]">{text}</p>
       </section>
 
       {/* 문장에서 떨어져 나온 조각들이 아래 카드로 날아간다 */}
@@ -79,7 +78,7 @@ export function OrganizeScene({ text, steps }: { text: string; steps: string[] }
       </div>
 
       {/* 지금 하는 일: 문구가 바뀔 때마다 위로 올라오며 나타난다 */}
-      <p role="status" aria-live="polite" className="flex h-9 items-center justify-center gap-0.5 text-[26px] leading-none">
+      <p role="status" aria-live="polite" className="hand-written flex h-9 items-center justify-center gap-0.5 text-[26px] leading-none">
         <span key={step} className="organize-step">
           {steps[step]}
         </span>
