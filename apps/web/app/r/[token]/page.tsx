@@ -1,4 +1,4 @@
-import { SECTIONS_BY_IMPORTANCE, sanitizeSections, translate } from "@readme/core";
+import { SECTIONS_BY_IMPORTANCE, isEmptySection, sanitizeSections, translate, type PartialCard, type Section } from "@readme/core";
 import { Wordmark } from "@/components/chrome";
 import { TornTape } from "@/components/TornTape";
 import { getSession, readCard } from "@/lib/data";
@@ -55,6 +55,8 @@ export default async function AnswerPage({ params }: { params: Promise<{ token: 
     );
     const asked = questions[0];
     const asks = sanitizeSections(row.sections);
+    // 보낸 사람 기록에 칸만 있고 값이 비어 있는 항목은 '알고 있어요(맞아요/달라요)'가 아니라 처음부터 질문지로 보여 준다
+    const known = Object.fromEntries(Object.entries(prefill).filter(([x, v]) => !isEmptySection(x as Section, v as never))) as PartialCard;
     return (
       <main className="screen !pb-0">
         {header}
@@ -69,8 +71,8 @@ export default async function AnswerPage({ params }: { params: Promise<{ token: 
             fromAvatar={inviterAvatar}
             message={row.message ?? ""}
             // 중요한 것(생일·못 먹는 것 …)부터. 보낸 사람이 이미 아는 항목(맞아요만 누르면 되는 것)이 맨 앞
-            sections={SECTIONS_BY_IMPORTANCE.filter((x) => asks.includes(x)).sort((a, b) => Number(!prefill[a]) - Number(!prefill[b]))}
-            prefill={prefill}
+            sections={SECTIONS_BY_IMPORTANCE.filter((x) => asks.includes(x)).sort((a, b) => Number(!known[a]) - Number(!known[b]))}
+            prefill={known}
             mine={mine}
             signedIn={!!session}
             submit={submitAnswer}
