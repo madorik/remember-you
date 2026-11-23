@@ -355,7 +355,7 @@ export function RequestForm({
             onChange={(e) => setMessage(e.target.value)}
             rows={3}
             maxLength={300}
-            placeholder={t("request.messagePlaceholder")}
+            placeholder={name.trim() ? t("request.messagePlaceholderFor", { name: name.trim() }) : t("request.messagePlaceholder")}
             className="hand-written mt-1.5 h-[81px] w-full resize-none border-0 bg-transparent p-0 text-[17.8px] leading-[27px] outline-none placeholder:font-sans placeholder:text-[13.5px] placeholder:text-muted [background-image:repeating-linear-gradient(180deg,transparent_0_26px,#d5e1f3_26px_27px)]"
           />
           {sender.name ? <p className="hand-written mt-1.5 truncate text-right text-[18px] leading-[1.2]">{t("request.postFrom", { name: sender.name })}</p> : null}
