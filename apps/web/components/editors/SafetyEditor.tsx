@@ -69,12 +69,15 @@ export function SafetyEditor({
   locale,
   large = false,
   showNote = true,
+  flush = false,
 }: {
   value: SafetyData;
   onChange: (v: SafetyData) => void;
   locale: Locale;
   large?: boolean;
   showNote?: boolean;
+  /** 이미 카드 안이라 맨 위 점선(항목 머리와 나누는 줄)이 필요 없을 때(온보딩) */
+  flush?: boolean;
 }) {
   const t = useT(locale);
   const allergens = ordered(ALLERGENS, ALLERGEN_ORDER[locale]);
@@ -102,7 +105,7 @@ export function SafetyEditor({
 
   return (
     <div className="flex flex-col">
-      <div className="flex flex-col gap-2 border-t-[1.5px] border-dashed border-ink/20 pb-3 pt-2.5">
+      <div className={`flex flex-col gap-2 pb-3 ${flush ? "" : "border-t-[1.5px] border-dashed border-ink/20 pt-2.5"}`}>
         <SectionHeading tone="red">
           {t("safety.allergens")}
         </SectionHeading>

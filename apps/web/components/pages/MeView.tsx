@@ -79,7 +79,7 @@ export function MeView({ locale, name, avatar, card, today }: MeData) {
         </div>
       </section>
 
-      <div className="h-8" />
+      <div className="page-end" />
     </>
   );
 }

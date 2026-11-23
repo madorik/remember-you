@@ -146,7 +146,7 @@ export function FoodStep({ locale, safety, spicy, next }: { locale: Locale; safe
       <input type="hidden" name="next" value={next} />
       <div className={`${CARD} flex flex-col`}>
         <CardTape color="mint" />
-        <SafetyEditor value={value} onChange={setValue} locale={locale} showNote={false} />
+        <SafetyEditor value={value} onChange={setValue} locale={locale} showNote={false} flush />
         <div className={DASH}>
           <SpicyScale value={level} onChange={setLevel} locale={locale} />
         </div>

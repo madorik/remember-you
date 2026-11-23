@@ -1019,7 +1019,7 @@ export function VoiceCapture({ locale, labels, people = [], tour = null }: { loc
   // 체험: 마이크면 "이렇게 말해보세요", 글이면 "이렇게 써보세요" + 예시 문장. 키보드가 뜨면 접어 적는 칸이 한 화면에 보이게
   const tourPrompt = tour ? (
     <TourNote label={mode === "voice" ? tour.say : tour.write} className="mt-[18px]">
-      <span className="num text-[17px] text-[#1f4fa3]">{tour.page}</span>
+      <span className="num rounded-full bg-sky-soft px-2.5 text-[14px] leading-[1.5]">{tour.page}</span>
       <h1 className="text-[30px] leading-[1.2]">{mode === "voice" ? tour.say : tour.write}</h1>
       <p className="hand-written mt-0.5 text-[30px] leading-[1.25]">
         <span className="hl">“{tour.example}”</span>

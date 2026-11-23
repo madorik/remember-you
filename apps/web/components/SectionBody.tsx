@@ -14,31 +14,68 @@ import {
   SPICY_LEVELS,
   STYLES,
   VIBES,
-  describeRing,
-  describeShoe,
-  describeTop,
   isEmptySection,
   labelOf,
   realCodes,
   type CatalogItem,
+  type DatesData,
   type Locale,
   type PartialCard,
   type Section,
   type YMD,
   PET_KINDS,
+  formatSpec,
+  monthName,
+  nextOccurrence,
 } from "@readme/core";
 import type { T } from "@/lib/i18n";
 import { ChiliMeter } from "./Chili";
 import { ColorDot } from "./ColorDot";
-import { DateTiles } from "./DateTiles";
-import { Icon, MarkerCircle } from "./marks";
+import { Icon } from "./marks";
+import { sectionSummary } from "./SectionSummary";
 
+/** 시안의 항목 본문 한 줄: 작은 라벨(고운돋움) + 사람이 적은 값(손글씨 400)이 한 줄로 이어진다 */
 function Row({ label, children, center = false }: { label: string; children: React.ReactNode; center?: boolean }) {
   return (
-    <div className={`flex gap-3 py-[7px] ${center ? "items-center" : ""}`}>
-      <span className={`w-[92px] shrink-0 text-[16px] leading-[1.2] text-muted ${center ? "" : "pt-[2px]"}`}>{label}</span>
-      <span className="min-w-0 flex-1 text-[19px] leading-[1.4]">{children}</span>
+    <div className={`py-[3px] ${center ? "flex flex-wrap items-center gap-x-1.5" : ""}`}>
+      <span className="text-[12px] leading-[1.3] text-muted">{label} </span>
+      <span className="hand-written min-w-0 text-[22px] leading-[1.1]">{children}</span>
     </div>
+  );
+}
+
+/** 한 장 뜯어 쓰는 작은 달력(시안 34×40): 위 망고 띠에 달, 아래 큰 날, 위에 고리 두 개 */
+function CalendarLeaf({ m, d, locale }: { m: number; d: number; locale: Locale }) {
+  return (
+    <span aria-hidden="true" className="relative block h-10 w-[34px] shrink-0">
+      <span className="absolute left-0 top-[3px] flex h-[37px] w-[34px] flex-col overflow-hidden rounded-[9px] border-[1.5px] border-ink bg-white">
+        <span className="flex h-3 shrink-0 items-center justify-center border-b-[1.5px] border-ink bg-sky text-[11px] leading-none">{monthName(m, locale)}</span>
+        <span className="hand flex flex-1 items-center justify-center text-[23px] leading-none">{d}</span>
+      </span>
+      <span className="absolute left-2 top-0 h-[9px] w-1 rounded-[3px] bg-ink" />
+      <span className="absolute left-[22px] top-0 h-[9px] w-1 rounded-[3px] bg-ink" />
+    </span>
+  );
+}
+
+/** 생일·기념일: 작은 달력 + '양력 5월 3일'(기념일은 이름을 앞에). 날마다 한 줄 */
+function DateLines({ dates, today, locale }: { dates: DatesData | undefined; today: YMD; locale: Locale }) {
+  const items = [
+    ...(dates?.birthday ? [{ label: "", spec: dates.birthday }] : []),
+    ...(dates?.anniversaries ?? []).map((a) => ({ label: a.label, spec: a.spec })),
+  ].slice(0, 4);
+  return (
+    <ul className="flex flex-col gap-1.5">
+      {items.map((item, i) => {
+        const next = nextOccurrence(item.spec, today);
+        return (
+          <li key={i} className="flex items-center gap-2">
+            <CalendarLeaf m={next ? next.date.m : item.spec.month} d={next ? next.date.d : item.spec.day} locale={locale} />
+            <span className="hand-written min-w-0 text-[23px] leading-[1.1]">{[item.label, formatSpec(item.spec, locale)].filter(Boolean).join(" · ")}</span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -50,7 +87,7 @@ export function SectionBody({ section, card, today, locale, t }: { section: Sect
 
   switch (section) {
     case "dates":
-      return <DateTiles dates={card.dates} today={today} locale={locale} t={t} className="mt-1" />;
+      return <DateLines dates={card.dates} today={today} locale={locale} />;
 
     case "safety": {
       const s = card.safety!;
@@ -58,20 +95,19 @@ export function SectionBody({ section, card, today, locale, t }: { section: Sect
       return (
         <>
           {allergens.length ? (
-            <div className="flex flex-wrap items-baseline gap-x-[24px] gap-y-3 pb-2.5 pl-2.5 pt-2.5">
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 py-[3px]">
               {allergens.map((c) => (
-                <span key={c} className="relative text-[24px] text-red">
+                <span key={c} className="hand-written rounded-full border-[1.5px] border-red px-[9px] py-0.5 text-[20px] leading-none text-red">
                   {labelOf(ALLERGENS, c, locale)}
-                  <MarkerCircle color="warn" pad={[11, 6]} width={2} />
                 </span>
               ))}
-              <span className="text-[16px] text-red">{t("person.allergy")}</span>
+              <span className="text-[12px] leading-[1.3] text-muted">{t("person.allergy")}</span>
             </div>
           ) : null}
           {s.allergens.includes(NONE) ? <Row label={t("safety.allergens")}>{labelOf(ALLERGENS, NONE, locale)}</Row> : null}
           {s.dislikes.length ? <Row label={t("person.wontEat")}>{codes(DISLIKES, s.dislikes)}</Row> : null}
           {s.diets.length ? <Row label={t("person.diet")}>{codes(DIETS, s.diets)}</Row> : null}
-          {s.allergyNote ? <p className="py-[7px] text-[18px] leading-[1.5]">“{s.allergyNote}”</p> : null}
+          {s.allergyNote ? <p className="hand-written py-[3px] text-[22px] leading-[1.2]">“{s.allergyNote}”</p> : null}
         </>
       );
     }
@@ -84,9 +120,9 @@ export function SectionBody({ section, card, today, locale, t }: { section: Sect
           {x.likes.length ? <Row label={t("person.likes")}>{x.likes.join(and)}</Row> : null}
           {x.spicy != null ? (
             <Row label={t("person.spicy")} center>
-              <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                <ChiliMeter level={x.spicy} size={19} />
-                {SPICY_LEVELS[x.spicy]?.[locale]}
+              <span className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+                <ChiliMeter level={x.spicy} size={16} />
+                <span className="font-sans text-[12px] tracking-[-0.035em] text-muted">{SPICY_LEVELS[x.spicy]?.[locale]}</span>
               </span>
             </Row>
           ) : null}
@@ -102,30 +138,8 @@ export function SectionBody({ section, card, today, locale, t }: { section: Sect
     }
 
     case "sizes": {
-      const z = card.sizes!;
-      const top = describeTop(z.top, locale);
-      const shoe = describeShoe(z.shoe, locale);
-      const ring = describeRing(z.ring, locale);
-      const cells = [
-        top ? { label: t("size.top"), ...top } : null,
-        z.bottom ? { label: t("size.bottom"), value: z.bottom, unit: t("size.bottomUnit"), hint: null } : null,
-        shoe ? { label: t("size.shoe"), ...shoe } : null,
-        ring ? { label: t("size.ring"), ...ring } : null,
-      ].filter((c) => c !== null);
-      return (
-        <div className="flex flex-wrap gap-2 pb-1 pt-1.5">
-          {cells.map((c) => (
-            <div key={c.label} className="flex min-w-[100px] flex-col gap-1 rounded-[10px] bg-sky-soft px-3.5 py-2.5">
-              <span className="text-[15px] text-muted">{c.label}</span>
-              <span className="flex items-baseline gap-1">
-                <span className="num text-[28px] leading-none">{c.value}</span>
-                <span className="text-[15px]">{c.unit}</span>
-              </span>
-              {c.hint ? <span className="text-[16px] text-ink-2">{c.hint}</span> : null}
-            </div>
-          ))}
-        </div>
-      );
+      const line = sectionSummary("sizes", card, locale, t);
+      return line ? <p className="hand-written py-[3px] text-[22px] leading-[1.1]">{line.text}</p> : null;
     }
 
     case "gifts": {
@@ -221,11 +235,11 @@ export function SectionBody({ section, card, today, locale, t }: { section: Sect
                 <span className="flex flex-col gap-0.5">
                   {what && pet.name ? <span>{what}</span> : pet.breed && !pet.name ? <span>{pet.breed}</span> : null}
                   {pet.treats.length ? (
-                    <span className="text-[16px] text-ink-2">
+                    <span className="font-sans text-[13px] tracking-[-0.035em] text-ink-2">
                       {t("pets.treats")} · {pet.treats.join(and)}
                     </span>
                   ) : null}
-                  {pet.note ? <span className="text-[16px] text-muted">{pet.note}</span> : null}
+                  {pet.note ? <span className="font-sans text-[13px] tracking-[-0.035em] text-muted">{pet.note}</span> : null}
                 </span>
               </Row>
             );

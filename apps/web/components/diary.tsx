@@ -1,9 +1,8 @@
-// 다이어리 v2 장식: 마스킹테이프·별·하트·물결선·반짝이·손그림 동그라미·D-day 도장·폴라로이드·줄노트 여백선.
+// 다이어리 장식: 별·하트·물결선·반짝이·손그림 동그라미·D-day 도장·폴라로이드·줄노트 여백선.
 // 장식은 모두 aria-hidden + pointer-events-none이고 absolute다(자리는 className으로). 감싸는 요소에는 relative가 있어야 하고,
 // 새로 relative·transform을 씌우지 않도록 이미 relative인 카드(.card relative) 안에 넣는다.
 
-import type { AvatarConfig } from "@readme/core";
-import { Avatar } from "./Avatar";
+import { TornTape } from "./TornTape";
 
 const INK = "#1F2340";
 const MANGO = "#FFC23D";
@@ -12,42 +11,6 @@ const PINK = "#F59BAE";
 const SKY = "#8FD2EC";
 
 const PLACE = "pointer-events-none absolute";
-
-const TAPE_RGB = { mango: "255,194,61", pink: "245,155,174", mint: "127,214,184" } as const;
-export type TapeColor = keyof typeof TAPE_RGB;
-
-/**
- * 마스킹테이프(사선 줄무늬). 카드 모서리·윗변에 걸친다.
- * vertical: 세로 줄무늬(줄노트 위의 민트 테이프). alpha: 테이프 색 농도
- */
-export function Tape({
-  color = "mango",
-  w = 58,
-  h = 20,
-  rotate = -34,
-  alpha = 0.6,
-  vertical = false,
-  className = "",
-}: {
-  color?: TapeColor;
-  w?: number;
-  h?: number;
-  rotate?: number;
-  alpha?: number;
-  vertical?: boolean;
-  className?: string;
-}) {
-  const stripe = vertical
-    ? "repeating-linear-gradient(90deg, rgba(255,255,255,.3) 0 4px, transparent 4px 9px)"
-    : "repeating-linear-gradient(135deg, rgba(255,255,255,.3) 0 5px, transparent 5px 10px)";
-  return (
-    <span
-      aria-hidden="true"
-      className={`${PLACE} rounded-[2px] ${className}`}
-      style={{ width: w, height: h, transform: `rotate(${rotate}deg)`, backgroundColor: `rgba(${TAPE_RGB[color]},${alpha})`, backgroundImage: stripe }}
-    />
-  );
-}
 
 const STAR = "M12 3 L14.2 9 L20.5 9.3 L15.5 13.2 L17.3 19.5 L12 15.8 L6.7 19.5 L8.5 13.2 L3.5 9.3 L9.8 9 Z";
 
@@ -202,16 +165,6 @@ export function MarginLine({ left = 28 }: { left?: number }) {
   return <span aria-hidden="true" className="pointer-events-none absolute bottom-0 top-0 w-[1.5px] bg-margin" style={{ left }} />;
 }
 
-/** 고치기 화면 머리의 이름표: 작은 얼굴 + 이름을 흰 알약에 */
-export function NameChip({ avatar, name }: { avatar: AvatarConfig | null; name: string }) {
-  return (
-    <span className="inline-flex max-w-full items-center gap-[5px] rounded-full bg-white py-0.5 pl-[3px] pr-3 text-[16px] shadow-[inset_0_0_0_1.5px_var(--color-ink)]">
-      <Avatar config={avatar} size={26} label={name} decorative />
-      <span className="truncate">{name}</span>
-    </span>
-  );
-}
-
 /** 손으로 쭉 그은 남색 줄(제목 아래 구분선). 블록이라 자리를 차지한다 */
 export function HandRule({ className = "" }: { className?: string }) {
   return (
@@ -235,19 +188,15 @@ export function Highlight({ text, word }: { text: string; word: string }) {
 }
 
 /**
- * 체험(?tour=) 안내 상자: 하늘색 포스트잇을 살짝 기울여 위에 테이프로 붙이고, 모서리에 별·하트.
+ * 체험(?tour=) 안내 상자(플래너 모양): 흰 종이 카드 + 남색 선, 윗변에 찢은 망고 테이프, 모서리에 별.
  * 키보드가 뜨면(html[data-kb]) 접는다. 안에는 순서(1 / 2)·제목·예시를 넣는다
  */
 export function TourNote({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
   return (
-    <section
-      aria-label={label}
-      className={`relative mx-4 flex flex-col items-center gap-0.5 rounded-md bg-[#d3e9ff] px-5 pb-[18px] pt-5 text-center shadow-[0_1px_2px_rgb(31_35_64/0.1),0_10px_20px_-12px_rgb(31_35_64/0.45)] [transform:rotate(-0.8deg)] [html[data-kb]_&]:hidden ${className}`}
-    >
-      <Tape color="mango" w={100} h={24} rotate={-3} alpha={0.62} className="-top-3 left-1/2 -ml-[50px]" />
+    <section aria-label={label} className={`card relative mx-4 flex flex-col items-center gap-0.5 px-5 pb-[18px] pt-[22px] text-center [html[data-kb]_&]:hidden ${className}`}>
+      <TornTape color="mango" w={78} h={24} rotate={-3} className="-top-3 left-1/2 -ml-[39px]" />
       {children}
-      <Star size={24} rotate={14} className="-right-2 -top-2" />
-      <Heart size={26} rotate={-14} className="-left-2.5 bottom-2" />
+      <Star size={22} rotate={14} className="-right-2 -top-2.5" />
     </section>
   );
 }

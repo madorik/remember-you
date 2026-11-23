@@ -1,7 +1,8 @@
 import { SECTIONS_BY_IMPORTANCE } from "@readme/core";
 import { MyReadmeList } from "@/app/(app)/me/MyReadmeList";
-import { TopBar } from "@/components/chrome";
-import { NameChip } from "@/components/diary";
+import Link from "@/components/AppLink";
+import { Icon } from "@/components/marks";
+import { PersonNameChip } from "@/components/PersonNameChip";
 import type { MeEditData } from "@/lib/pages/types";
 import { makeT } from "@/lib/t";
 
@@ -10,10 +11,14 @@ export function MeEditView({ locale, name, avatar, card, open }: MeEditData) {
   const t = makeT(locale);
   return (
     <div className="page-end flex flex-1 flex-col">
-      <TopBar back="/me" label={t("common.back")} />
-      <div className="relative px-6 pt-1.5">
-        <NameChip avatar={avatar} name={name} />
-        <h1 className="scribble mt-2.5 text-[41px] leading-none">{t("me.title")}</h1>
+      <div className="flex h-12 items-center pl-1.5 pr-2.5">
+        <Link href="/me" prefetch={false} aria-label={t("common.back")} className="flex h-11 w-11 items-center justify-center">
+          <Icon name="back" size={26} strokeWidth={2} />
+        </Link>
+      </div>
+      <div className="flex flex-col gap-2 px-5">
+        <PersonNameChip avatar={avatar} name={name} />
+        <h1 className="scribble self-start text-[41px] leading-none">{t("me.title")}</h1>
       </div>
       <MyReadmeList
         rows={SECTIONS_BY_IMPORTANCE.map((section) => ({

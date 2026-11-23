@@ -12,7 +12,7 @@ export function SpicyScale({ value, onChange, locale, large = false }: { value: 
   return (
     <div className="flex flex-col gap-1.5">
       <SectionHeading>{t("taste.spicy")}</SectionHeading>
-      <div className="flex flex-col items-start">
+      <div className="flex flex-col items-center">
         <div role="radiogroup" aria-label={t("taste.spicy")} className="relative flex shrink-0 items-center pb-[22px]">
           {SPICY_LEVELS.map((label, i) => (
             <button
@@ -34,7 +34,7 @@ export function SpicyScale({ value, onChange, locale, large = false }: { value: 
             </span>
           ) : null}
         </div>
-        {value != null ? <span className="min-w-0 text-[15px] text-accent">{SPICY_LEVELS[value]?.[locale]}</span> : null}
+        {value != null ? <span className="min-w-0 text-center text-[13px] leading-[1.3]">{SPICY_LEVELS[value]?.[locale]}</span> : null}
       </div>
     </div>
   );

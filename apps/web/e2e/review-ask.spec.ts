@@ -154,7 +154,8 @@ test("물어본 답장을 확인하면 리뷰 창을 부탁한다", async ({ pag
   test.setTimeout(150_000);
   await fakeApp(page);
   await demo(page);
-  const mom = page.locator('a[href^="/people/"]:not([href*="/reminder"])').filter({ hasText: "엄마" }).first();
+  // 홈의 큰 카드 얼굴(이름은 글자가 아니라 읽어 주는 이름)이 그 사람 화면으로 가는 링크
+  const mom = page.getByRole("link", { name: "엄마", exact: true }).first();
   const contactId = /\/people\/([0-9a-f-]{36})/.exec((await mom.getAttribute("href")) ?? "")?.[1];
   expect(contactId).toBeTruthy();
   // 그 사람에게서 아직 안 읽은 답장 알림이 온 상태로 만든다

@@ -37,7 +37,7 @@ export function RequestView({ locale, people, fixed, initialName, defaults, xmas
       </div>
       {tour ? (
         <TourNote label={fixed ? t("request.titleTo", { name: fixed.label }) : t("tour.ask.title")} className="mt-1">
-          <span className="num text-[17px] text-[#1f4fa3]">{t("tour.page", { n: tour.n, total: tour.total })}</span>
+          <span className="num rounded-full bg-sky-soft px-2.5 text-[14px] leading-[1.5]">{t("tour.page", { n: tour.n, total: tour.total })}</span>
           <h1 className="text-[30px] leading-[1.2]">{fixed ? t("request.titleTo", { name: fixed.label }) : t("tour.ask.title")}</h1>
           <p className="text-[15px] leading-[1.5]">{t("tour.ask.body")}</p>
         </TourNote>

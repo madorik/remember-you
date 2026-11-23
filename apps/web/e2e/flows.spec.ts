@@ -274,8 +274,9 @@ test("답하기: 아무것도 적지 않고 '다음'만 눌러 가면 보낼 수
   await page.getByRole("button", { name: "알림 1" }).click();
   await page.getByRole("region", { name: "알림" }).getByRole("link", { name: /삼촌이 답장을 보냈어요/ }).click();
   await expect(page).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
-  await expect(page.getByText("따뜻한 목도리", { exact: true })).toBeVisible();
-  await expect(page.getByText("향초", { exact: true })).toBeVisible();
+  // 사람 화면은 항목마다 한 줄로 줄여 보인다('따뜻한 목도리 · 향초')
+  await expect(page.getByText(/따뜻한 목도리/)).toBeVisible();
+  await expect(page.getByText(/향초/)).toBeVisible();
   await expect(page.getByRole("link", { name: /좋아하는 음식/ })).toHaveCount(0);
 
   // 항목을 건드리지 않았어도 '없어요'를 눌렀으면 그건 답이다(하나만 물은 링크)
@@ -439,7 +440,8 @@ test("영어로 보면 사이즈가 미국 사이즈로도 보인다", async ({ 
   await jisu.getByRole("button", { name: "English" }).click();
   await jisu.goto("/people");
   await jisu.getByRole("link", { name: /도윤/ }).first().click();
-  await expect(jisu.getByRole("link", { name: /^Sizes/ })).toBeVisible();
+  // 사람 화면은 사이즈를 한 줄로 줄여 보이고, 미국 사이즈 환산은 그 줄을 눌러 펼친 항목에서 본다
+  await jisu.getByRole("link", { name: /^Sizes/ }).click();
   await expect(jisu.getByText("About US women's 6.5")).toBeVisible();
   await expect(jisu.getByText("About US 6")).toBeVisible();
   await shot(jisu, "11-person-en");
@@ -906,11 +908,13 @@ test("데모로 둘러보기: 샘플 사람들이 들어 있고, 데모 계정�
   await expect(page.getByRole("link", { name: /아내/ }).first()).toBeVisible();
   await expect(page.getByText("엄마 칠순")).toBeVisible();
   await shot(page, "12-demo-home");
-  // 반려동물: 엄마 기록에 콩이(강아지 · 말티즈)와 좋아하는 간식
-  await page.locator('a[href^="/people/"]:not([href*="/reminder"])').filter({ hasText: "엄마" }).first().click();
+  // 반려동물: 엄마 기록에 콩이(강아지 · 말티즈)와 좋아하는 간식. 홈의 큰 카드 얼굴을 누르면 사람 화면, 사람 화면은 5줄까지만 보여 줘서 반려동물은 고치기 화면의 항목에서 본다
+  await page.getByRole("link", { name: "엄마", exact: true }).first().click();
   await expect(page).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
-  await expect(page.getByText("콩이", { exact: true })).toBeVisible();
-  await expect(page.getByText(/닭가슴살 육포/)).toBeVisible();
+  await page.goto(`${new URL(page.url()).pathname}/edit?open=pets`);
+  const pets = page.locator("#edit-pets");
+  await expect(pets.locator("input").first()).toHaveValue("콩이");
+  await expect(pets.getByLabel(/좋아하는 간식/)).toHaveValue(/닭가슴살 육포/);
   await shot(page, "12b-demo-pets");
   await page.goto("/home");
   await page.getByRole("link", { name: /아내/ }).first().click();
@@ -1438,7 +1442,8 @@ test("말로 적기: 줄의 사람 칩을 눌러 '새로'로 잡힌 줄을 내 �
   expect(jisu).toHaveLength(1);
   await page.goto(`/people/${jisu[0]!.id}`);
   await expect(page.getByText("수국").first()).toBeVisible();
-  await expect(page.getByText("L", { exact: true }).first()).toBeVisible();
+  // 사이즈는 한 줄로 줄여 보인다('상의 M · 하의 L')
+  await expect(page.getByText(/하의 L/).first()).toBeVisible();
 });
 
 test("말로 적기: 같은 이름이 둘이면 고르기 전에는 저장할 수 없고(그 줄로 가서 칩이 반짝), 고르면 고른 사람에게만 들어간다", async ({ browser }) => {
@@ -1530,6 +1535,8 @@ test("가입 직후 체험: 글로 사람을 적어 보고(예시 문장) 적힌
   // 링크를 만들었으면 시작하기로 마치고 홈으로. 엄마는 사람들에 남아 있다
   await page.getByRole("button", { name: "시작하기" }).click();
   await expect(page).toHaveURL(/\/home$/);
+  // 날짜가 없는 엄마는 홈 카드에 안 뜨니 사람들에서 본다
+  await page.goto("/people");
   await expect(page.getByRole("link", { name: /엄마/ }).first()).toBeVisible();
 });
 
@@ -1692,40 +1699,43 @@ test("달력: 공휴일·연휴(대체공휴일 포함)가 보이고, 좌우로 
   await page.goto("/");
   await page.getByRole("button", { name: "데모로 둘러보기" }).click();
   await expect(page).toHaveURL(/\/home/);
-  // 2026년 9월: 추석(9/25) 연휴 9/24~9/27(일) 4일
+  // 2026년 9월: 추석(9/25) 연휴 9/24~9/27(일) 4일. 제목은 '2026년'은 작게 '9월'은 크게 나눠 그려서 읽어 주는 이름(aria-label)으로 본다
   await page.goto("/calendar?m=2026-09");
   const title = page.getByRole("heading", { level: 1 });
-  await expect(title).toHaveText("2026년 9월");
-  const holidays = page.getByRole("region", { name: "공휴일과 챙기는 날" });
-  await expect(holidays.getByText("추석 연휴")).toBeVisible();
-  await expect(holidays.getByText("4일 연휴")).toBeVisible();
-  await expect(holidays.getByText("추석", { exact: true })).toBeVisible();
-  await expect(page.getByRole("region", { name: "2026년 9월" }).getByText("추석", { exact: true })).toBeVisible();
+  await expect(title).toHaveAttribute("aria-label", "2026년 9월");
+  // 아래 '다가오는 날' 한 장에 공휴일·연휴가 날짜 순서로 있고, 위 달력 칸에도 이름이 붙는다
+  const upcoming = page.getByRole("region", { name: "다가오는 날" });
+  const grid = page.getByRole("region", { name: "2026년 9월" });
+  await expect(grid.getByText("추석 연휴").first()).toBeVisible();
+  await expect(grid.getByText("추석", { exact: true })).toBeVisible();
+  await expect(upcoming.getByText("추석", { exact: true })).toBeVisible();
+  await expect(upcoming.getByText(/4일 연휴/)).toBeVisible();
   // 오른쪽에서 왼쪽으로 밀면 다음 달(10월): 개천절(토) 대체공휴일 10/5, 한글날
   await swipe(page, 300, 60);
-  await expect(title).toHaveText("2026년 10월");
+  await expect(title).toHaveAttribute("aria-label", "2026년 10월");
   await expect(page).toHaveURL(/\/calendar\?m=2026-10$/);
-  await expect(page.getByText("대체공휴일(개천절)")).toBeVisible();
-  await expect(page.getByText("한글날", { exact: true }).first()).toBeVisible();
+  await expect(upcoming.getByText("개천절", { exact: true })).toBeVisible();
+  await expect(upcoming.getByText("대체공휴일", { exact: true })).toBeVisible();
+  await expect(upcoming.getByText("한글날", { exact: true })).toBeVisible();
   // 조금만 밀면 제자리, 왼쪽에서 오른쪽으로 밀면 이전 달
   await swipe(page, 220, 190);
-  await expect(title).toHaveText("2026년 10월");
+  await expect(title).toHaveAttribute("aria-label", "2026년 10월");
   await swipe(page, 60, 300);
-  await expect(title).toHaveText("2026년 9월");
+  await expect(title).toHaveAttribute("aria-label", "2026년 9월");
   // 12월: 크리스마스(성탄절) 쉬는 날 + 크리스마스 이브, 선물 고르러 가는 길
   await page.goto("/calendar?m=2026-12");
   await expect(page.getByRole("region", { name: "2026년 12월" }).getByText("성탄절", { exact: true })).toBeVisible();
   await expect(page.getByRole("region", { name: "2026년 12월" }).getByText("이브", { exact: true })).toBeVisible();
-  await expect(page.getByRole("region", { name: "공휴일과 챙기는 날" }).getByText("크리스마스(성탄절)")).toBeVisible();
-  await expect(page.getByRole("region", { name: "공휴일과 챙기는 날" }).getByRole("link", { name: /크리스마스\(성탄절\)/ })).toHaveAttribute("href", "/people?pick=1&to=gift");
+  await expect(upcoming.getByRole("link", { name: /크리스마스/ })).toHaveAttribute("href", "/people?pick=1&to=gift");
   // 2027년 설날(일요일 2/7): 연휴 2/6~2/9, 대체공휴일 2/9
   await page.goto("/calendar?m=2027-02");
-  await expect(page.getByText("대체공휴일(설날)")).toBeVisible();
-  await expect(page.getByRole("region", { name: "공휴일과 챙기는 날" }).getByText("4일 연휴")).toBeVisible();
+  await expect(upcoming.getByText("설날", { exact: true })).toBeVisible();
+  await expect(upcoming.getByText("대체공휴일", { exact: true })).toBeVisible();
+  await expect(upcoming.getByText(/4일 연휴/).first()).toBeVisible();
 });
 
 test("내 기록 링크로 보내기: 글에는 정보가 없고, 받은 사람이 앱에서 저장할 곳과 있던 값 유지·덮어쓰기를 골라 저장한다", async ({ page, browser }) => {
-  const base = "http://localhost:3200";
+  const base = test.info().project.use.baseURL!;
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/");
   await page.getByRole("button", { name: "데모로 둘러보기" }).click();
