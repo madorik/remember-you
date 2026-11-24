@@ -44,12 +44,12 @@ export function AnswerSent({ locale, from, topics, signedIn, savedMine }: { loca
       }
     >
       {inApp ? (
-        <Link href={here} className="btn-primary w-full !text-[21.1px]">
+        <Link href={here} className="btn-primary w-full">
           <Envelope />
           {t("answer.askBack")}
         </Link>
       ) : (
-        <GetAppLink href={`/get?from=answer&next=${encodeURIComponent(here)}`} appPath={askBack} className="btn-primary w-full !text-[21.1px]">
+        <GetAppLink href={`/get?from=answer&next=${encodeURIComponent(here)}`} appPath={askBack} className="btn-primary w-full">
           <Envelope />
           {t("answer.askBackApp")}
         </GetAppLink>

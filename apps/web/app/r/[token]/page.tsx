@@ -50,7 +50,7 @@ export default async function AnswerPage({ params }: { params: Promise<{ token: 
     const header = (
       <div className="flex min-h-12 items-center justify-between px-5">
         <Wordmark size={24} locale={locale} />
-        <span className="rounded-full border border-dashed border-ink/30 bg-paper px-3 py-1 text-[10.8px] text-ink [transform:rotate(-2deg)]">{t("answer.noInstall")}</span>
+        <span className="rounded-full border border-dashed border-ink/30 bg-paper px-2.5 py-[3px] text-[11.7px] text-ink [transform:rotate(-2deg)]">{t("answer.noInstall")}</span>
       </div>
     );
     const asked = questions[0];
@@ -89,9 +89,9 @@ export default async function AnswerPage({ params }: { params: Promise<{ token: 
       <div className="flex min-h-12 items-center px-5">
         <Wordmark size={24} locale={locale} />
       </div>
-      <section className="card relative mx-4 mt-10 px-5 pb-8 pt-8">
+      <section className="card relative mx-4 mt-6 px-3.5 pb-4 pt-4">
         <TornTape color="pink" w={66} h={21} rotate={6} className="-top-3 right-6" />
-        <p className="hand text-[22.7px] leading-[1.3]">{t(key, { from: named })}</p>
+        <p className="hand text-[19.4px] leading-[1.35]">{t(key, { from: named })}</p>
       </section>
     </main>
   );

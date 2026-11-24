@@ -4,11 +4,10 @@ import { QUESTIONS, QUESTION_SECTION, canAnswerOwn, type AvatarConfig, type Dail
 import { useActionState, useEffect, useRef, useState } from "react";
 import type { AnswerState } from "@/app/actions/request";
 import { AnswerSent } from "@/components/AnswerSent";
-import { Avatar } from "@/components/Avatar";
+import { AnswerIntro } from "@/components/AnswerIntro";
 import { ChiliMeter } from "@/components/Chili";
-import { useT } from "@/components/editors/shared";
-import { CheckGlyph, Icon } from "@/components/marks";
-import { Mascot } from "@/components/Mascot";
+import { CircleOption, UNDERLINE_INPUT, useT } from "@/components/editors/shared";
+import { Icon } from "@/components/marks";
 import { TornTape } from "@/components/TornTape";
 
 const INITIAL: AnswerState = { sent: false, savedMine: false, error: null };
@@ -60,45 +59,33 @@ export function AnswerQuestion({
       <input type="hidden" name="question" value={id} />
       <input type="hidden" name="value" value={value} />
 
-      <section className="relative flex flex-col gap-5 px-5 pt-8">
-        <div className="flex items-center gap-4">
-          <figure className="m-0 shrink-0 -rotate-[4deg] border border-edge bg-white px-[5.4px] pb-[16.2px] pt-[5.4px]">
-            <span className="flex h-[72.9px] w-[72.9px] items-center justify-center overflow-hidden bg-white">
-              {fromAvatar ? <Avatar config={fromAvatar} size={66} label={from} decorative /> : <Mascot pose={6} size={70} />}
-            </span>
-          </figure>
-          <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
-            <h1 className="hand-written !font-normal text-[23.5px] leading-[1.2]">{t("answer.titleOne", { from })}</h1>
-            <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-ink/30 bg-paper px-2.5 py-[3px] text-[11.7px]">
-              <Icon name="lock" size={13} strokeWidth={1.9} className="shrink-0" />
-              {t("answer.onlyFrom", { from })}
-            </span>
-          </div>
-        </div>
-        {message ? <p className="-rotate-[0.6deg] whitespace-pre-line rounded-[3.2px_3.2px_13px_3.2px] border border-edge bg-[#fff3b0] px-3.5 py-2.5 hand-written text-[18.6px] leading-[1.3]">{message}</p> : null}
-      </section>
+      <AnswerIntro title={t("answer.titleOne", { from })} from={from} fromAvatar={fromAvatar} message={message} onlyFrom={t("answer.onlyFrom", { from })} />
 
-      <section className="card relative mx-4 mt-9 flex flex-col gap-4 px-3.5 pb-4 pt-3.5">
+      <section className="card relative mx-4 mt-3.5 flex flex-col gap-3.5 px-3.5 pb-3.5 pt-3">
         <TornTape color="mint" w={66} h={21} rotate={6} className="-top-3 right-6" />
-        <h2 className="hand-written !font-normal text-[25px] leading-[1.25]">{question.prompt[locale]}</h2>
+        <h2 className="hand scribble self-start text-[19.4px] leading-[1.3]" style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
+          {question.prompt[locale]}
+        </h2>
         <div className="flex flex-wrap gap-2" role="group" aria-label={question.prompt[locale]}>
           {question.options.map((o) => {
             const on = !writing && picked === o.value;
-            return (
+            const pick = () => {
+              setWriting(false);
+              setPicked(on ? "" : o.value);
+            };
+            return spicy ? (
               <button
                 key={o.value}
                 type="button"
                 aria-pressed={on}
-                onClick={() => {
-                  setWriting(false);
-                  setPicked(on ? "" : o.value);
-                }}
-                className={`relative inline-flex items-center justify-center gap-1.5 rounded-xl border border-edge px-4 text-[14.4px] before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] ${spicy ? "min-h-11 flex-col gap-0 py-1" : "h-11 whitespace-nowrap"} ${on ? "bg-sky" : "bg-white"}`}
+                onClick={pick}
+                className={`relative inline-flex min-h-9 flex-col items-center justify-center rounded-xl border border-edge px-3 py-1 text-[12.6px] before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] ${on ? "bg-sky" : "bg-white"}`}
               >
-                {on && !spicy ? <CheckGlyph /> : null}
                 {o.label[locale]}
-                {spicy ? <ChiliMeter level={Number(o.value)} size={14} /> : null}
+                <ChiliMeter level={Number(o.value)} size={14} />
               </button>
+            ) : (
+              <CircleOption key={o.value} label={o.label[locale]} on={on} onToggle={pick} />
             );
           })}
           {own ? (
@@ -109,7 +96,7 @@ export function AnswerQuestion({
                 setWriting(!writing);
                 setPicked("");
               }}
-              className={`relative inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border border-dashed px-4 text-[14.4px] before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] ${writing ? "border-edge bg-sky" : "border-edge bg-transparent"}`}
+              className={`relative inline-flex h-9 items-center justify-center gap-1 rounded-xl border border-dashed px-3 text-[12.6px] before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] ${writing ? "border-edge bg-sky" : "border-ink/30 bg-transparent text-muted"}`}
             >
               <Icon name="pencil" size={16} strokeWidth={1.9} />
               {t("answer.own")}
@@ -125,7 +112,7 @@ export function AnswerQuestion({
             enterKeyHint="send"
             aria-label={t("answer.own")}
             placeholder={t("answer.own")}
-            className="hand-written h-11 w-full min-w-0 rounded-none border-0 border-b border-dashed border-ink/30 bg-transparent p-0 text-[20px] outline-none placeholder:font-sans placeholder:text-[13.5px] placeholder:text-muted focus:border-edge"
+            className={`${UNDERLINE_INPUT} h-10`}
           />
         ) : null}
         <span className="text-[10.8px] leading-[1.45] text-muted">{t("answer.footer", { from })}</span>
@@ -137,7 +124,7 @@ export function AnswerQuestion({
             {t(state.error === "closed" ? "accept.expired" : state.error === "self" ? "answer.self" : state.error === "empty" ? "answer.needOne" : "common.error")}
           </p>
         ) : null}
-        <button disabled={pending || !value} className="btn-primary !min-h-[45px] w-full !text-[19.4px]">
+        <button disabled={pending || !value} className="btn-primary w-full">
           {t("answer.send")}
         </button>
       </div>

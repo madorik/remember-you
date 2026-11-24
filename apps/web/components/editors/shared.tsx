@@ -25,7 +25,6 @@ export function CircleOption({
   label,
   on,
   onToggle,
-  large = false,
   textClass = "",
   className = "",
   noCheck = false,
@@ -34,7 +33,6 @@ export function CircleOption({
   on: boolean;
   onToggle: () => void;
   color?: "red" | "ink" | "warn";
-  large?: boolean;
   textClass?: string;
   /** 칩 자리를 더 줄이거나 바꿀 때(설정의 알림 시점 한 줄) */
   className?: string;
@@ -46,7 +44,7 @@ export function CircleOption({
       type="button"
       aria-pressed={on}
       onClick={onToggle}
-      className={`relative inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-edge text-[12.6px] before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] ${large ? "h-11 px-4" : "h-9 px-3"} ${on ? "bg-sky" : "bg-white"} ${textClass} ${className}`}
+      className={`relative inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-edge text-[12.6px] before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] h-9 px-3 ${on ? "bg-sky" : "bg-white"} ${textClass} ${className}`}
     >
       {on && !noCheck ? <CheckGlyph /> : null}
       {label}

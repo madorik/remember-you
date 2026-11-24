@@ -4,7 +4,7 @@ import { emptySection, isEmptySection, sanitizeSection, type AvatarConfig, type 
 import { useActionState, useEffect, useRef, useState } from "react";
 import type { AnswerState } from "@/app/actions/request";
 import { AnswerSent } from "@/components/AnswerSent";
-import { Avatar } from "@/components/Avatar";
+import { AnswerIntro } from "@/components/AnswerIntro";
 import { DateSpecPicker } from "@/components/editors/DatesEditor";
 import { CultureEditor } from "@/components/editors/CultureEditor";
 import { FavoritesEditor } from "@/components/editors/FavoritesEditor";
@@ -13,7 +13,7 @@ import { PetsEditor } from "@/components/editors/PetsEditor";
 import { SafetyEditor } from "@/components/editors/SafetyEditor";
 import { SizesEditor } from "@/components/editors/SizesEditor";
 import { TasteEditor } from "@/components/editors/TasteEditor";
-import { CircleOption, TextField, joinList, splitList, useT } from "@/components/editors/shared";
+import { CircleOption, SectionHeading, TextField, joinList, splitList, useT } from "@/components/editors/shared";
 import { DrawnCheck, Icon } from "@/components/marks";
 import { TornTape } from "@/components/TornTape";
 import { Mascot } from "@/components/Mascot";
@@ -28,7 +28,7 @@ function GiftsLite({ value, onChange, locale }: { value: GiftsData; onChange: (v
   const [skip, setSkip] = useState(joinList(value.skip));
   const [wish, setWish] = useState(joinList(value.wishlist.map((w) => w.title)));
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <TextField
         label={t("gift.wishTitle")}
         value={wish}
@@ -39,11 +39,11 @@ function GiftsLite({ value, onChange, locale }: { value: GiftsData; onChange: (v
         }}
         placeholder={t("gift.wishPlaceholder")}
       />
-      <div className="flex flex-col gap-1">
-        <span className="text-[13.5px]">{t("gift.giftCard")}</span>
-        <div className="flex flex-wrap gap-2">
-          <CircleOption large label={t("gift.giftCardYes")} on={value.giftCard === "yes"} onToggle={() => onChange({ ...value, giftCard: value.giftCard === "yes" ? null : "yes" })} />
-          <CircleOption large color="ink" label={t("gift.giftCardNo")} on={value.giftCard === "no"} onToggle={() => onChange({ ...value, giftCard: value.giftCard === "no" ? null : "no" })} />
+      <div className="flex flex-col gap-1.5">
+        <SectionHeading>{t("gift.giftCard")}</SectionHeading>
+        <div className="flex flex-wrap gap-2 pt-1">
+          <CircleOption label={t("gift.giftCardYes")} on={value.giftCard === "yes"} onToggle={() => onChange({ ...value, giftCard: value.giftCard === "yes" ? null : "yes" })} />
+          <CircleOption color="ink" label={t("gift.giftCardNo")} on={value.giftCard === "no"} onToggle={() => onChange({ ...value, giftCard: value.giftCard === "no" ? null : "no" })} />
         </div>
       </div>
       <TextField
@@ -220,10 +220,8 @@ export function AnswerForm({
       <input type="hidden" name="saveMine" value={signedIn && saveMine ? "1" : "0"} />
 
       {/* 진행: 뒤로 · 칸 막대 · 몇 번째(하나만 물었으면 없음) */}
-      {single ? (
-        <div className="h-3" />
-      ) : (
-        <div className="sticky top-0 z-20 flex items-center gap-2 bg-bg pb-1.5 pl-1 pr-4 pt-1.5" style={{ top: "var(--sat)" }}>
+      {single ? null : (
+        <div className="sticky top-0 z-20 flex items-center gap-2 bg-bg pb-1.5 pl-1.5 pr-4 pt-1.5" style={{ top: "var(--sat)" }}>
           <button type="button" onClick={() => go(step - 1)} disabled={step === 0} aria-label={t("common.back")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] shrink-0 items-center justify-center disabled:opacity-0">
             <Icon name="back" size={24} strokeWidth={2} />
           </button>
@@ -232,54 +230,36 @@ export function AnswerForm({
               <span key={i} className={`h-2 flex-1 rounded-full border border-edge ${i <= step ? "bg-sky" : "bg-white"}`} />
             ))}
           </div>
-          <span className="w-8 shrink-0 text-right text-[10.8px] text-muted">
+          <span className="hand w-8 shrink-0 text-right text-[13.5px] leading-none text-muted">
             {step + 1}/{total}
           </span>
         </div>
       )}
 
-      {step === 0 ? (
-        <section className="relative flex flex-col gap-5 px-5 pt-5">
-          <div className="flex items-center gap-4">
-            {/* 물어본 사람이 꾸민 얼굴(없으면 캐릭터) */}
-            <figure className="m-0 shrink-0 -rotate-[4deg] border border-edge bg-white px-[5.4px] pb-[16.2px] pt-[5.4px]">
-              <span className="flex h-[72.9px] w-[72.9px] items-center justify-center overflow-hidden bg-white">
-                {fromAvatar ? <Avatar config={fromAvatar} size={66} label={from} decorative /> : <Mascot pose={6} size={70} />}
-              </span>
-            </figure>
-            <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
-              <h1 className="hand-written !font-normal text-[23.5px] leading-[1.2]">{highlightCount(t("answer.title", { from, n: sections.length }))}</h1>
-              <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-ink/30 bg-paper px-2.5 py-[3px] text-[11.7px]">
-                <Icon name="lock" size={13} strokeWidth={1.9} className="shrink-0" />
-                {t("answer.onlyFrom", { from })}
-              </span>
-            </div>
-          </div>
-          {message ? <p className="-rotate-[0.6deg] whitespace-pre-line rounded-[3.2px_3.2px_13px_3.2px] border border-edge bg-[#fff3b0] px-3.5 py-2.5 hand-written text-[18.6px] leading-[1.3]">{message}</p> : null}
-        </section>
-      ) : null}
+      {step === 0 ? <AnswerIntro title={highlightCount(t("answer.title", { from, n: sections.length }))} from={from} fromAvatar={fromAvatar} message={message} onlyFrom={t("answer.onlyFrom", { from })} /> : null}
 
       {s ? (
-        <section key={s} className="card relative mx-4 mt-9 flex flex-col gap-3.5 px-3.5 pb-3.5 pt-3.5">
+        <section key={s} className={`card relative mx-4 flex flex-col gap-3.5 px-3.5 pb-3.5 pt-3 ${step === 0 ? "mt-3.5" : "mt-6"}`}>
           <TornTape color={step % 2 ? "pink" : "mint"} w={66} h={21} rotate={6} className="-top-3 right-6" />
-          <div className="flex items-center gap-2.5">
-            <SectionIcon section={s} size={44} outline />
-            <h2 className="flex-1 text-[21.1px] leading-[1.15]">{t(`request.topic.${s}` as "request.topic.dates")}</h2>
+          <div className="flex min-h-[38px] items-center gap-2.5">
+            <SectionIcon section={s} size={38} outline />
+            <h2 className={`hand scribble text-[19.4px] leading-none ${s === "safety" ? "text-red" : ""}`} style={step % 2 ? undefined : ({ "--scribble": "#5dbb9a" } as React.CSSProperties)}>
+              {t(`request.topic.${s}` as "request.topic.dates")}
+            </h2>
           </div>
-          {prefill[s] ? <p className="-mt-1.5 text-[11.7px] text-muted">{t("answer.prefilledHint", { from })}</p> : null}
+          {prefill[s] ? <p className="text-[11.7px] text-muted">{t("answer.prefilledHint", { from })}</p> : null}
           {modes[s] !== "none" ? (
             <div className="flex flex-col gap-4">
               {s === "dates" ? (
                 <DateSpecPicker
-                  large
                   year="birth"
                   value={answers.dates?.birthday ?? null}
                   onChange={(birthday) => set("dates", { birthday, anniversaries: answers.dates?.anniversaries ?? [] })}
                   locale={locale}
                 />
               ) : null}
-              {s === "safety" ? <SafetyEditor large value={answers.safety ?? emptySection("safety")} onChange={(v) => set("safety", v)} locale={locale} /> : null}
-              {s === "taste" ? <TasteEditor large value={answers.taste ?? emptySection("taste")} onChange={(v) => set("taste", v)} locale={locale} /> : null}
+              {s === "safety" ? <SafetyEditor flush value={answers.safety ?? emptySection("safety")} onChange={(v) => set("safety", v)} locale={locale} /> : null}
+              {s === "taste" ? <TasteEditor value={answers.taste ?? emptySection("taste")} onChange={(v) => set("taste", v)} locale={locale} /> : null}
               {s === "sizes" ? <SizesEditor value={answers.sizes ?? emptySection("sizes")} onChange={(v) => set("sizes", v)} locale={locale} /> : null}
               {s === "gifts" ? <GiftsLite value={answers.gifts ?? emptySection("gifts")} onChange={(v) => set("gifts", v)} locale={locale} /> : null}
               {s === "favorites" ? <FavoritesEditor value={answers.favorites ?? emptySection("favorites")} onChange={(v) => set("favorites", v)} locale={locale} /> : null}
@@ -297,30 +277,31 @@ export function AnswerForm({
                 setModes((x) => ({ ...x, [s]: none ? "none" : "new" }));
                 if (none) go(step + 1);
               }}
-              className={`inline-flex h-8 items-center self-end rounded-full border border-edge px-4 text-[11.7px] ${modes[s] === "none" ? "bg-sky" : "bg-white"}`}
+              className={`relative inline-flex h-[30.6px] items-center self-end rounded-full border border-edge px-3.5 text-[11.7px] before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] ${modes[s] === "none" ? "bg-sky" : "bg-white"}`}
             >
               {t("answer.none")}
             </button>
           ) : null}
+          {single ? finish : null}
         </section>
       ) : (
-        <section className="card relative mx-4 mt-9 flex flex-col gap-4 px-3.5 pb-4 pt-3.5">
+        <section className="card relative mx-4 mt-6 flex flex-col gap-3.5 px-3.5 pb-3.5 pt-3">
           <TornTape color="mint" w={66} h={21} rotate={6} className="-top-3 right-6" />
           <div className="flex items-center gap-3">
             <Mascot pose={6} size={52} />
-            <h2 className="text-[22.7px] leading-[1.2]">
+            <h2 className="text-[23.4px] leading-none">
               <span className="hl">{t("answer.almost")}</span>
             </h2>
           </div>
           {/* 보내기 전에 무엇이 가는지 한눈에 */}
           {answered.length ? (
             <div className="flex flex-col gap-1.5">
-              <h3 className="hand text-[15.3px] leading-none">{t("answer.willSend", { from })}</h3>
-              <ul className="flex flex-col rounded-xl border border-edge bg-white px-3 py-1.5">
+              <h3 className="hand text-[16.2px] leading-none">{t("answer.willSend", { from })}</h3>
+              <ul className="flex flex-col">
                 {answered.map((x) => (
-                  <li key={x} className="flex items-baseline gap-2 border-b border-dashed border-ink/20 py-1.5 text-[12.6px] last:border-b-0">
+                  <li key={x} className="flex items-baseline gap-2 border-t border-dashed border-ink/30 py-2 text-[12.6px] first:border-t-0">
                     <span className="w-[92px] shrink-0 text-muted">{t(`request.topic.${x}` as "request.topic.dates")}</span>
-                    <span className="hand-written min-w-0 flex-1 truncate text-[17px] leading-[1.2]">
+                    <span className="hand-written min-w-0 flex-1 truncate text-[17.8px] leading-[1.2]">
                       {modes[x] === "none" ? t("answer.none") : summarize(x, (modes[x] === "ok" ? prefill[x] : answers[x]) as CardData[Section], locale, t) || t("answer.empty")}
                     </span>
                   </li>
@@ -331,7 +312,6 @@ export function AnswerForm({
           {finish}
         </section>
       )}
-      {single ? <div className="mx-5 mt-4 flex flex-col gap-3">{finish}</div> : null}
 
       <div className="bottom-bar mt-auto flex flex-col gap-2 bg-bg px-4 pt-4">
         {state.error ? (
@@ -343,11 +323,11 @@ export function AnswerForm({
           <p className="px-1 text-[12.6px] text-muted">{t("answer.needOne")}</p>
         ) : null}
         {canSend ? (
-          <button disabled={pending || !answered.length || (needsConsent && !consent)} className="btn-primary !min-h-[45px] w-full !text-[19.4px]">
+          <button disabled={pending || !answered.length || (needsConsent && !consent)} className="btn-primary w-full">
             {t("answer.send")}
           </button>
         ) : (
-          <button type="button" onClick={() => go(step + 1)} className="btn-primary !min-h-[45px] w-full !text-[19.4px]">
+          <button type="button" onClick={() => go(step + 1)} className="btn-primary w-full">
             <Icon name="chevron" size={19} strokeWidth={2} />
             {t("answer.next")}
           </button>

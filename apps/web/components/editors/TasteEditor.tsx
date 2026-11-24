@@ -6,9 +6,9 @@ import { ChiliIcon } from "../Chili";
 import { CircleOption, Collapsible, SectionHeading, TextField, joinList, splitList, useT } from "./shared";
 
 /** 매운맛: 고추 다섯 개 한 줄. 몇 번째를 누르느냐가 단계(그만큼 빨개진다), 옆에 그 단계 이름. 같은 걸 다시 누르면 뺀다 */
-export function SpicyScale({ value, onChange, locale, large = false }: { value: number | null; onChange: (v: number | null) => void; locale: Locale; large?: boolean }) {
+export function SpicyScale({ value, onChange, locale }: { value: number | null; onChange: (v: number | null) => void; locale: Locale }) {
   const t = useT(locale);
-  const size = large ? 34 : 32;
+  const size = 32;
   return (
     <div className="flex flex-col gap-1.5">
       <SectionHeading>{t("taste.spicy")}</SectionHeading>
@@ -22,7 +22,7 @@ export function SpicyScale({ value, onChange, locale, large = false }: { value: 
               aria-checked={value === i}
               aria-label={label[locale]}
               onClick={() => onChange(value === i ? null : i)}
-              className={`flex items-center justify-center rounded-full transition-transform active:scale-90 ${large ? "h-14 w-14" : "h-11 w-11 relative before:absolute before:-inset-[2.2px]"}`}
+              className="relative flex h-11 w-11 items-center justify-center rounded-full transition-transform before:absolute before:-inset-[2.2px] active:scale-90"
             >
               <ChiliIcon on={value != null && i <= value} size={size} />
             </button>
@@ -79,7 +79,7 @@ export function AlcoholPicker({ value, onChange, locale }: { value: AlcoholData;
   );
 }
 
-export function TasteEditor({ value, onChange, locale, large = false, lite = false }: { value: TasteData; onChange: (v: TasteData) => void; locale: Locale; large?: boolean; lite?: boolean }) {
+export function TasteEditor({ value, onChange, locale, lite = false }: { value: TasteData; onChange: (v: TasteData) => void; locale: Locale; lite?: boolean }) {
   const t = useT(locale);
   const [likes, setLikes] = useState(joinList(value.likes));
   const rest = (
@@ -100,7 +100,7 @@ export function TasteEditor({ value, onChange, locale, large = false, lite = fal
         }}
         placeholder={t("taste.likesPlaceholder")}
       />
-      <SpicyScale value={value.spicy} onChange={(spicy) => onChange({ ...value, spicy })} locale={locale} large={large} />
+      <SpicyScale value={value.spicy} onChange={(spicy) => onChange({ ...value, spicy })} locale={locale} />
       {/* lite(받는 사람 화면): 간식·마시는 것·술은 접어 둔다(값이 있으면 펼친 채) */}
       {lite ? (
         <Collapsible title={t("answer.more")} startOpen={!!(value.dessert || value.drinks || value.alcohol?.level)}>

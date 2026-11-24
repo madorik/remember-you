@@ -46,14 +46,12 @@ export function DateSpecPicker({
   onChange,
   locale,
   preview = true,
-  large = false,
   year,
 }: {
   value: DateSpec | null;
   onChange: (v: DateSpec | null) => void;
   locale: Locale;
   preview?: boolean;
-  large?: boolean;
   year?: "birth" | "since";
 }) {
   const t = useT(locale);
@@ -85,7 +83,7 @@ export function DateSpecPicker({
   const first = list[0];
   const left = first ? diffDays(today, first) : null;
   const leftText = left == null ? "" : left === 0 ? (locale === "ko" ? "오늘이에요" : "today") : locale === "ko" ? `${left}일 남았어요` : `in ${left} days`;
-  const selectClass = `num w-full appearance-none rounded-xl bg-transparent text-center outline-none ${large ? "h-[54px] text-[37.4px]" : "h-14 text-[34.9px]"}`;
+  const selectClass = "num h-14 w-full appearance-none rounded-xl bg-transparent text-center text-[34.9px] outline-none";
 
   return (
     <div className="flex flex-col gap-3">

@@ -31,7 +31,7 @@ export function AnswerDone({
   const h2 = "hand scribble text-[19.4px] leading-none";
   return (
     <div className="flex flex-1 flex-col">
-      <section className="card relative mx-4 mt-3 flex flex-col items-center px-5 pb-6 pt-5 text-center">
+      <section className="card relative mx-4 mt-3.5 flex flex-col items-center px-3.5 pb-5 pt-4 text-center">
         <figure className="relative m-0 rotate-[3deg] border border-edge bg-white px-2 pb-[16.2px] pt-2">
           <TornTape color="pink" w={62} h={22} rotate={-8} className="-top-4 left-7" />
           <span className="flex h-[85.5px] w-[85.5px] items-center justify-center overflow-hidden bg-white">
@@ -41,7 +41,7 @@ export function AnswerDone({
         <h1 className="mt-4 text-[29.2px] leading-[1.1]">
           <span className="hl">{title}</span>
         </h1>
-        <p className="mt-3 text-[12.6px] leading-[1.45]">{body}</p>
+        <p className="mt-2.5 text-[12.6px] leading-[1.45]">{body}</p>
       </section>
 
       {shown.length ? (

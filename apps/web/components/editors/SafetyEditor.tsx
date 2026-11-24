@@ -5,7 +5,7 @@ import { useState } from "react";
 import { CircleOption, SectionHeading, TextField, UNDERLINE_INPUT, toggleWithNone, useT } from "./shared";
 
 /** 목록에 없는 음식 직접 더하기: 누르면 그 자리에 칸이 열린다. 엔터로 더하면 칸이 열린 채로 남아 이어서 더한다 */
-function AddTag({ label, placeholder, onAdd, large }: { label: string; placeholder: string; onAdd: (name: string) => void; large: boolean }) {
+function AddTag({ label, placeholder, onAdd }: { label: string; placeholder: string; onAdd: (name: string) => void }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const take = () => {
@@ -18,7 +18,7 @@ function AddTag({ label, placeholder, onAdd, large }: { label: string; placehold
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`relative inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-dashed border-ink/30 px-3 text-[12.6px] text-muted before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] ${large ? "h-11" : "h-9"}`}
+        className="relative inline-flex h-9 items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-dashed border-ink/30 px-3 text-[12.6px] text-muted before:absolute before:-inset-y-1 before:inset-x-0 before:content-['']"
       >
         <span aria-hidden="true" className="leading-none">
           +
@@ -67,14 +67,12 @@ export function SafetyEditor({
   value,
   onChange,
   locale,
-  large = false,
   showNote = true,
   flush = false,
 }: {
   value: SafetyData;
   onChange: (v: SafetyData) => void;
   locale: Locale;
-  large?: boolean;
   showNote?: boolean;
   /** 이미 카드 안이라 맨 위 점선(항목 머리와 나누는 줄)이 필요 없을 때(온보딩) */
   flush?: boolean;
@@ -95,12 +93,12 @@ export function SafetyEditor({
   };
   const custom = (key: "allergens" | "dislikes") =>
     customTags(key === "allergens" ? ALLERGENS : DISLIKES, value[key]).map((name) => (
-      <CircleOption key={`custom-${name}`} label={name} color={key === "allergens" ? "warn" : "ink"} on onToggle={() => toggle(key, name)} large={large} />
+      <CircleOption key={`custom-${name}`} label={name} color={key === "allergens" ? "warn" : "ink"} on onToggle={() => toggle(key, name)} />
     ));
-  const addTag = (key: "allergens" | "dislikes") => <AddTag label={t("safety.add")} placeholder={t("safety.addPlaceholder")} onAdd={(name) => add(key, name)} large={large} />;
+  const addTag = (key: "allergens" | "dislikes") => <AddTag label={t("safety.add")} placeholder={t("safety.addPlaceholder")} onAdd={(name) => add(key, name)} />;
   // 첫 칸 '없음'(알레르기 없음 · 안 먹는 것 없음 · 식단 없음)
   const none = (key: "allergens" | "dislikes" | "diets") => (
-    <CircleOption label={NONE_LABEL[locale]} color="ink" on={value[key].includes(NONE)} onToggle={() => toggle(key, NONE)} large={large} />
+    <CircleOption label={NONE_LABEL[locale]} color="ink" on={value[key].includes(NONE)} onToggle={() => toggle(key, NONE)} />
   );
 
   return (
@@ -112,11 +110,11 @@ export function SafetyEditor({
         <div className="flex flex-wrap gap-1.5">
           {none("allergens")}
           {[...allergens.first, ...(more ? allergens.rest : [])].map((i) => (
-            <CircleOption key={i.code} label={i.label[locale]} color="warn" on={value.allergens.includes(i.code)} onToggle={() => toggle("allergens", i.code)} large={large} />
+            <CircleOption key={i.code} label={i.label[locale]} color="warn" on={value.allergens.includes(i.code)} onToggle={() => toggle("allergens", i.code)} />
           ))}
           {custom("allergens")}
           {addTag("allergens")}
-          <button type="button" onClick={() => setMore(!more)} aria-expanded={more} className={`relative inline-flex items-center gap-0.5 whitespace-nowrap px-2.5 text-[11.7px] text-muted before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] ${large ? "h-11" : "h-9"}`}>
+          <button type="button" onClick={() => setMore(!more)} aria-expanded={more} className="relative inline-flex h-9 items-center gap-0.5 whitespace-nowrap px-2.5 text-[11.7px] text-muted before:absolute before:-inset-y-1 before:inset-x-0 before:content-['']">
             {more ? t("safety.less") : t("safety.more")}
             <span aria-hidden="true" className={more ? "rotate-180" : ""}>
               ⌄
@@ -130,7 +128,7 @@ export function SafetyEditor({
         <div className="flex flex-wrap gap-1.5">
           {none("dislikes")}
           {[...dislikes.first, ...(more ? dislikes.rest : [])].map((i) => (
-            <CircleOption key={i.code} label={i.label[locale]} color="ink" on={value.dislikes.includes(i.code)} onToggle={() => toggle("dislikes", i.code)} large={large} />
+            <CircleOption key={i.code} label={i.label[locale]} color="ink" on={value.dislikes.includes(i.code)} onToggle={() => toggle("dislikes", i.code)} />
           ))}
           {custom("dislikes")}
           {addTag("dislikes")}
@@ -143,7 +141,7 @@ export function SafetyEditor({
           <div className="flex flex-wrap gap-1.5">
             {none("diets")}
             {DIETS.map((i) => (
-              <CircleOption key={i.code} label={i.label[locale]} color="ink" on={value.diets.includes(i.code)} onToggle={() => toggle("diets", i.code)} large={large} />
+              <CircleOption key={i.code} label={i.label[locale]} color="ink" on={value.diets.includes(i.code)} onToggle={() => toggle("diets", i.code)} />
             ))}
           </div>
         </div>
