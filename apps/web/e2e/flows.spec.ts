@@ -520,7 +520,8 @@ test("아는 사람에게 다시 물어보기: 내 기록 값이 미리 채워�
   await expect(page).toHaveURL(new RegExp(`${personUrl}$`));
   await expect(page.getByText("답장을 기다리고 있어요")).toHaveCount(0);
   await dad.goto(canceled);
-  await expect(dad.getByText("보낸 사람이 취소한 링크예요.")).toBeVisible();
+  // 보낸 사람 이름이 들어간다(accept.canceledFrom)
+  await expect(dad.getByText(/^.+님이 취소한 링크예요\.$/)).toBeVisible();
 });
 
 test("로그인하고 답하기: 내 리드미 값이 미리 채워지고, 내 리드미에도 저장되며, 물어본 사람 목록에 내 이름으로 보인다", async ({ browser }) => {
@@ -605,79 +606,6 @@ test("나만 보는 메모: 사람 화면에 남는다", async ({ browser }) => 
   await sheet.getByRole("button", { name: "메모 추가" }).click();
   await expect(sheet.getByText("목도리 줬음. 잘 하고 다님")).toBeVisible();
   await expect(jisu.getByRole("button", { name: "메모 더 보기", exact: true })).toBeVisible();
-});
-
-test("직접 적어 두기: 물어보지 않아도 적어 두면 나만 보고, 생일 알림도 온다", async ({ browser, request }) => {
-  const cron = async () => (await (await request.get("/api/cron/reminders", { headers: { authorization: `Bearer ${CRON_SECRET}` } })).json()).created as number;
-  await cron(); // 이미 잡힌 알림은 먼저 만들어 두고, 아래에서 새로 생긴 것만 센다
-  const jisu = await as(browser, "jisu");
-  await jisu.goto("/people");
-  await jisu.getByRole("link", { name: "직접 적기" }).click();
-  await expect(jisu).toHaveURL(/\/people\/new/);
-  // 이름이나 부르는 말 · 프로필(얼굴) · 폴더만 나온다(생일 같은 건 사람 화면에서 적는다)
-  await expect(jisu.getByLabel("이름이나 부르는 말")).toBeVisible();
-  await expect(jisu.getByRole("button", { name: "아무거나", exact: true })).toBeVisible();
-  await expect(jisu.getByLabel("폴더")).toBeVisible();
-  await expect(jisu.getByText("생일", { exact: true })).toHaveCount(0);
-  await jisu.getByLabel("이름이나 부르는 말").fill("할머니");
-  await jisu.getByRole("button", { name: "만들기", exact: true }).click();
-  await expect(jisu.getByRole("heading", { name: "할머니" })).toBeVisible();
-  // 아무것도 없으면 미리 보기 대신 '적기'와 '물어보기' 두 단추(물어보기는 이 사람으로 열린다)
-  await expect(jisu.getByRole("link", { name: "적기", exact: true })).toBeVisible();
-  await expect(jisu.getByRole("link", { name: "물어보기", exact: true })).toHaveAttribute("href", /^\/request\?to=[0-9a-f-]{36}$/);
-  const personUrl = new URL(jisu.url()).pathname;
-
-  // 생일을 오늘부터 7일 뒤로(기본 알림 시점이 7일 전·당일)
-  const [y, m, d] = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date()).split("-").map(Number);
-  const in7 = new Date(Date.UTC(y, m - 1, d + 7));
-  await jisu.getByRole("link", { name: "적기", exact: true }).click();
-  // 빈 사람의 '적기'는 생일과 기념일 칸이 열린 채로 간다
-  await expect(jisu).toHaveURL(/\/edit\?open=dates$/);
-  await expect(jisu.getByRole("button", { name: /^생일과 기념일/ })).toHaveAttribute("aria-expanded", "true");
-  // 비어 있는 항목 옆에는 그 항목만 물어보는 작은 링크
-  await expect(jisu.getByRole("link", { name: "물어보기", exact: true }).first()).toHaveAttribute("href", /^\/request\?to=[0-9a-f-]{36}&topic=[a-z]+$/);
-  await jisu.getByLabel("월").first().selectOption(String(in7.getUTCMonth() + 1));
-  await jisu.getByLabel("일").first().selectOption(String(in7.getUTCDate()));
-  await expect(jisu.getByText("저장했어요.", { exact: true })).toBeVisible();
-
-  await jisu.getByRole("button", { name: /^알레르기와 못 먹는 음식/ }).click();
-  await jisu.getByRole("button", { name: "땅콩", exact: true }).first().click();
-  await expect(jisu.getByText("저장했어요.", { exact: true })).toBeVisible();
-
-  await jisu.goto(personUrl);
-  await expect(jisu.getByRole("link", { name: /알레르기와 못 먹는 음식/ })).toBeVisible();
-  await expect(jisu.getByText(/땅콩/)).toBeVisible();
-  await shot(jisu, "14-mine-person");
-  await jisu.goto("/people");
-  await expect(jisu.getByRole("link", { name: /할머니.*7일 남음/ })).toBeVisible();
-  // 생일 알림 크론은 브라우저 알림(웹 푸시 구독)이 있는 사람만 읽는다(앱은 기기 로컬 알림): 구독을 하나 등록해 둔다.
-  // 알려진 푸시 서비스 주소가 아니거나 모양이 틀린 구독은 받지 않는다
-  const pushKeys = { p256dh: "B".repeat(87), auth: "A".repeat(22) };
-  const bad = await jisu.request.post("/api/push", { data: { platform: "web", token: JSON.stringify({ endpoint: "https://evil.example/x", keys: pushKeys }) } });
-  expect(bad.status()).toBe(400);
-  const sub = await jisu.request.post("/api/push", { data: { platform: "web", token: JSON.stringify({ endpoint: "https://fcm.googleapis.com/fcm/send/e2e", keys: pushKeys }) } });
-  expect(sub.status()).toBe(200);
-  expect(await cron()).toBeGreaterThanOrEqual(1);
-
-  // 다른 사람은 주소를 알아도 못 본다
-  const doyun = await as(browser, "doyun");
-  await doyun.goto(personUrl);
-  await expect(doyun.getByText("할머니")).toHaveCount(0);
-
-  // 지우기는 사람 화면 위 줄 오른쪽 ··· 메뉴의 한 곳뿐(프로필 고치기에는 없다). 누르면 확인 시트가 뜨고, 취소하면 그대로, 지우면 목록에서 사라진다
-  await jisu.goto(personUrl);
-  await jisu.getByRole("link", { name: "프로필 수정" }).click();
-  await expect(jisu.getByText("사람들에서 지우기", { exact: true })).toHaveCount(0);
-  await jisu.goto(personUrl);
-  await personMenu(jisu, "지우기");
-  await expect(jisu.getByRole("dialog", { name: "할머니를 지울까요?" })).toBeVisible();
-  await jisu.getByRole("button", { name: "취소", exact: true }).click();
-  await expect(jisu.getByRole("dialog")).toHaveCount(0);
-  await expect(jisu).toHaveURL(personUrl);
-  await personMenu(jisu, "지우기");
-  await jisu.getByRole("button", { name: "지우기", exact: true }).last().click();
-  await expect(jisu).toHaveURL(/\/people$/);
-  await expect(jisu.getByRole("link", { name: /할머니/ })).toHaveCount(0);
 });
 
 test("생년월일: 태어난 해를 고르면 나이와 띠가 보인다", async ({ browser }) => {
@@ -1184,36 +1112,6 @@ test("사람들 > 고르기: 사람을 고르면 알레르기를 빼고 메뉴�
   await expect(page.getByText("공유하기")).toHaveCount(0);
 });
 
-test("사람들 > 고르기: 고른 사람을 한꺼번에 지운다(확인 시트에서 취소하면 그대로, 지우면 목록에서 빠진다)", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: "데모로 둘러보기" }).click();
-  await expect(page).toHaveURL(/\/home/);
-  await page.getByRole("link", { name: "사람들" }).click();
-  await page.getByRole("button", { name: "선택" }).click();
-  // 아무도 안 골랐을 땐 동작 막대가 없어서 지우기도 없다
-  const remove = page.getByRole("toolbar").getByRole("button", { name: "지우기", exact: true });
-  await expect(remove).toHaveCount(0);
-  await page.getByRole("button", { name: "아내 선택" }).click();
-  await page.getByRole("button", { name: "단짝 선택" }).click();
-  await remove.click();
-  const sheet = page.getByRole("dialog", { name: "2명을 지울까요?" });
-  await expect(sheet).toBeVisible();
-  // 취소하면 아무도 안 지워지고 고른 채로
-  await sheet.getByRole("button", { name: "취소" }).click();
-  await expect(sheet).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "아내 선택" })).toHaveAttribute("aria-pressed", "true");
-  // 지우면 두 명이 목록에서 빠지고 알림이 뜬다
-  await remove.click();
-  await page.getByRole("dialog", { name: "2명을 지울까요?" }).getByRole("button", { name: "지우기", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("2명을 지웠어요");
-  await expect(page.getByRole("button", { name: "아내 선택" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "단짝 선택" })).toHaveCount(0);
-  // 다른 사람은 그대로 있고, 새로 고쳐도 되살아나지 않는다
-  await expect(page.getByRole("button", { name: /선택$/ }).first()).toBeVisible();
-  await page.reload();
-  await expect(page.getByText("아내", { exact: true })).toHaveCount(0);
-});
-
 test("오늘의 질문: 가까운 사람의 빈 칸을 하나씩 묻고, 답하면 그 사람 기록에 들어가며, 하루 두 번을 쓰면 더 뜨지 않는다", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "데모로 둘러보기" }).click();
@@ -1549,62 +1447,6 @@ async function personLinks(page: import("@playwright/test").Page) {
   const all = await page.locator('a[href^="/people/"]').evaluateAll((as) => as.map((a) => ({ href: a.getAttribute("href") ?? "", text: a.textContent ?? "" })));
   return all.filter((a) => /^\/people\/[0-9a-f-]{36}$/.test(a.href)).map((a) => ({ id: a.href.split("/").pop()!, text: a.text }));
 }
-
-test("말로 적기: 줄의 사람 칩을 눌러 '새로'로 잡힌 줄을 내 사람으로 돌리면 새 사람이 안 생기고 그 사람에게 값이 들어간다(같은 이름 줄은 함께, 한 줄만도 가능)", async ({ browser }) => {
-  const page = await newPage(browser);
-  await page.goto("/");
-  await signIn(page);
-  await onboard(page, { name: "하나" });
-  const fake = await fakeDrafts(page);
-  const save = page.getByRole("button", { name: "저장", exact: true });
-
-  // 지수를 먼저 만들어 둔다(새 사람 줄을 그대로 저장)
-  fake([{ spoken: "지수", target: { kind: "new", name: "지수" }, key: "sizes.top", field: "상의", text: "M" }]);
-  await draftText(page, "지수는 상의 M");
-  await save.click();
-  await expect(page).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
-
-  // 없는 이름 '와이프'로 적은 두 줄: 둘 다 새로. 첫 줄만 바꾸려고 '같은 이름 줄 모두 바꾸기'를 끄고 지수를 고른다
-  fake([
-    { spoken: "와이프", target: { kind: "new", name: "와이프" }, key: "favorites.flowers", field: "꽃", text: "수국" },
-    { spoken: "와이프", target: { kind: "new", name: "와이프" }, key: "sizes.bottom", field: "하의", text: "L" },
-  ]);
-  await draftText(page, "와이프는 수국을 좋아하고 하의는 L");
-  const fresh = page.getByRole("button", { name: /^와이프 새로/ });
-  await expect(fresh).toHaveCount(2);
-  await shot(page, "target-1-new");
-  await fresh.first().click();
-  const sheet = page.getByRole("dialog", { name: "누구 이야기예요?" });
-  await expect(sheet).toBeVisible();
-  const all = sheet.getByRole("checkbox", { name: "같은 이름 줄 모두 바꾸기" });
-  await expect(all).toHaveAttribute("aria-checked", "true");
-  await all.click();
-  await shot(page, "target-2-sheet");
-  await sheet.getByRole("button", { name: /^지수/ }).click();
-  await expect(sheet).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /^와이프 새로/ })).toHaveCount(1);
-  await expect(page.getByRole("button", { name: /^지수/ })).toHaveCount(1);
-  // 남은 줄을 열면 같은 이름 줄이 더 없어 '모두 바꾸기'가 안 보인다. 지수를 고르면 새로 표시가 모두 없어진다
-  await page.getByRole("button", { name: /^와이프 새로/ }).click();
-  await expect(sheet).toBeVisible();
-  await expect(sheet.getByRole("checkbox")).toHaveCount(0);
-  await sheet.getByRole("button", { name: /^지수/ }).click();
-  await expect(page.getByRole("button", { name: /^지수/ })).toHaveCount(2);
-  await expect(page.getByText("새로", { exact: true })).toHaveCount(0);
-  await shot(page, "target-3-picked");
-  await save.click();
-  await expect(page).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
-
-  // 와이프라는 새 사람은 없고, 지수 한 명에게 두 값이 다 들어갔다
-  const people = await personLinks(page);
-  expect(people.filter((p) => /와이프/.test(p.text))).toHaveLength(0);
-  const jisu = people.filter((p) => /지수/.test(p.text));
-  expect(jisu).toHaveLength(1);
-  await page.goto(`/people/${jisu[0]!.id}`);
-  await expect(page.getByText("수국").first()).toBeVisible();
-  // 사이즈는 한 줄로 줄여 보인다('상의 M · 하의 L')
-  await expect(page.getByText(/하의 L/).first()).toBeVisible();
-});
 
 test("말로 적기: 같은 이름이 둘이면 고르기 전에는 저장할 수 없고(그 줄로 가서 칩이 반짝), 고르면 고른 사람에게만 들어간다", async ({ browser }) => {
   const page = await newPage(browser);

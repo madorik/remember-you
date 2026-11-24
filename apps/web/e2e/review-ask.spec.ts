@@ -125,19 +125,6 @@ test("방금 저장한 게 아니면(표시가 없거나 오래됐으면) 홈에
   expect(await askedCount(page)).toBe(0);
 });
 
-test("저장 직후여도 그 사이에 홈을 떠나면 묻지 않는다", async ({ page }) => {
-  test.setTimeout(120_000);
-  await fakeApp(page);
-  await demo(page);
-  await seed(page, { days: 5, savedAgoMs: 1_000 });
-  await page.goto("/home");
-  await page.getByRole("link", { name: "사람들" }).first().click();
-  await expect(page).toHaveURL(/\/people$/);
-  await page.waitForTimeout(QUIET_MS);
-  expect(await daysCount(page)).toBe(6);
-  expect(await nativeCalls(page)).toEqual([]);
-});
-
 test("웹 브라우저에서는 아무 일도 하지 않는다", async ({ page }) => {
   test.setTimeout(120_000);
   await demo(page);

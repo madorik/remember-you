@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 
 // 검색·AI 답변용 공개 화면: 시작 화면의 자주 묻는 질문·선물 가이드 링크, 가이드의 업데이트 날짜·글 구조화 데이터, 사이트맵 수정일.
@@ -93,4 +94,14 @@ test("사이트맵: 수정일이 실제 내용을 고친 날이고, 가이드 �
   expect(byPath("/gifts")).toBeTruthy();
   // 가이드 수정일은 처음 낸 날(2026-11-16)에 묶여 있지 않다
   expect(byPath("/gifts/parents")!.lastmod > "2026-11-16").toBe(true);
+});
+
+test("IndexNow 키 파일은 로그인 없이 열리고 키와 같은 글이다(로그인해야 보이는 화면은 여전히 막힌다)", async ({ request }) => {
+  const key = readFileSync(new URL("../../../scripts/indexnow.mjs", import.meta.url), "utf8").match(/const KEY = "([0-9a-f]{32})"/)?.[1];
+  expect(key).toBeTruthy();
+  const res = await request.get(`/${key}.txt`, { maxRedirects: 0 });
+  expect(res.status()).toBe(200);
+  expect((await res.text()).trim()).toBe(key);
+  // 로그인해야 보이는 화면은 그대로 시작 화면으로
+  expect((await request.get("/home", { maxRedirects: 0 })).status()).toBe(307);
 });

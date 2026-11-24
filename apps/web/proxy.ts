@@ -4,7 +4,7 @@ import { LEGACY_HOSTS, SITE_URL } from "@/lib/site";
 
 // 로그인해야 보이는 화면은 세션 쿠키가 없으면 시작 화면으로 보낸다(진짜 확인은 각 화면의 getSession이 한다).
 // 로그인 없이 열리는 곳: 시작·로그인·물어보기에 답하기(/r)·가족에게 보낸 선물 카드(/g)·링크로 받은 기록(/s, 화면이 로그인을 직접 확인한다)·선물 가이드(/gifts)·우리 통계(/admin, 관리자 키로 화면에서 막는다)
-// ·이용 기록 받기(/api/e)·로그인 API·앱 로그인 넘기기·크론·약관류·robots·sitemap·llms.txt·앱 링크 확인 파일
+// ·이용 기록 받기(/api/e)·로그인 API·앱 로그인 넘기기·크론·약관류·robots·sitemap·llms.txt·앱 링크 확인 파일·IndexNow 키 파일(public/<32자>.txt)
 const PUBLIC = [
   /^\/$/,
   /^\/login/,
@@ -16,6 +16,7 @@ const PUBLIC = [
   /^\/admin(\/|$)/,
   /^\/api\/e$/,
   /^\/(robots\.txt|sitemap\.xml|llms\.txt)$/,
+  /^\/[0-9a-f]{32}\.txt$/,
   /^\/api\/auth\//,
   /^\/auth\//,
   /^\/api\/cron\//,
