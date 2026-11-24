@@ -238,8 +238,9 @@ export function PeopleBoard({
     },
   });
   const membersOf = (f: FolderView) => [...f.memberIds, ...Object.keys(added).filter((id) => added[id]!.includes(f.id) && !f.memberIds.includes(id))];
-  const unfiled = ordered.filter((r) => !r.folderIds.length && !added[r.contactId]?.length);
+  // 목록은 둘로 나눈다: 즐겨찾기(어느 폴더에 있든) / 폴더 없음(폴더에도 없고 즐겨찾기도 아닌 사람). 폴더에 넣은 사람은 폴더 안에서만 보인다
   const favRows = ordered.filter((r) => r.favorite);
+  const unfiled = ordered.filter((r) => !r.favorite && !r.folderIds.length && !added[r.contactId]?.length);
   const lazyRow = rows.length > LONG_LIST ? LAZY_ROW : "";
   // 사람이 몇 명 안 될 때는 빈 기본 폴더 칸이 화면을 차지하지 않게, 사람(과 더하기)을 폴더 칸보다 먼저 보인다
   const few = rows.length > 0 && rows.length <= FEW_PEOPLE;
@@ -326,6 +327,69 @@ export function PeopleBoard({
     </div>
   );
   const filled = folders.filter((f) => f.memberIds.some((id) => byId.has(id)));
+
+  // 사람 한 줄(눌러 사람 화면, 꾹 눌러 끌면 폴더 칸에 넣는다)
+  const dragRow = (r: PersonRow) => (
+    <li
+      key={r.contactId}
+      onPointerDown={(e) => drag.onPointerDown(e, r.contactId, r.name, "list")}
+      onContextMenu={(e) => e.preventDefault()}
+      className={`select-none border-t border-dashed border-ink/30 first:border-t-0 [-webkit-touch-callout:none] ${lazyRow} ${drag.dragging?.id === r.contactId ? "opacity-40" : ""}`}
+    >
+      <Link href={`/people/${r.contactId}`} draggable={false} className="flex min-h-[50.4px] items-center gap-2.5">
+        <RowBody row={r} avatarLabel={labels.avatarOf.replace("{name}", r.name)} />
+      </Link>
+    </li>
+  );
+  // 즐겨찾기: 어느 폴더에 있든 한곳에 모아 바로 본다. 제목을 누르면 접힌다
+  const favSection = favRows.length ? (
+    <section aria-label={labels.favorites} className="relative">
+      <h2 className="px-6 pt-5">
+        <button type="button" aria-expanded={favOpen} aria-controls="people-fav" onClick={() => setFavOpen(!favOpen)} className="flex min-h-11 w-full items-baseline gap-1.5 text-left">
+          <span className="text-[23.4px] leading-none">
+            {labels.favorites}
+            {/* 사람 줄의 즐겨찾기 표시와 같은 분홍 하트(글자 줄 안에) */}
+            <svg aria-hidden="true" width="15.3" height="15.3" viewBox="0 0 24 24" fill="#E8627C" className="ml-1 inline-block align-[-1px]">
+              <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />
+            </svg>
+          </span>
+          <span className="font-sans text-[12.6px] font-normal text-muted">{favRows.length}</span>
+          <Icon name="chevron" size={18} strokeWidth={2} className={`ml-auto self-center text-muted transition-transform ${favOpen ? "rotate-90" : ""}`} />
+        </button>
+      </h2>
+      {favOpen ? (
+        <div id="people-fav" className="card relative mx-4 px-3.5">
+          <ul className="flex flex-col">{favRows.map(dragRow)}</ul>
+        </div>
+      ) : null}
+    </section>
+  ) : null;
+  // 폴더 없음: 폴더에도 없고 즐겨찾기도 아닌 사람. 다 넣었으면 이 칸은 없다. 몇 명 안 되면 끝에 사람 추가하기 줄
+  const unfiledSection = unfiled.length ? (
+    <section aria-label={labels.unfiled} className="relative">
+      <h2 className="flex items-baseline gap-1.5 px-6 pb-2 pt-5">
+        <span className="text-[23.4px] leading-none">{labels.unfiled}</span>
+        <span className="font-sans text-[12.6px] font-normal text-muted">{unfiled.length}</span>
+      </h2>
+      {unfiled.length > 1 && !few ? <div className="px-4">{sortChips}</div> : null}
+      <div className="card relative mx-4 px-3.5">
+        <TornTape color="pink" w={50} h={15} rotate={-30} className="-left-1.5 -top-[8.1px]" />
+        <ul className="flex flex-col">
+          {unfiled.map(dragRow)}
+          {few ? (
+            <li className="border-t border-dashed border-ink/30">
+              <Link href="/people/new" className="flex min-h-[50.4px] items-center gap-2.5 text-[15.3px] text-accent">
+                <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-dashed border-edge text-ink">
+                  <Icon name="personAdd" size={20} strokeWidth={1.8} />
+                </span>
+                {labels.addRow}
+              </Link>
+            </li>
+          ) : null}
+        </ul>
+      </div>
+    </section>
+  ) : null;
 
   return (
     <>
@@ -511,61 +575,9 @@ export function PeopleBoard({
               </div>
             </section>
           )}
-          {/* 몇 명 안 되면: 사람 전부(즐겨찾기 먼저)를 폴더 칸 위에, 끝에 직접 적기. 끌어서 아래 폴더 칸에 넣을 수도 있다 */}
-          {few ? (
-            <section aria-label={labels.title} className="relative">
-              <div className="card relative mx-4 mt-5 px-3.5">
-                <TornTape color="pink" w={50} h={15} rotate={-30} className="-left-1.5 -top-[8.1px]" />
-                <ul className="flex flex-col">
-                  {ordered.map((r) => (
-                    <li
-                      key={r.contactId}
-                      onPointerDown={(e) => drag.onPointerDown(e, r.contactId, r.name, "list")}
-                      onContextMenu={(e) => e.preventDefault()}
-                      className={`select-none border-t border-dashed border-ink/30 first:border-t-0 [-webkit-touch-callout:none] ${drag.dragging?.id === r.contactId ? "opacity-40" : ""}`}
-                    >
-                      <Link href={`/people/${r.contactId}`} draggable={false} className="flex min-h-[50.4px] items-center gap-2.5">
-                        <RowBody row={r} avatarLabel={labels.avatarOf.replace("{name}", r.name)} />
-                      </Link>
-                    </li>
-                  ))}
-                  <li className="border-t border-dashed border-ink/30">
-                    <Link href="/people/new" className="flex min-h-[50.4px] items-center gap-2.5 text-[15.3px] text-accent">
-                      <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-dashed border-edge text-ink">
-                        <Icon name="personAdd" size={20} strokeWidth={1.8} />
-                      </span>
-                      {labels.addRow}
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-            </section>
-          ) : null}
-          {/* 즐겨찾기: 어느 폴더에 있든 한곳에 모아 바로 본다. 제목을 누르면 접힌다 */}
-          {favRows.length && !few ? (
-            <section aria-label={labels.favorites} className="relative">
-              <h2 className="px-6 pt-5">
-                <button type="button" aria-expanded={favOpen} aria-controls="people-fav" onClick={() => setFavOpen(!favOpen)} className="flex min-h-11 w-full items-baseline gap-1.5 text-left">
-                  <span className="text-[23.4px] leading-none">{labels.favorites}</span>
-                  <span className="font-sans text-[12.6px] font-normal text-muted">{favRows.length}</span>
-                  <Icon name="chevron" size={18} strokeWidth={2} className={`ml-auto self-center text-muted transition-transform ${favOpen ? "rotate-90" : ""}`} />
-                </button>
-              </h2>
-              {favOpen ? (
-                <div id="people-fav" className="card relative mx-4 px-3.5">
-                  <ul className="flex flex-col">
-                    {favRows.map((r) => (
-                      <li key={r.contactId} className={`border-t border-dashed border-ink/30 first:border-t-0 ${lazyRow}`}>
-                        <Link href={`/people/${r.contactId}`} className="flex min-h-[50.4px] items-center gap-2.5">
-                          <RowBody row={r} avatarLabel={labels.avatarOf.replace("{name}", r.name)} />
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-            </section>
-          ) : null}
+          {/* 즐겨찾기 맨 위. 몇 명 안 되면 폴더 없음도 폴더 칸 위에(빈 기본 폴더 칸이 화면을 먼저 차지하지 않게) */}
+          {favSection}
+          {few ? unfiledSection : null}
           <section aria-label={labels.folders} className="relative">
           <h2 className="flex items-baseline gap-1.5 px-6 pb-2 pt-5">
             <span className="text-[23.4px] leading-none">{labels.folders}</span>
@@ -605,36 +617,7 @@ export function PeopleBoard({
           </div>
           </section>
 
-          {/* 아직 폴더에 없는 사람만. 다 넣었으면 이 칸은 없다 */}
-          {unfiled.length && !few ? (
-            <>
-              <section aria-label={labels.unfiled} className="relative">
-              <h2 className="flex items-baseline gap-1.5 px-6 pb-2 pt-5">
-                <span className="text-[23.4px] leading-none">{labels.unfiled}</span>
-                <span className="font-sans text-[12.6px] font-normal text-muted">{unfiled.length}</span>
-              </h2>
-              {unfiled.length > 1 ? <div className="px-4">{sortChips}</div> : null}
-              <div className="card relative mx-4 px-3.5">
-                <TornTape color="pink" w={50} h={15} rotate={-30} className="-left-1.5 -top-[8.1px]" />
-                <ul className="flex flex-col">
-                {unfiled.map((r) => (
-                  <li
-                    key={r.contactId}
-                   
-                    onPointerDown={(e) => drag.onPointerDown(e, r.contactId, r.name, "list")}
-                    onContextMenu={(e) => e.preventDefault()}
-                    className={`select-none border-t border-dashed border-ink/30 first:border-t-0 [-webkit-touch-callout:none] ${lazyRow} ${drag.dragging?.id === r.contactId ? "opacity-40" : ""}`}
-                  >
-                    <Link href={`/people/${r.contactId}`} draggable={false} className="flex min-h-[50.4px] items-center gap-2.5">
-                      <RowBody row={r} avatarLabel={labels.avatarOf.replace("{name}", r.name)} />
-                    </Link>
-                  </li>
-                ))}
-                </ul>
-              </div>
-              </section>
-            </>
-          ) : null}
+          {few ? null : unfiledSection}
         </div>
       )}
 
