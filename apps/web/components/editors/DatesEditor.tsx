@@ -30,9 +30,37 @@ export { ReminderPicker } from "./ReminderPicker";
 /** 아직 월·일을 다 고르지 않은 날짜(둘 다 골라야 값이 된다) */
 type Draft = Partial<DateSpec>;
 
-function useToday(): YMD {
+export function useToday(): YMD {
   // 시간대는 기기 기준(서버와 하루 차이 날 수 있는 자정 근처도 사용자가 보는 날짜로 맞춘다)
   return useMemo(() => todayIn(Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Seoul"), []);
+}
+
+/**
+ * 날짜 하나를 고르는 상태: 월·일을 둘 다 골라야 onChange(날짜)가 불린다(없던 1월 1일을 만들지 않는다).
+ * 값이 없는 동안 고르고 있는 것(월만 고른 상태 등)은 draft에 두고, 다 고른 값이 불완전해지면 onChange(null)
+ */
+export function useSpecDraft(value: DateSpec | null, onChange: (v: DateSpec | null) => void) {
+  const [draft, setDraft] = useState<Draft>({});
+  const spec: Draft = value ?? draft;
+  const capOf = (s: Draft) => (s.calendar === "lunar" ? 30 : s.month ? daysInMonth(s.year ?? 2024, s.month) : 31);
+  const maxDay = capOf(spec);
+  const set = (patch: Draft) => {
+    const next: Draft = { ...spec, ...patch };
+    if (next.year === undefined) delete next.year;
+    if (next.calendar === "solar") delete next.leap;
+    if (next.day !== undefined) next.day = Math.min(next.day, capOf(next));
+    if (next.month !== undefined && next.day !== undefined) {
+      setDraft({});
+      const done: DateSpec = { calendar: next.calendar ?? "solar", month: next.month, day: next.day };
+      if (next.leap) done.leap = true;
+      if (next.year !== undefined) done.year = next.year;
+      onChange(done);
+      return;
+    }
+    setDraft(next);
+    if (value) onChange(null);
+  };
+  return { spec, set, maxDay };
 }
 
 /**
@@ -55,28 +83,8 @@ export function DateSpecPicker({
   year?: "birth" | "since";
 }) {
   const t = useT(locale);
-  // 값이 없는 동안 고르고 있는 것(월만 고른 상태 등). 값이 생기면 값이 기준이다
-  const [draft, setDraft] = useState<Draft>({});
-  const spec: Draft = value ?? draft;
+  const { spec, set, maxDay } = useSpecDraft(value, onChange);
   const today = useToday();
-  const capOf = (s: Draft) => (s.calendar === "lunar" ? 30 : s.month ? daysInMonth(s.year ?? 2024, s.month) : 31);
-  const maxDay = capOf(spec);
-  const set = (patch: Draft) => {
-    const next: Draft = { ...spec, ...patch };
-    if (next.year === undefined) delete next.year;
-    if (next.calendar === "solar") delete next.leap;
-    if (next.day !== undefined) next.day = Math.min(next.day, capOf(next));
-    if (next.month !== undefined && next.day !== undefined) {
-      setDraft({});
-      const done: DateSpec = { calendar: next.calendar ?? "solar", month: next.month, day: next.day };
-      if (next.leap) done.leap = true;
-      if (next.year !== undefined) done.year = next.year;
-      onChange(done);
-      return;
-    }
-    setDraft(next);
-    if (value) onChange(null);
-  };
   const yearLabel = year === "birth" ? t("dates.birthYear") : year === "since" ? t("dates.sinceYear") : "";
   const years = Array.from({ length: today.y - SPEC_YEAR_MIN + 1 }, (_, i) => today.y - i);
   const list = value ? occurrences(value, today, 3) : [];

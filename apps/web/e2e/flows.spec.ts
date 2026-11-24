@@ -403,7 +403,7 @@ test("답하기: 아무것도 적지 않고 '다음'만 눌러 가면 보낼 수
   await expect(uncle.getByText(ko["answer.needOne"])).toBeVisible();
   await expect(uncle.getByRole("button", { name: ko["answer.send"], exact: true })).toBeDisabled();
   // 선물 화면으로 돌아가 받고 싶은 것을 적으면 보낼 수 있다
-  await uncle.getByRole("button", { name: ko["common.back"] }).click();
+  await uncle.getByRole("button", { name: ko["answer.prev"] }).click();
   await uncle.getByPlaceholder(ko["gift.wishPlaceholder"]).fill("따뜻한 목도리, 향초");
   await uncle.getByRole("button", { name: "다음", exact: true }).click();
   await expect(uncle.getByText(ko["answer.needOne"])).toHaveCount(0);

@@ -3,18 +3,23 @@
 import { ALCOHOL_KINDS, ALCOHOL_LEVELS, SPICY_LEVELS, type AlcoholData, type Locale, type TasteData } from "@readme/core";
 import { useState } from "react";
 import { ChiliIcon } from "../Chili";
-import { CircleOption, Collapsible, SectionHeading, TextField, joinList, splitList, useT } from "./shared";
+import { CircleOption, Collapsible, TextField, joinList, splitList, useT } from "./shared";
 
-/** 매운맛: 고추 다섯 개 한 줄. 몇 번째를 누르느냐가 단계(그만큼 빨개진다), 옆에 그 단계 이름. 같은 걸 다시 누르면 뺀다 */
+/** 고르기 이름 뒤에 괄호로 기준이 붙은 것('보통 매운맛 (신라면 정도)')은 그 기준만: 한 줄 오른쪽 자리에 들어가게 */
+function shortLabel(label: string): string {
+  return /\(([^)]+)\)/.exec(label)?.[1] ?? label;
+}
+
+/** 매운맛: 한 줄. 왼쪽 이름 · 동그란 고추 단추 다섯(몇 번째를 누르느냐가 단계, 그만큼 빨개진다) · 오른쪽 단계 이름. 같은 걸 다시 누르면 뺀다 */
 export function SpicyScale({ value, onChange, locale }: { value: number | null; onChange: (v: number | null) => void; locale: Locale }) {
   const t = useT(locale);
-  const size = 32;
   return (
-    <div className="flex flex-col gap-1.5">
-      <SectionHeading>{t("taste.spicy")}</SectionHeading>
-      <div className="flex flex-col items-center">
-        <div role="radiogroup" aria-label={t("taste.spicy")} className="relative flex shrink-0 items-center pb-[19.8px]">
-          {SPICY_LEVELS.map((label, i) => (
+    <div className="flex items-center gap-2.5">
+      <span className="shrink-0 text-[12.6px] text-muted">{t("taste.spicy")}</span>
+      <div role="radiogroup" aria-label={t("taste.spicy")} className="flex shrink-0 gap-1.5">
+        {SPICY_LEVELS.map((label, i) => {
+          const on = value != null && i <= value;
+          return (
             <button
               key={i}
               type="button"
@@ -22,20 +27,16 @@ export function SpicyScale({ value, onChange, locale }: { value: number | null; 
               aria-checked={value === i}
               aria-label={label[locale]}
               onClick={() => onChange(value === i ? null : i)}
-              className="relative flex h-11 w-11 items-center justify-center rounded-full transition-transform before:absolute before:-inset-[2.2px] active:scale-90"
+              className={`relative flex h-9 w-9 items-center justify-center rounded-full border border-edge transition-transform before:absolute before:-inset-[3.6px] before:content-[''] active:scale-90 ${on ? "bg-[#FFE1DC]" : "bg-white"}`}
             >
-              <ChiliIcon on={value != null && i <= value} size={size} />
+              <ChiliIcon on={on} size={20} />
             </button>
-          ))}
-          {/* 가운데(보통)가 어느 정도인지 기준 하나: 신라면. 고르면 옆 이름에 같은 말이 나오니 그때는 뺀다 */}
-          {value !== 2 ? (
-            <span aria-hidden="true" className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 whitespace-nowrap text-[11.7px] leading-none text-muted">
-              {t("taste.spicyAnchor")}
-            </span>
-          ) : null}
-        </div>
-        {value != null ? <span className="min-w-0 text-center text-[11.7px] leading-[1.3]">{SPICY_LEVELS[value]?.[locale]}</span> : null}
+          );
+        })}
       </div>
+      <span aria-hidden="true" className="ml-auto min-w-0 text-right text-[11.25px] leading-[1.3] text-muted">
+        {value != null ? shortLabel(SPICY_LEVELS[value]?.[locale] ?? "") : ""}
+      </span>
     </div>
   );
 }
@@ -45,7 +46,7 @@ export function AlcoholPicker({ value, onChange, locale }: { value: AlcoholData;
   const t = useT(locale);
   return (
     <div className="flex flex-col gap-1.5">
-      <SectionHeading>{t("taste.alcohol")}</SectionHeading>
+      <span className="text-[10.8px] text-muted">{t("taste.alcohol")}</span>
       <div className="flex flex-wrap gap-2 pt-1">
         {ALCOHOL_LEVELS.map((l) => (
           <CircleOption

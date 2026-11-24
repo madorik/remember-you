@@ -5,7 +5,8 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import type { AnswerState } from "@/app/actions/request";
 import { AnswerSent } from "@/components/AnswerSent";
 import { AnswerIntro } from "@/components/AnswerIntro";
-import { DateSpecPicker } from "@/components/editors/DatesEditor";
+import { AnswerDates } from "@/components/AnswerDates";
+import { CuteTopicIcon } from "@/components/CuteTopicIcon";
 import { CultureEditor } from "@/components/editors/CultureEditor";
 import { FavoritesEditor } from "@/components/editors/FavoritesEditor";
 import { LifeEditor } from "@/components/editors/LifeEditor";
@@ -17,7 +18,6 @@ import { CircleOption, SectionHeading, TextField, joinList, splitList, useT } fr
 import { DrawnCheck, Icon } from "@/components/marks";
 import { TornTape } from "@/components/TornTape";
 import { Mascot } from "@/components/Mascot";
-import { SectionIcon } from "@/components/SectionIcon";
 import { summarize } from "@/lib/summary";
 
 type Mode = "ok" | "fix" | "new" | "none";
@@ -219,18 +219,15 @@ export function AnswerForm({
       <input type="hidden" name="consent" value={consent ? "1" : "0"} />
       <input type="hidden" name="saveMine" value={signedIn && saveMine ? "1" : "0"} />
 
-      {/* 진행: 뒤로 · 칸 막대 · 몇 번째(하나만 물었으면 없음) */}
+      {/* 진행: 칸 막대(지난 칸·지금 칸은 망고, 남은 칸은 흰색) · 몇 번째(하나만 물었으면 없음). 되돌아가는 건 아래 '이전' 단추 */}
       {single ? null : (
-        <div className="sticky top-0 z-20 flex items-center gap-2 bg-bg pb-1.5 pl-1.5 pr-4 pt-1.5" style={{ top: "var(--sat)" }}>
-          <button type="button" onClick={() => go(step - 1)} disabled={step === 0} aria-label={t("common.back")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] shrink-0 items-center justify-center disabled:opacity-0">
-            <Icon name="back" size={24} strokeWidth={2} />
-          </button>
-          <div className="flex flex-1 gap-2" aria-hidden="true">
+        <div className="sticky top-0 z-20 flex items-center gap-2 bg-bg px-5 pb-1.5 pt-1.5" style={{ top: "var(--sat)" }}>
+          <div className="flex flex-1 gap-[4.5px]" aria-hidden="true">
             {Array.from({ length: total }, (_, i) => (
-              <span key={i} className={`h-2 flex-1 rounded-full border border-edge ${i <= step ? "bg-sky" : "bg-white"}`} />
+              <span key={i} className={`h-1.5 flex-1 rounded-[2.7px] border ${i <= step ? "border-transparent bg-sky" : "border-ink/20 bg-white"}`} />
             ))}
           </div>
-          <span className="hand w-8 shrink-0 text-right text-[13.5px] leading-none text-muted">
+          <span className="hand shrink-0 text-right text-[14.4px] leading-none text-muted">
             {step + 1}/{total}
           </span>
         </div>
@@ -239,25 +236,18 @@ export function AnswerForm({
       {step === 0 ? <AnswerIntro title={highlightCount(t("answer.title", { from, n: sections.length }))} from={from} fromAvatar={fromAvatar} message={message} onlyFrom={t("answer.onlyFrom", { from })} /> : null}
 
       {s ? (
-        <section key={s} className={`card relative mx-4 flex flex-col gap-3.5 px-3.5 pb-3.5 pt-3 ${step === 0 ? "mt-3.5" : "mt-6"}`}>
+        <section key={s} className={`card relative mx-4 flex flex-col gap-3.5 p-3.5 ${step === 0 ? "mt-3.5" : "mt-6"}`}>
           <TornTape color={step % 2 ? "pink" : "mint"} w={66} h={21} rotate={6} className="-top-3 right-6" />
           <div className="flex min-h-[38px] items-center gap-2.5">
-            <SectionIcon section={s} size={38} outline />
-            <h2 className={`hand scribble text-[19.4px] leading-none ${s === "safety" ? "text-red" : ""}`} style={step % 2 ? undefined : ({ "--scribble": "#5dbb9a" } as React.CSSProperties)}>
+            <CuteTopicIcon section={s} size={38} />
+            <h2 className={`hand scribble text-[21.6px] leading-none ${s === "safety" ? "text-red" : ""}`} style={{ "--scribble": "#5dbb9a" } as React.CSSProperties}>
               {t(`request.topic.${s}` as "request.topic.dates")}
             </h2>
           </div>
           {prefill[s] ? <p className="text-[11.7px] text-muted">{t("answer.prefilledHint", { from })}</p> : null}
           {modes[s] !== "none" ? (
             <div className="flex flex-col gap-4">
-              {s === "dates" ? (
-                <DateSpecPicker
-                  year="birth"
-                  value={answers.dates?.birthday ?? null}
-                  onChange={(birthday) => set("dates", { birthday, anniversaries: answers.dates?.anniversaries ?? [] })}
-                  locale={locale}
-                />
-              ) : null}
+              {s === "dates" ? <AnswerDates value={answers.dates ?? emptySection("dates")} onChange={(v) => set("dates", v)} locale={locale} /> : null}
               {s === "safety" ? <SafetyEditor flush value={answers.safety ?? emptySection("safety")} onChange={(v) => set("safety", v)} locale={locale} /> : null}
               {s === "taste" ? <TasteEditor value={answers.taste ?? emptySection("taste")} onChange={(v) => set("taste", v)} locale={locale} /> : null}
               {s === "sizes" ? <SizesEditor value={answers.sizes ?? emptySection("sizes")} onChange={(v) => set("sizes", v)} locale={locale} /> : null}
@@ -285,7 +275,7 @@ export function AnswerForm({
           {single ? finish : null}
         </section>
       ) : (
-        <section className="card relative mx-4 mt-6 flex flex-col gap-3.5 px-3.5 pb-3.5 pt-3">
+        <section className="card relative mx-4 mt-6 flex flex-col gap-3.5 p-3.5">
           <TornTape color="mint" w={66} h={21} rotate={6} className="-top-3 right-6" />
           <div className="flex items-center gap-3">
             <Mascot pose={6} size={52} />
@@ -322,16 +312,25 @@ export function AnswerForm({
           // 마지막 화면인데 답한 게 하나도 없다(전부 건드리지 않고 넘겼다): 보낼 수 없는 까닭
           <p className="px-1 text-[12.6px] text-muted">{t("answer.needOne")}</p>
         ) : null}
-        {canSend ? (
-          <button disabled={pending || !answered.length || (needsConsent && !consent)} className="btn-primary w-full">
-            {t("answer.send")}
-          </button>
-        ) : (
-          <button type="button" onClick={() => go(step + 1)} className="btn-primary w-full">
-            <Icon name="chevron" size={19} strokeWidth={2} />
-            {t("answer.next")}
-          </button>
-        )}
+        <div className="flex gap-2.5">
+          {single || step === 0 ? null : (
+            <button type="button" onClick={() => go(step - 1)} className="btn-outline btn-outline-lift basis-[34%] shrink-0 !gap-1">
+              <Icon name="back" size={19} strokeWidth={2} />
+              {t("answer.prev")}
+            </button>
+          )}
+          {canSend ? (
+            // key: '다음'을 누른 그 클릭이 끝나기 전에 같은 자리 단추가 '보내기'로 바뀌어 곧바로 보내지는 일이 없게, 두 단추를 다른 요소로 둔다
+            <button key="send" type="submit" disabled={pending || !answered.length || (needsConsent && !consent)} className="btn-primary min-w-0 flex-1">
+              {t("answer.send")}
+            </button>
+          ) : (
+            <button key="next" type="button" onClick={() => go(step + 1)} className="btn-primary min-w-0 flex-1 !gap-1">
+              {t("answer.next")}
+              <Icon name="chevron" size={19} strokeWidth={2} />
+            </button>
+          )}
+        </div>
       </div>
     </form>
   );
