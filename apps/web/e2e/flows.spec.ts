@@ -441,8 +441,8 @@ test("받은 답도 내가 고친다", async ({ browser }) => {
   const personUrl = new URL(page.url()).pathname;
   // 사람 화면은 적어 둔 것만 미리 보기. 항목을 누르면 수정 화면에서 그 항목이 펼쳐진 채로 열리고, 고르면 바로 저장된다
   await expect(page.getByRole("button", { name: /^사이즈/ })).toHaveCount(0);
-  // 그 사람이 직접 답한 항목에는 '○○가 알려 줌' 표시
-  await expect(page.getByText("아빠가 알려 줌").first()).toBeVisible();
+  // 그 사람이 직접 답한 항목이어도 '○○가 알려 줌' 같은 표시는 없다
+  await expect(page.getByText(/알려 줌/)).toHaveCount(0);
   await page.getByRole("link", { name: /알레르기와 못 먹는 음식/ }).click();
   await expect(page).toHaveURL(/\/edit\?open=safety$/);
   const safety = page.getByRole("button", { name: /^알레르기와 못 먹는 음식/ });
@@ -453,8 +453,6 @@ test("받은 답도 내가 고친다", async ({ browser }) => {
   // 수정 화면에는 비어 있는 항목도 다 있다
   await expect(page.getByRole("button", { name: /^사이즈/ })).toBeVisible();
   await page.goto(personUrl);
-  // 내가 고친 항목은 이제 내 기록이라 '알려 줌' 표시가 빠진다
-  await expect(page.getByRole("link", { name: /알레르기와 못 먹는 음식/ })).not.toContainText("알려 줌");
   // 사람 화면은 항목마다 적어 둔 값이 그대로(알레르기는 붉은 알약)
   await expect(page.getByText(/땅콩/)).toBeVisible();
   await expect(page.getByText(/굴/)).toBeVisible();

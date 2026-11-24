@@ -22,7 +22,6 @@ export function RememberedList({
   sectionHref,
   editLabel,
   t,
-  badge,
   empty,
   className = "mt-[19.8px]",
 }: {
@@ -34,8 +33,6 @@ export function RememberedList({
   sectionHref: (section: Section) => string;
   editLabel: string;
   t: T;
-  /** 항목 줄 오른쪽에 붙는 작은 표시(예: 그 사람이 직접 답한 항목) */
-  badge?: (section: Section) => React.ReactNode;
   /** 아무것도 적어 두지 않았을 때 */
   empty: React.ReactNode;
   className?: string;
@@ -59,7 +56,6 @@ export function RememberedList({
                 <Link href={sectionHref(section)} className="flex min-h-[48.6px] items-center gap-[10.8px] pt-[5.4px]">
                   <SectionIcon section={section} size={38} cake={section === "dates"} />
                   <span className={`min-w-0 flex-1 text-[16.2px] ${section === "safety" ? "text-red" : ""}`}>{t(`section.${section}` as "section.safety")}</span>
-                  {badge?.(section) ?? null}
                   <Icon name="chevron" size={16} strokeWidth={2} className="shrink-0 text-muted" />
                 </Link>
                 <div className="pb-[12.6px] pt-[3.6px]">{body}</div>

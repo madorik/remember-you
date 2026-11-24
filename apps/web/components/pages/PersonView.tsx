@@ -204,15 +204,6 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
         sectionHref={(section) => `/people/${p.contactId}/edit?open=${section}`}
         editLabel={t("me.edit")}
         t={t}
-        // 그 사람이 물어보기에 직접 답한 항목(내가 고치면 이 표시는 빠진다)
-        badge={(section) =>
-          p.answered[section] ? (
-            <span className="inline-flex h-[21.6px] max-w-[48%] shrink-0 items-center gap-1 rounded-full bg-sky-soft pl-1.5 pr-2 text-[10.8px] leading-none shadow-[inset_0_0_0_1px_var(--color-mango-edge)]">
-              <Icon name="check" size={12} strokeWidth={2.6} className="shrink-0 text-accent" />
-              <span className="truncate">{t("person.toldBy", { name: displayName })}</span>
-            </span>
-          ) : null
-        }
         // 아직 아무것도 없을 때: 직접 적거나, 그 사람에게 물어보거나(물어보기 화면이 이 사람으로 열린다)
         empty={
           <div className="grid grid-cols-2 gap-2.5">

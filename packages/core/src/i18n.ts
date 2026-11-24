@@ -354,7 +354,6 @@ export const ko = {
   "home.ask": "물어보기",
 
   "person.askMore": "물어보기",
-  "person.toldBy": "{name}님이 알려 줌",
   "person.allergy": "알레르기",
   "person.likes": "좋아해요",
   "person.wontEat": "안 먹어요",
@@ -1211,7 +1210,6 @@ export const en: Messages = {
   "home.ask": "Ask",
 
   "person.askMore": "Ask",
-  "person.toldBy": "Told by {name}",
   "person.allergy": "allergy",
   "person.likes": "Loves",
   "person.wontEat": "Won't eat",
