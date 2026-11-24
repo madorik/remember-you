@@ -150,12 +150,8 @@ export function AnswerDates({ value, onChange, locale }: { value: DatesData; onC
         </div>
       </div>
 
-      <div className="mt-4 flex gap-3">
-        <Leaf head={t("dates.month")} label={t("dates.month")} value={spec.month} max={12} suffix={monthSuffix} onPick={(month) => set({ month })} />
-        <Leaf head={t("dates.day")} label={t("dates.day")} value={spec.day} max={maxDay} suffix={daySuffix} onPick={(day) => set({ day })} />
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5">
+      {/* 태어난 해 → 월 → 일 순서(날짜 읽는 순서대로) */}
+      <div className="mt-3 flex items-center gap-2">
         <span className="text-[12.6px] text-muted">{t("dates.birthYear")}</span>
         <PillSelect label={t("dates.birthYear")} shown={spec.year ? (ko ? `${spec.year}년` : String(spec.year)) : t("dates.yearUnsure")} value={spec.year ? String(spec.year) : ""} onPick={(v) => set({ year: v ? Number(v) : undefined })}>
           <option value="">{t("dates.yearUnsure")}</option>
@@ -165,9 +161,12 @@ export function AnswerDates({ value, onChange, locale }: { value: DatesData; onC
             </option>
           ))}
         </PillSelect>
-        <span className="text-[11.25px] text-muted">{t("dates.yearOptional")}</span>
       </div>
-      {value.birthday?.leap ? <p className="mt-2 text-[11.7px] leading-[1.5] text-muted">{t("dates.leapNote", { m: value.birthday.month, d: value.birthday.day })}</p> : null}
+
+      <div className="mt-4 flex gap-3">
+        <Leaf head={t("dates.month")} label={t("dates.month")} value={spec.month} max={12} suffix={monthSuffix} onPick={(month) => set({ month })} />
+        <Leaf head={t("dates.day")} label={t("dates.day")} value={spec.day} max={maxDay} suffix={daySuffix} onPick={(day) => set({ day })} />
+      </div>
 
       {first && left !== null ? (
         <div className="mt-3.5 flex items-center gap-2 rounded-xl bg-sky-soft px-3 py-2.5">

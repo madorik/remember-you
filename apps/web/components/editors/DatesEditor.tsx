@@ -129,7 +129,6 @@ export function DateSpecPicker({
             </select>
             <Icon name="chevron" size={14} strokeWidth={2} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rotate-90" />
           </span>
-          <span className="min-w-0 text-[10.8px] leading-[1.3] text-muted">{t("dates.yearOptional")}</span>
         </label>
       ) : null}
 
