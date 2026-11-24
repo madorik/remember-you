@@ -1251,8 +1251,8 @@ test("오늘의 질문: '물어보기'는 그 사람을 고른 채 그 질문 �
   const href = (await card.getByRole("link").first().getAttribute("href")) ?? "";
   const id = href.split("/").pop()!;
   const first = ((await card.getByRole("heading").textContent()) ?? "").trim();
-  // 답을 모를 때: 그 사람에게 이 질문을 물어보러 가는 칩
-  await expect(card.getByRole("link", { name: /^몰라요/ })).toHaveAttribute("href", new RegExp(`^/request\\?to=${id}&q=[A-Za-z]+$`));
+  // 물어보기는 위 단추 하나뿐(아래 '몰라요 → 물어보기' 줄은 없다)
+  await expect(card.getByRole("link", { name: /^몰라요/ })).toHaveCount(0);
   await card.getByRole("button", { name: "물어보기" }).click();
   await expect(page).toHaveURL(new RegExp(`/request\\?to=${id}&q=[A-Za-z]+$`));
   // 그 사람이 고정돼 있고 묻는 건 그 질문 하나뿐이다(항목을 고르는 칸은 없다)

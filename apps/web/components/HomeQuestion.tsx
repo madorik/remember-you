@@ -26,8 +26,7 @@ export interface HomeQuestionProps {
   noneValue: string | null;
   noneLabel: string;
   canOwn: boolean;
-  /** dontKnow: 답을 모를 때 그 사람에게 이 질문을 물어보러 가는 칩("몰라요 → 엄마에게 물어보기") */
-  labels: { title: string; ask: string; skip: string; more: string; mute: string; own: string; save: string; dontKnow: string };
+  labels: { title: string; ask: string; skip: string; more: string; mute: string; own: string; save: string };
 }
 
 export function HomeQuestion({ contactId, qid, prompt, name, avatar, options, noneValue, noneLabel, canOwn, labels }: HomeQuestionProps) {
@@ -185,18 +184,6 @@ export function HomeQuestion({ contactId, qid, prompt, name, avatar, options, no
           </button>
         </form>
       ) : null}
-
-      {/* 답을 모르겠을 때: 이 질문을 그 사람에게 바로 물어보러 간다. 보기 줄은 옆으로 밀어야 끝이 보이니 한 줄을 따로 둔다 */}
-      <Link
-        href={`/request?to=${contactId}&q=${qid}`}
-        className="mt-2 flex h-[34.2px] items-center justify-center gap-1.5 rounded-xl border border-edge bg-sky-soft px-3 text-[12.6px] transition-transform active:scale-[0.98]"
-      >
-        <svg viewBox="0 0 24 24" width="15.3" height="15.3" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
-          <rect x="3" y="6" width="18" height="13" rx="2" fill="#F9CBD5" />
-          <path d="M3.8 7l8.2 6.2L20.2 7" />
-        </svg>
-        <span className="min-w-0 truncate">{labels.dontKnow}</span>
-      </Link>
     </section>
   );
 }

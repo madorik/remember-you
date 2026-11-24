@@ -373,7 +373,7 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
             noneValue={question.options.some((o) => o.value === NONE) ? NONE : null}
             noneLabel={NONE_LABEL[locale]}
             canOwn={canAnswerOwn(question.id)}
-            labels={{ title: t("home.question"), ask: t("home.questionAsk"), skip: t("common.skip"), more: t("home.more"), mute: t("home.questionMute"), own: t("home.questionOwn"), save: t("common.save"), dontKnow: t("home.questionDontKnow", { name: askedName }) }}
+            labels={{ title: t("home.question"), ask: t("home.questionAsk"), skip: t("common.skip"), more: t("home.more"), mute: t("home.questionMute"), own: t("home.questionOwn"), save: t("common.save") }}
           />
         </>
       ) : null}
