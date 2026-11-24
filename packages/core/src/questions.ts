@@ -32,42 +32,70 @@ const CULTURE_QUESTION_KEY = {
 /** 첫 칸 '없음'. 고르는 칸이면 코드(none), 글 칸이면 글자(없음)로 저장한다 */
 const NONE_OPTION: QuestionOption = { value: NONE, label: NONE_LABEL };
 
-function fromCatalog(list: CatalogItem[], codes: string[]): QuestionOption[] {
-  return [NONE_OPTION, ...codes.map((c) => list.find((i) => i.code === c)).filter((i): i is CatalogItem => !!i).map((i) => ({ value: i.code, label: i.label }))];
+/** 그 목록의 보기 전부(앞에 '없음') */
+function fromCatalog(list: CatalogItem[]): QuestionOption[] {
+  return [NONE_OPTION, ...list.map((i) => ({ value: i.code, label: i.label }))];
 }
 
+/** 글 칸 질문의 보기: 값은 한국어 글 그대로 저장한다 */
+function texts(list: [string, string][]): QuestionOption[] {
+  return [NONE_OPTION, ...list.map(([ko, en]) => ({ value: ko, label: { ko, en } }))];
+}
+
+// 보기는 많아도 된다: 홈 카드에서는 한 줄로 두고 옆으로 민다
 export const QUESTIONS: DailyQuestion[] = [
   {
     id: "drinks",
     prompt: { ko: "요즘 제일 자주 마시는 건?", en: "What do you drink most these days?" },
-    options: [
-      NONE_OPTION,
-      { value: "아메리카노", label: { ko: "아메리카노", en: "Americano" } },
-      { value: "라떼", label: { ko: "라떼", en: "Latte" } },
-      { value: "차", label: { ko: "차", en: "Tea" } },
-      { value: "탄산수", label: { ko: "탄산수", en: "Sparkling water" } },
-    ],
+    options: texts([
+      ["아메리카노", "Americano"],
+      ["라떼", "Latte"],
+      ["믹스커피", "Instant coffee mix"],
+      ["녹차", "Green tea"],
+      ["보리차", "Barley tea"],
+      ["유자차", "Citron tea"],
+      ["허브티", "Herbal tea"],
+      ["탄산수", "Sparkling water"],
+      ["콜라·사이다", "Soda"],
+      ["과일 주스", "Fruit juice"],
+      ["우유", "Milk"],
+      ["두유", "Soy milk"],
+    ]),
   },
   {
     id: "flowers",
     prompt: { ko: "꽃을 받는다면?", en: "If someone gave you flowers?" },
-    options: [
-      NONE_OPTION,
-      { value: "튤립", label: { ko: "튤립", en: "Tulips" } },
-      { value: "수국", label: { ko: "수국", en: "Hydrangeas" } },
-      { value: "장미", label: { ko: "장미", en: "Roses" } },
-    ],
+    options: texts([
+      ["장미", "Roses"],
+      ["튤립", "Tulips"],
+      ["수국", "Hydrangeas"],
+      ["프리지아", "Freesias"],
+      ["안개꽃", "Baby's breath"],
+      ["해바라기", "Sunflowers"],
+      ["카네이션", "Carnations"],
+      ["작약", "Peonies"],
+      ["백합", "Lilies"],
+      ["라넌큘러스", "Ranunculus"],
+      ["리시안셔스", "Lisianthus"],
+      ["꽃보다 화분", "A potted plant"],
+    ]),
   },
   {
     id: "scent",
     prompt: { ko: "좋아하는 향은?", en: "Which scent do you like?" },
-    options: [
-      NONE_OPTION,
-      { value: "우디", label: { ko: "우디", en: "Woody" } },
-      { value: "플로럴", label: { ko: "플로럴", en: "Floral" } },
-      { value: "시트러스", label: { ko: "시트러스", en: "Citrus" } },
-      { value: "향 없는 게 좋아요", label: { ko: "향 없는 게 좋아요", en: "Unscented" } },
-    ],
+    options: texts([
+      ["우디", "Woody"],
+      ["플로럴", "Floral"],
+      ["시트러스", "Citrus"],
+      ["머스크", "Musk"],
+      ["비누 향", "Clean soap"],
+      ["바닐라", "Vanilla"],
+      ["허브", "Herbal"],
+      ["바다 향", "Aquatic"],
+      ["파우더리", "Powdery"],
+      ["과일 향", "Fruity"],
+      ["향 없는 게 좋아요", "Unscented"],
+    ]),
   },
   {
     id: "giftCard",
@@ -80,19 +108,21 @@ export const QUESTIONS: DailyQuestion[] = [
   {
     id: "spicy",
     prompt: { ko: "매운 음식은 어디까지?", en: "How spicy can you go?" },
+    // 매운맛 0~4 다섯 단계 전부(가운데는 신라면 정도)
     options: [
       { value: "0", label: { ko: "못 먹어요", en: "None" } },
-      { value: "2", label: { ko: "보통", en: "Medium" } },
-      { value: "3", label: { ko: "좋아요", en: "Hot" } },
+      { value: "1", label: { ko: "살짝만", en: "A little" } },
+      { value: "2", label: { ko: "신라면 정도", en: "Medium" } },
+      { value: "3", label: { ko: "매운 거 좋아요", en: "Hot" } },
       { value: "4", label: { ko: "아주 매워도", en: "Very hot" } },
     ],
   },
-  { id: "season", prompt: { ko: "제일 좋아하는 계절은?", en: "Your favorite season?" }, options: fromCatalog(SEASONS, ["spring", "summer", "autumn", "winter"]) },
-  { id: "musicGenre", prompt: { ko: "요즘 즐겨 듣는 음악은?", en: "What music are you into?" }, options: fromCatalog(MUSIC_GENRES, ["ballad", "kpop", "hiphop", "indie", "trot"]) },
-  { id: "movieGenre", prompt: { ko: "영화를 고른다면?", en: "Pick a movie genre" }, options: fromCatalog(MOVIE_GENRES, ["romance", "comedy", "action", "thriller", "animation"]) },
-  { id: "pattern", prompt: { ko: "옷이나 소품, 어떤 무늬가 좋아요?", en: "Which pattern do you like?" }, options: fromCatalog(PATTERNS, ["solid", "stripe", "check", "floral"]) },
-  { id: "metal", prompt: { ko: "액세서리는 어떤 색?", en: "Jewelry: which metal?" }, options: fromCatalog(METALS, ["gold", "silver", "rosegold"]) },
-  { id: "style", prompt: { ko: "평소 옷 스타일은?", en: "Your everyday style?" }, options: fromCatalog(STYLES, ["minimal", "casual", "classic", "street"]) },
+  { id: "season", prompt: { ko: "제일 좋아하는 계절은?", en: "Your favorite season?" }, options: fromCatalog(SEASONS) },
+  { id: "musicGenre", prompt: { ko: "요즘 즐겨 듣는 음악은?", en: "What music are you into?" }, options: fromCatalog(MUSIC_GENRES) },
+  { id: "movieGenre", prompt: { ko: "영화를 고른다면?", en: "Pick a movie genre" }, options: fromCatalog(MOVIE_GENRES) },
+  { id: "pattern", prompt: { ko: "옷이나 소품, 어떤 무늬가 좋아요?", en: "Which pattern do you like?" }, options: fromCatalog(PATTERNS) },
+  { id: "metal", prompt: { ko: "액세서리는 어떤 색?", en: "Jewelry: which metal?" }, options: fromCatalog(METALS) },
+  { id: "style", prompt: { ko: "평소 옷 스타일은?", en: "Your everyday style?" }, options: fromCatalog(STYLES) },
 ];
 
 /** 보기에 없는 답을 직접 적을 수 있는 질문과 그 답이 들어갈 글 칸(음악은 즐겨 듣는 노래, 영화는 인생 영화) */
