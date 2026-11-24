@@ -126,7 +126,7 @@ export function HomeQuestion({ contactId, qid, prompt, name, avatar, options, no
       </div>
 
       {/* 보기는 한 줄로 두고(카드를 3줄로 지킨다) 많으면 가로로 민다: 오른쪽 끝은 흐려진다. 끝까지 밀어도 화면(뒤로 가기 몸짓)이 따라 밀리지 않게 */}
-      <form action={answerAbout} className="-mx-3.5 mt-2.5 flex gap-1.5 overflow-x-auto overscroll-x-contain px-3.5[-webkit-mask-image:linear-gradient(90deg,#000_calc(100%-18px),transparent)] [mask-image:linear-gradient(90deg,#000_calc(100%-18px),transparent)] [scrollbar-width:none]">
+      <form action={answerAbout} className="-mx-3.5 mt-2.5 flex gap-1.5 overflow-x-auto overscroll-x-contain px-3.5 [-webkit-mask-image:linear-gradient(90deg,#000_calc(100%-18px),transparent)] [mask-image:linear-gradient(90deg,#000_calc(100%-18px),transparent)] [scrollbar-width:none]">
         {hidden}
         {options.map((o) => (
           <button
