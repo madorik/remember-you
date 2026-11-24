@@ -8,6 +8,7 @@ iOS만 배포된 때(안드로이드는 Play 비공개 테스트)의 홍보 묶�
 | `appstore-copy.md` | App Store 부제·홍보 문구·키워드·설명·스크린샷 문구·피처링 제안 문장 |
 | `xmas-2026/blog-naver-xmas.md` | 네이버 블로그 원고(와타랩스 블로그, 해요체). 붙여 넣기 페이지·사진은 `~/Desktop/readme-promo/xmas-2026/` |
 | `xmas-2026/shorts-xmas.md` | 릴스·쇼츠 대본 3편 |
+| `xmas-2026/blog-naver-keywords.md` | 네이버 블로그 원고(검색 유입용: 생일 알림·기념일 챙기기·음력 생신·선물 추천, 2026-11-24). 사진·QR·쿠팡 카드·붙여 넣기 페이지는 `~/Desktop/readme-promo/blog-keywords-2026-11-24/`, 설치 링크 `from=share_blog_kw` |
 
 ## 순서(추천)
 
