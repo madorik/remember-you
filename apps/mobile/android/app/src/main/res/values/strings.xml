@@ -4,6 +4,4 @@
     <string name="title_activity_main">기억해유</string>
     <string name="package_name">kr.readme.app</string>
     <string name="custom_url_scheme">kr.readme.app</string>
-    <string name="app_link_host" translatable="false">remember-you.watalabs.com</string>
-    <string name="app_link_host_legacy" translatable="false">readme.watalabs.com</string>
-</resources>
+    <string name="app_link_host" translatable="false">remember-you.watalabs.com</string></resources>

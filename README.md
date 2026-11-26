@@ -69,7 +69,7 @@ pnpm open:ios / pnpm open:android                          # Xcode·Android Stud
 
 ## 운영
 
-- 웹: Vercel 프로젝트 `readme`(madoriks-projects, 루트 `apps/web`, 함수 지역 icn1(서울)) → **https://remember-you.watalabs.com**(watalabs.com DNS가 같은 Vercel 팀에 있다. 예전 주소 itsreadme.vercel.app은 308로 넘어온다). 예전 운영 주소 **readme.watalabs.com**도 같은 프로젝트에 붙어 있다: 이미 깔린 앱(예전 주소를 띄운다)·이미 보낸 물어보기 링크 때문. `NEXT_PUBLIC_SITE_URL`이 새 주소면 예전 주소로 온 브라우저는 `proxy.ts`가 새 주소로 308(앱 웹뷰·`/api`·`/.well-known`은 그대로). 배포는 저장소 루트에서 `vercel deploy --prod`(`.vercelignore`가 비밀값·네이티브 폴더를 뺀다).
+- 웹: Vercel 프로젝트 `remember-you`(2026-11-26 `readme`에서 이름 바꿈, madoriks-projects, 루트 `apps/web`, 함수 지역 icn1(서울)) → **https://remember-you.watalabs.com**(watalabs.com DNS가 같은 Vercel 팀에 있다. 예전 주소 itsreadme.vercel.app은 308로 넘어온다). 예전 운영 주소 readme.watalabs.com은 2026-11-26에 뗐다(주소를 바꾼 11-15 뒤로 나온 앱은 새 주소를 띄우고, 물어보기 링크는 7일이면 끝난다). 배포는 저장소 루트에서 `vercel deploy --prod`(`.vercelignore`가 비밀값·네이티브 폴더를 뺀다).
 - DB: Supabase 프로젝트 `readme`(madorik's Org, Free, 서울 ap-northeast-2). Supabase의 Data API는 꺼 두었고(0006 마이그레이션으로 anon·authenticated 권한도 회수), 앱은 Postgres로만 붙는다. Vercel `DATABASE_URL` = 트랜잭션 풀러(`aws-0-ap-northeast-2.pooler.supabase.com:6543`, 사용자 `postgres.<ref>`), `DATABASE_URL_UNPOOLED` = 세션 풀러(같은 호스트 5432, 마이그레이션용). 비밀번호·ref는 `~/.readme/supabase.env`. 마이그레이션: `vercel env pull <파일> --environment production` 뒤 `node --env-file=<파일> scripts/migrate.mjs`. **0012 → 0013 사이에만** 공유받던 리드미를 기록으로 복사해야 한다: migrate가 0013에서 멈추면 `npx tsx --env-file=<파일> scripts/records-copy.mts`(암호화 키 필요) 뒤 migrate를 한 번 더. 무료 프로젝트는 1주일 동안 활동이 없으면 일시정지된다(매일 크론이 DB를 읽는다).
 - 비밀값(`BETTER_AUTH_SECRET`, `DATA_ENCRYPTION_KEY`, `CRON_SECRET`)은 Vercel과 저장소 밖 `~/.readme/prod-secrets.env`에 있다. **암호화 키를 잃으면 저장된 알레르기·사이즈·메모를 못 읽는다.**
 - `vercel.json`이 매일 오전 8시(KST)에 생일 알림 크론을 부르고, 그때 7일 지난 데모 계정을 지운다.
@@ -97,7 +97,7 @@ pnpm open:ios / pnpm open:android                          # Xcode·Android Stud
 
 ## 남은 외부 설정
 
-1. **구글 로그인**: Google Cloud 프로젝트 `readme-514623`(Google 인증 플랫폼, 앱 이름 리드미, 외부, 승인된 도메인 watalabs.com), 웹 클라이언트 `readme web`(리디렉션 `https://remember-you.watalabs.com/api/auth/callback/google`, 예전 주소 `https://readme.watalabs.com/api/auth/callback/google`, `http://localhost:3200/api/auth/callback/google`). 값은 Vercel·`apps/web/.env.local`·`~/.readme/google-oauth.env`. **게시 상태가 '테스트 중'이면 테스트 사용자만 로그인된다** → 대상 > 앱 게시로 프로덕션.
+1. **구글 로그인**: Google Cloud 프로젝트 `readme-514623`(Google 인증 플랫폼, 앱 이름 리드미, 외부, 승인된 도메인 watalabs.com), 웹 클라이언트 `readme web`(리디렉션 `https://remember-you.watalabs.com/api/auth/callback/google`, `http://localhost:3200/api/auth/callback/google`). 값은 Vercel·`apps/web/.env.local`·`~/.readme/google-oauth.env`. **게시 상태가 '테스트 중'이면 테스트 사용자만 로그인된다** → 대상 > 앱 게시로 프로덕션.
 2. **Apple 로그인**(iOS 출시 전): Services ID + Sign in with Apple 키로 client secret(JWT)을 만들어 `APPLE_CLIENT_ID`·`APPLE_CLIENT_SECRET`. Return URL `https://remember-you.watalabs.com/api/auth/callback/apple`.
 3. **앱 링크**: Android는 업로드 키와 Play 앱 서명 키 SHA-256이 `ANDROID_SHA256_FINGERPRINTS`에 있다(`/.well-known/*`는 요청 때 환경 변수를 읽는다). iOS는 `apps/mobile/ios/App/App/App.entitlements`의 Associated Domains `applinks:remember-you.watalabs.com`(프로젝트에 이미 연결, 다음 빌드부터 적용·Apple 개발자 계정에서 Associated Domains 기능이 켜져 있어야 한다), 서버에 `APPLE_TEAM_ID`. 앱 링크는 물어보기(`/r/*`)와 내 기록 링크(`/s/*`) 둘이고, 네이티브 설정을 바꿨으니 앱을 새로 빌드해야 /s/ 링크가 앱에서 바로 열린다.
 4. **카카오톡 공유(선택)**: JavaScript 키를 `NEXT_PUBLIC_KAKAO_JS_KEY`에, 플랫폼에 운영 도메인 등록.
