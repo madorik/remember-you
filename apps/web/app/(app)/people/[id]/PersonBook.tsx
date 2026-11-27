@@ -68,6 +68,7 @@ function MonthTape({ label }: { label: string }) {
  * 메모장은 점 모눈 위 세로 점선 타임라인(최근 메모부터 달별로, 누르면 시트에서 전부 보고 지운다).
  * 메모장 칸이 열려 있는 동안 오른쪽 아래에 둥근 연필 단추가 떠 있고(메모 쓰기 화면의 마이크와 같은 모양·자리), 누르면 이 사람이 붙은 채로 메모 쓰기가 열린다.
  * 기억해 둔 것은 흰 속지에 기록 목록(remembered, 서버가 그린 RememberedList)이고 칸막이 줄 오른쪽 끝 연필이 고치는 화면으로 간다.
+ * 속지는 메모가 적어도 화면 아래(하단 메뉴 바로 위)까지 늘어나고(flex-1, 화면 틀 <main>이 세로 flex), 메모가 많으면 내용만큼 길어진다.
  * 메모를 지우면 목록에서 바로 사라지고(서버에서도 바로 지운다) 5초 동안 되돌릴 수 있다.
  * 그 메모가 사람 기록에 더한 것이 아직 남아 있으면 시트에 '이 메모로 더해진 것'이 보이고, '같이 지우기'는 그것도 되돌린다(되돌리기는 메모와 되돌린 칸을 되살린다)
  */
@@ -156,7 +157,7 @@ export function PersonBook({
 
   return (
     <>
-      <div className="relative mb-1 ml-[21.6px] mr-[14.4px] mt-[41.4px]">
+      <div className="relative mb-1 ml-[21.6px] mr-[14.4px] mt-[41.4px] flex flex-1 flex-col">
         {/* 칸막이: 속지 윗선 밑으로 3px 파묻혀(속지가 위에 얹힌다) 윗선이 이어져 보인다. 켜진 칸이 더 높다 */}
         <div role="tablist" aria-label={name} className="absolute left-[41.4px] flex items-end gap-[16.2px]" style={{ bottom: "calc(100% - 2.7px)" }}>
           <button type="button" role="tab" id={`${uid}-memo`} aria-selected={tab === "memo"} aria-controls={panelId} onClick={() => pick("memo")} className={tabClass(tab === "memo", "bg-[#FFD978]", "bg-[#FFF4D6]")}>
@@ -173,7 +174,7 @@ export function PersonBook({
           </AppLink>
         ) : null}
 
-        <BinderPage dots={tab === "memo"} left={tab === "memo" ? 40 : 42} pageClassName="min-h-[270px]">
+        <BinderPage dots={tab === "memo"} left={tab === "memo" ? 40 : 42} className="flex flex-1 flex-col" pageClassName="flex min-h-[270px] flex-1 flex-col">
           <div role="tabpanel" id={panelId} aria-labelledby={`${uid}-${tab}`}>
             {tab === "memo" ? (
               <div className="pt-[12.6px]">
@@ -264,23 +265,20 @@ export function PersonBook({
         )}
       </div>
       {/* 오른쪽 아래 연필: 메모 쓰기 화면의 마이크와 같은 모양·자리(.memo-mic: 하단 메뉴 위로 54px). 메모장 칸에서만, 키보드가 뜨면 숨는다.
-          높이 0짜리 sticky 줄이라 화면이 길어져도 같은 자리에 있고, 앞의 flex-1 빈칸이 짧은 화면에서도 이 줄을 화면 맨 아래로 내려 준다 */}
+          높이 0짜리 sticky 줄이라 화면이 길어져도 같은 자리에 있다. 속지(위 flex-1)가 화면 아래까지 늘어나 이 줄도 맨 아래에 있다 */}
       {tab === "memo" && canWrite ? (
-        <>
-          <div aria-hidden="true" className="flex-1" />
-          <div className="memo-mic sticky z-20 h-0 w-full [:root[data-kb]_&]:hidden">
-            <div className="absolute bottom-0" style={{ right: u(22), width: u(66), height: u(66) }}>
-              <AppLink
-                href={`/voice?to=${contactId}`}
-                aria-label={labels.write}
-                className="relative flex h-full w-full items-center justify-center rounded-full border border-edge bg-sky text-ink"
-                style={{ boxShadow: `0 ${u(4)}px 0 var(--color-mango-deep), 0 ${u(16)}px ${u(22)}px -${u(12)}px rgb(31 35 64 / 0.55)` }}
-              >
-                <Icon name="pencil" size={30} strokeWidth={2} />
-              </AppLink>
-            </div>
+        <div className="memo-mic sticky z-20 h-0 w-full [:root[data-kb]_&]:hidden">
+          <div className="absolute bottom-0" style={{ right: u(22), width: u(66), height: u(66) }}>
+            <AppLink
+              href={`/voice?to=${contactId}`}
+              aria-label={labels.write}
+              className="relative flex h-full w-full items-center justify-center rounded-full border border-edge bg-sky text-ink"
+              style={{ boxShadow: `0 ${u(4)}px 0 var(--color-mango-deep), 0 ${u(16)}px ${u(22)}px -${u(12)}px rgb(31 35 64 / 0.55)` }}
+            >
+              <Icon name="pencil" size={30} strokeWidth={2} />
+            </AppLink>
           </div>
-        </>
+        </div>
       ) : null}
     </>
   );

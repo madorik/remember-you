@@ -13,6 +13,7 @@ export * from "./reminders";
 export * from "./holidays";
 export * from "./publicholidays";
 export * from "./questions";
+export * from "./completion";
 export * from "./invite";
 export * from "./i18n";
 export * from "./speech";

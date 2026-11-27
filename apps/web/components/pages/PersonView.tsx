@@ -1,6 +1,7 @@
-import { formatMonthDay, formatSpec, nextOccurrence, solarToLunar } from "@readme/core";
+import { formatMonthDay, formatSpec, nextOccurrence, recordCompletion, solarToLunar } from "@readme/core";
 import Link from "@/components/AppLink";
 import { AskOnButton } from "@/app/(app)/people/[id]/AskOnButton";
+import { CompletionBar } from "@/app/(app)/people/[id]/CompletionBar";
 import { FavoriteStar } from "@/app/(app)/people/[id]/FavoriteStar";
 import { NameEditor } from "@/app/(app)/people/[id]/NameEditor";
 import { OrganizeRefresh } from "@/app/(app)/people/[id]/OrganizeRefresh";
@@ -38,6 +39,11 @@ export function PersonView({ locale, back, today, person: p, name, notes, tab, f
   // 프로필 생일 줄: 양력 날짜 · 음력(음력 생일이면 적은 그대로, 양력 생일이면 그 날의 음력)
   const birthdayLunar = !birthday ? null : birthday.calendar === "lunar" ? { m: birthday.month, d: birthday.day, leap: birthday.leap } : nextBirthday ? solarToLunar(nextBirthday.date) : null;
   const editDates = `/people/${p.contactId}/edit?open=dates`;
+  // 기억해 둔 것 작성률(오늘의 질문이 묻는 칸 중 채운 비율): 막대에 올리면 어느 항목 채우기가 남았는지(앞 셋 + 외 n개) 말풍선으로
+  const rate = recordCompletion(p.card);
+  const rateChips = rate.missing.map((section) => ({ section, label: t(`person.short.${section}` as "person.short.taste"), href: `/people/${p.contactId}/edit?open=${section}` }));
+  const rateNames = rateChips.slice(0, 3).map((c) => c.label).join(locale === "ko" ? "·" : ", ");
+  const rateMessage = !rateChips.length ? t("person.rate.done") : rateChips.length > 3 ? t("person.rate.leftMore", { names: rateNames, n: rateChips.length - 3 }) : t("person.rate.left", { names: rateNames });
   const displayName = p.name || name;
 
   return (
@@ -141,6 +147,7 @@ export function PersonView({ locale, back, today, person: p, name, notes, tab, f
               ) : null}
             </span>
           ) : null}
+          <CompletionBar pct={rate.pct} label={t("person.rate", { pct: rate.pct })} message={rateMessage} chips={rateChips} />
         </div>
       </section>
 
