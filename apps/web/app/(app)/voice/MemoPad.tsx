@@ -478,7 +478,10 @@ export function MemoPad({
   // 이 화면이 이미 열려 있을 때 두 번째 공유가 와도(같은 주소로 다시 /voice?shared=1) shared=1이 다시 나타나는 때마다 읽는다:
   // 본문이 비었으면 그 글로 채우고, 쓰던 글이 있으면 빈 줄 하나 띄우고 뒤에 붙인다(합쳐 1000자를 넘으면 앞에서부터 1000자만 담고 알린다).
   // 저장소는 화면을 그릴 때 읽을 수 없어(서버 그림과 어긋난다) 열린 뒤에 읽는다
-  const sharedNow = useSearchParams().get("shared") === "1";
+  const params = useSearchParams();
+  const sharedNow = params.get("shared") === "1";
+  // 사람 화면 ··· 메뉴의 '메모 가져오기'로 열렸다(?import=1): 메모 가져오기 메뉴를 열어 둔 채 시작하고 주소에서 import=1을 지운다(새로고침해도 다시 열지 않게)
+  const importNow = params.get("import") === "1";
   useEffect(() => {
     if (!sharedNow) return;
     let got = "";
@@ -496,10 +499,19 @@ export function MemoPad({
     }
     const q = new URLSearchParams(window.location.search);
     q.delete("shared");
+    // import=1이 함께 와도 주소는 여기서 한 번에 정리한다(둘이 따로 replace하면 나중 것이 앞의 지움을 되살린다)
+    q.delete("import");
     router.replace(q.size ? `/voice?${q}` : "/voice");
     // say·labels·text는 shared=1이 나타난 그때의 값을 한 번 쓴다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sharedNow, router]);
+
+  useEffect(() => {
+    if (!importNow || sharedNow) return;
+    const q = new URLSearchParams(window.location.search);
+    q.delete("import");
+    router.replace(q.size ? `/voice?${q}` : "/voice");
+  }, [importNow, sharedNow, router]);
 
   // ── 사진에서: 고른 사진(1~3장)을 줄여 서버로 보내 글만 읽어 오고, 본문 뒤에 붙인다(사람 고르기·저장은 그대로 사람이 한다) ──
   const readPhotos = async (files: FileList | null) => {
@@ -845,6 +857,7 @@ export function MemoPad({
                 locale={locale}
                 labels={labels.menu}
                 disabled={busy || saving || reading}
+                autoOpen={importNow}
                 onPhoto={() => photoInput.current?.click()}
                 triggerLabel={labels.importNotes}
                 className="relative flex h-11 w-11 items-center justify-center rounded-full before:absolute before:-inset-[2.2px]"
@@ -858,6 +871,7 @@ export function MemoPad({
               locale={locale}
               labels={labels.menu}
               disabled={busy || saving || reading}
+              autoOpen={importNow}
               onPhoto={() => photoInput.current?.click()}
               className="inline-flex items-center gap-[4.5px] whitespace-nowrap rounded-full border border-edge bg-white text-[12.15px]"
               style={{ height: u(34), padding: `0 ${u(13)}px 0 ${u(10)}px` }}

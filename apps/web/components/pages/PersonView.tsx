@@ -54,7 +54,7 @@ export function PersonView({ locale, back, today, person: p, name, notes, tab, f
       <ReviewMoment source="answer" delay={4000} armed={answered} />
       {/* 말로·글로 적기를 저장하고 이 화면으로 왔을 때도 리뷰를 부탁할 좋은 순간(앱에서만, 기록을 막 저장한 직후에만) */}
       <ReviewMoment source="saved" when="saved" delay={4000} />
-      {/* 위 줄: 뒤로 … 즐겨찾기 별 · ··· 메뉴(물어보기 · 선물 고르기 · 폴더 · 지우기). 사람 기록 공유하기는 개인정보 우려로 껐다(2026-11-21) */}
+      {/* 위 줄: 뒤로 … 즐겨찾기 별 · ··· 메뉴(물어보기 · 선물 고르기 · 메모 가져오기 · 폴더 · 지우기). 사람 기록 공유하기는 개인정보 우려로 껐다(2026-11-21) */}
       <div className="flex h-11 items-center justify-between pl-1.5 pr-2">
         <Link href={back} prefetch={false} aria-label={t("common.back")} className="flex h-11 w-11 relative before:absolute before:-inset-[2.2px] items-center justify-center">
           <Icon name="back" size={26} strokeWidth={2} />
@@ -70,6 +70,7 @@ export function PersonView({ locale, back, today, person: p, name, notes, tab, f
               more: t("person.moreMenu"),
               ask: t("person.askMore"),
               gift: t("person.pickGift"),
+              importNotes: t("import.open"),
               folder: t("folder.label"),
               remove: t("common.delete"),
               folderSheet: personFolderLabels(t),

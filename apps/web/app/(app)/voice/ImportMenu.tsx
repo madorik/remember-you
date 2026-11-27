@@ -57,6 +57,7 @@ export function ImportMenu({
   locale,
   labels,
   disabled,
+  autoOpen = false,
   onPhoto,
   className,
   style,
@@ -66,6 +67,8 @@ export function ImportMenu({
   locale: Locale;
   labels: ImportMenuLabels;
   disabled: boolean;
+  /** true가 되는 때마다 메뉴를 연다(사람 화면 ··· 메뉴의 '메모 가져오기'로 들어온 ?import=1) */
+  autoOpen?: boolean;
   onPhoto: () => void;
   className: string;
   style?: React.CSSProperties;
@@ -89,6 +92,11 @@ export function ImportMenu({
       gone = true;
     };
   }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (autoOpen) setOpen(true);
+  }, [autoOpen]);
 
   const close = () => {
     setOpen(false);

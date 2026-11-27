@@ -308,3 +308,33 @@ test("메모 앱에서 공유로 돌아오면 쓰던 글·고른 사람이 그�
   await expect(page).toHaveURL(new RegExp(`/people/${id}$`));
   await expect(page.getByText("삼성 노트에서 가져온 글")).toBeVisible();
 });
+
+test("사람 화면 ··· 메뉴의 '메모 가져오기': 그 사람으로 메모 화면이 열리고 가져오기 메뉴가 열려 있으며, 주소에서 import=1이 지워져 새로고침하면 닫혀 있다", async ({ browser }) => {
+  const page = await demo(browser);
+  await page.goto("/home");
+  const href = await page.getByRole("link", { name: /^엄마/ }).first().getAttribute("href");
+  const id = href!.split("/").pop()!;
+  await page.goto(`/people/${id}`);
+
+  await page.getByRole("button", { name: "더 보기" }).click();
+  const items = page.getByRole("menu", { name: "더 보기" }).getByRole("menuitem");
+  // 물어보기 · 선물 고르기 바로 다음, 폴더 · 지우기 앞
+  const names = await items.allTextContents();
+  expect(names.indexOf("메모 가져오기")).toBe(names.indexOf("선물 고르기") + 1);
+  expect(names.indexOf("폴더")).toBe(names.indexOf("메모 가져오기") + 1);
+  await shot(page, "person-menu");
+  await page.getByRole("menuitem", { name: "메모 가져오기" }).click();
+
+  // 그 사람 그대로(칩) + 메뉴가 열려 있다. import=1은 지워지고 to=는 남는다
+  await expect(page).toHaveURL(new RegExp(`/voice\\?to=${id}$`));
+  await expect(menu(page)).toBeVisible();
+  await expect(menu(page).getByRole("menuitem", { name: "사진에서" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "엄마 빼기" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "닫기" })).toHaveAttribute("href", `/people/${id}`);
+  await shot(page, "person-menu-opened-import");
+
+  // 새로고침하면 다시 열리지 않는다(사람은 그대로)
+  await page.reload();
+  await expect(page.getByRole("button", { name: "엄마 빼기" })).toBeVisible();
+  await expect(menu(page)).toHaveCount(0);
+});

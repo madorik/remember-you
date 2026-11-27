@@ -10,7 +10,7 @@ const ICON = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke
 const ITEM = "flex h-[41.4px] w-full items-center gap-2.5 px-3.5 text-left text-[13.5px]";
 
 /**
- * 사람 화면 오른쪽 위 ···: 누르면 단추 밑에 작은 메뉴(물어보기 · 선물 고르기 · 폴더 · 구분선 · 지우기(빨강))가 열린다.
+ * 사람 화면 오른쪽 위 ···: 누르면 단추 밑에 작은 메뉴(물어보기 · 선물 고르기 · 메모 가져오기 · 폴더 · 구분선 · 지우기(빨강))가 열린다.
  * 바깥을 누르거나 Esc로 닫고, 위·아래 화살표로 옮긴다. 폴더는 폴더 고르기 시트를 열고(프로필 카드에는 폴더 칩이 없다), 지우기는 시트로 한 번 더 확인한다(RemovePersonSheet)
  */
 export function PersonMenu({
@@ -24,7 +24,7 @@ export function PersonMenu({
   name: string;
   folders: FolderView[];
   mine: string[];
-  labels: { more: string; ask: string; gift: string; folder: string; remove: string; sheet: RemoveLabels; folderSheet: PersonFolderLabels };
+  labels: { more: string; ask: string; gift: string; importNotes: string; folder: string; remove: string; sheet: RemoveLabels; folderSheet: PersonFolderLabels };
 }) {
   const [open, setOpen] = useState(false);
   const [asking, setAsking] = useState(false);
@@ -97,6 +97,14 @@ export function PersonMenu({
                 <path d="M12 7c-1.6-3.2-5.4-3.6-5.4-1.3C6.6 7 9.6 7 12 7zM12 7c1.6-3.2 5.4-3.6 5.4-1.3C17.4 7 14.4 7 12 7z" />
               </svg>
               {labels.gift}
+            </Link>
+            {/* 메모 쓰기 화면을 이 사람으로 열고 '메모 가져오기' 메뉴를 열어 둔다(MemoPad가 import=1을 읽고 주소에서 지운다) */}
+            <Link role="menuitem" href={`/voice?to=${encodeURIComponent(contactId)}&import=1`} className={ITEM}>
+              <svg {...ICON} stroke="#1F2340">
+                <rect x="5" y="4.5" width="14" height="16" rx="2.5" fill="#DDF1FA" />
+                <path d="M9 4.5V3.5h6v1M12 9v6.5M9 13l3 3 3-3" />
+              </svg>
+              {labels.importNotes}
             </Link>
             <button
               type="button"
