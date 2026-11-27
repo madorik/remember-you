@@ -5,7 +5,6 @@ import { aiConfigured } from "@/lib/ai";
 import { displayName, listOpenInvites, listPeople, requireSession, todayFor } from "@/lib/data";
 import { makeT } from "@/lib/t";
 import { personHint } from "@/lib/summary";
-import { tourTotal } from "@/lib/tour";
 import { webPushPublicKey } from "@/lib/webpush";
 import type { PageInput } from "./routes";
 import type { PrivacyData, RequestData, VoiceData } from "./types";
@@ -23,7 +22,6 @@ export async function loadPrivacy(): Promise<PrivacyData> {
     pushEnabled: s.profile.pushEnabled,
     holidayReminders: s.profile.holidayReminders,
     reminderOffsets: s.profile.reminderOffsets,
-    ai: aiConfigured(),
     webPushKey: webPushPublicKey(),
   };
 }
@@ -54,8 +52,6 @@ export async function loadRequest({ searchParams }: PageInput): Promise<RequestD
   const fixed = searchParams.to ? (people.find((p) => p.id === searchParams.to) ?? null) : null;
   const focus = SECTIONS.find((x) => x === searchParams.topic) ?? null;
   const question = sanitizeQuestionIds([searchParams.q])[0] ?? null;
-  // 체험(?tour=)이면 마지막 단계: 말로 적기가 있으면 둘째, 없으면(AI 꺼짐) 첫째이자 마지막
-  const total = tourTotal();
   return {
     locale: s.profile.locale,
     people,
@@ -66,7 +62,6 @@ export async function loadRequest({ searchParams }: PageInput): Promise<RequestD
     focus,
     question,
     webPushKey: s.profile.pushEnabled ? webPushPublicKey() : null,
-    tour: searchParams.tour ? { n: total, total } : null,
   };
 }
 
@@ -81,5 +76,5 @@ export async function loadVoice({ searchParams }: PageInput): Promise<VoiceData>
     .map((p) => ({ id: p.contactId, name: p.name, tag: p.nickname && p.nickname !== p.name ? p.nickname : "", avatar: p.avatar, hint: personHint(p.card, s.profile.locale, t) }));
   // 사람 화면의 구슬에서 왔으면(?to=) 그 사람에게 고정(내 사람이 아니면 무시)
   const fixed = searchParams.to ? (people.find((p) => p.id === searchParams.to) ?? null) : null;
-  return { locale: s.profile.locale, today: todayFor(s.profile), people, fixed, shared: searchParams.shared === "1", tour: searchParams.tour ? { n: 1, total: tourTotal() } : null };
+  return { locale: s.profile.locale, today: todayFor(s.profile), people, fixed, shared: searchParams.shared === "1" };
 }

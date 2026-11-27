@@ -1367,34 +1367,135 @@ interface FakeLine {
   text: string;
   candidates?: string[];
 }
-test("가입 직후 체험: 글로 사람을 적어 보고(예시 문장) 적힌 걸 본 뒤, 물어보기 링크까지 만들면 홈으로 끝난다", async ({ browser }) => {
+test("가입 직후 첫 메모: 하단 메뉴 없이 메모지가 열리고, 바로 고르는 이름(엄마)으로 새 사람을 정해 적고 저장하면 그 사람 화면에서 환영 알림과 함께 메모가 보인다", async ({ browser }) => {
   const page = await newPage(browser);
   await page.goto("/");
   await signIn(page);
-  await onboard(page, { name: "하나", intro: "stay" });
-  // ① 말로·글로 적기: 예시 문장과 안내. 마이크가 있으면 '말로'가 먼저라 '글로'로 바꾼다
-  const toText = page.getByRole("radio", { name: "글로" });
-  if (await toText.count()) await toText.click();
-  await expect(page.getByRole("heading", { name: "이렇게 써보세요" })).toBeVisible();
-  await page.getByRole("textbox", { name: "엄마는 장미꽃을 좋아해" }).fill("엄마는 장미꽃을 좋아해");
-  await page.getByRole("button", { name: "기억해 두기" }).click();
-  // 나눈 결과는 저장 전 초안으로 보인다(엄마 · 새로 · 장미꽃). 값은 그 자리에서 고칠 수 있다. 값 글자는 AI가 나누는 거라 "장미"로 적힐 때도 있다
-  await expect(page.getByRole("heading", { name: "이렇게 기억해 둘게요" })).toBeVisible({ timeout: 60_000 });
-  const draft = page.getByRole("textbox", { name: /^엄마/ });
-  await expect(draft.first()).toBeVisible();
-  await expect(draft.first()).toHaveValue(/장미/);
-  // 저장을 눌러야 기록에 들어가고, 체험은 방금 적은 엄마에게 물어보기로 이어진다(사람이 정해져 있다)
+  await expect(page).toHaveURL(/\/onboarding$/);
+  // 하단 메뉴도 닫기도 없고, 머리 줄엔 '첫 메모'와 건너뛰기뿐(저장은 글을 적은 뒤에)
+  await expect(page.getByRole("heading", { name: "첫 메모" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "메뉴" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "건너뛰기" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "저장", exact: true })).toHaveCount(0);
+  // 아무도 안 골랐을 땐 이름 칸이 열려 있고(터치 기기라 키보드는 저절로 뜨지 않는다) 바로 고르는 이름 넷, 캐릭터 말풍선 한 줄
+  await expect(page.getByRole("combobox", { name: "이름" })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "이름" })).not.toBeFocused();
+  for (const q of ["엄마", "아빠", "아내", "남편"]) await expect(page.getByRole("button", { name: q, exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "친구", exact: true })).toHaveCount(0);
+  await expect(page.getByText("누구 이야기부터 적어 볼까요?")).toBeVisible();
+  await shot(page, "onb-1-start");
+
+  // 엄마를 고르면 '새로' 표시가 붙은 칩이 되고(× 로 뺄 수 있다), 글을 적으면 말풍선이 바뀌고 저장이 생긴다
+  await page.getByRole("button", { name: "엄마", exact: true }).click();
+  await expect(page.getByRole("button", { name: "엄마 빼기" })).toBeVisible();
+  await expect(page.getByText("새로", { exact: true })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "이름" })).toHaveCount(0);
+  await page.getByRole("textbox", { name: "엄마는 장미꽃을 좋아해" }).fill("엄마는 장미꽃을 좋아해. 꽃가루 알레르기가 있어서 생화보다 드라이플라워가 좋대");
+  await expect(page.getByText("저장하면 끝이에요!")).toBeVisible();
+  await shot(page, "onb-2-write");
   await page.getByRole("button", { name: "저장", exact: true }).click();
-  await expect(page).toHaveURL(/\/request\?tour=2&to=[0-9a-f-]{36}/);
-  await expect(page.getByText("2 / 2")).toBeVisible();
-  await expect(page.getByRole("heading", { name: /엄마/ })).toBeVisible();
-  await makeLink(page);
-  // 링크를 만들었으면 시작하기로 마치고 홈으로. 엄마는 사람들에 남아 있다
-  await page.getByRole("button", { name: "시작하기" }).click();
+
+  // 저장하면 그 사람 화면: 환영 알림(주소의 welcome은 바로 지워진다)과 메모장 칸에 방금 쓴 메모
+  await expect(page).toHaveURL(/\/people\/[0-9a-f-]{36}(\?welcome=1)?$/);
+  await expect(page.getByRole("status").filter({ hasText: "엄마 메모장이 생겼어요" })).toBeVisible();
+  await expect(page).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
+  await expect(page.getByRole("tab", { name: /^메모장/ })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByText("엄마는 장미꽃을 좋아해. 꽃가루 알레르기가 있어서 생화보다 드라이플라워가 좋대")).toBeVisible();
+  await shot(page, "onb-3-person");
+
+  // 온보딩은 끝난 것: 다시 열면 홈으로, 홈과 하단 메뉴도 열린다. 엄마는 사람들에 남아 있다
+  await page.goto("/onboarding");
   await expect(page).toHaveURL(/\/home$/);
-  // 날짜가 없는 엄마는 홈 카드에 안 뜨니 사람들에서 본다
   await page.goto("/people");
   await expect(page.getByRole("link", { name: /엄마/ }).first()).toBeVisible();
+  // 옛 온보딩 주소는 첫 메모(이미 마쳤으면 홈)로 옮겨 가고 ?next를 이어 간다
+  await page.goto("/onboarding/avatar");
+  await expect(page).toHaveURL(/\/home$/);
+  await page.context().close();
+
+  // 가려던 곳(?next)이 있으면 저장한 뒤 그곳으로(사람 화면이 아니라): 건너뛰기도 마찬가지
+  const guest = await newPage(browser);
+  await guest.goto("/");
+  await signIn(guest);
+  await expect(guest).toHaveURL(/\/onboarding$/);
+  await guest.goto("/onboarding/food?next=%2Fpeople");
+  await expect(guest).toHaveURL(/\/onboarding\?next=%2Fpeople$/);
+  await guest.getByRole("button", { name: "아빠", exact: true }).click();
+  await guest.getByRole("textbox", { name: "엄마는 장미꽃을 좋아해" }).fill("아빠는 막걸리를 좋아해");
+  await guest.getByRole("button", { name: "저장", exact: true }).click();
+  await expect(guest).toHaveURL(/\/people$/);
+  await expect(guest.getByRole("link", { name: /아빠/ }).first()).toBeVisible();
+});
+
+test("가입 직후 첫 메모: 건너뛰면 아무것도 만들지 않고 홈으로, 이름을 쳐서 새 사람으로도 정할 수 있다", async ({ browser }) => {
+  const page = await newPage(browser);
+  await page.goto("/");
+  await signIn(page);
+  await expect(page).toHaveURL(/\/onboarding$/);
+  // 이름을 직접 치면 '새로 추가'가 뜬다(엔터로도 고른다)
+  const name = page.getByRole("combobox", { name: "이름" });
+  await name.fill("은지");
+  await expect(page.getByRole("option", { name: "'은지' 새로 추가" })).toBeVisible();
+  await name.press("Enter");
+  await expect(page.getByRole("button", { name: "은지 빼기" })).toBeVisible();
+  // 빼면 처음 모습으로
+  await page.getByRole("button", { name: "은지 빼기" }).click();
+  await expect(page.getByRole("combobox", { name: "이름" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "엄마", exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "건너뛰기" }).click();
+  await expect(page).toHaveURL(/\/home$/);
+  await page.goto("/people");
+  await expect(page.getByRole("link", { name: /은지/ })).toHaveCount(0);
+  await page.goto("/onboarding");
+  await expect(page).toHaveURL(/\/home$/);
+});
+
+test("메모 쓰기: +로 이름 칸을 열어 이름을 치면 맞는 내 사람과 '새로 추가'가 뜨고(같은 이름이 있어도 새로 추가), 새 사람을 고른 채 저장하면 그 사람이 생긴다", async ({ browser }) => {
+  const page = await newPage(browser);
+  await page.goto("/");
+  await page.getByRole("button", { name: "데모로 둘러보기" }).click();
+  await expect(page).toHaveURL(/\/home/);
+  await page.goto("/voice");
+  await page.getByRole("button", { name: "사람 더하기" }).click();
+  const name = page.getByRole("combobox", { name: "이름" });
+  await expect(name).toBeFocused();
+
+  // 이미 있는 이름: 맞는 내 사람이 먼저(엔터가 새 사람을 만들지 않게 먼저 걸리고), 맨 끝에 '새로 추가'. 위아래 화살표로 옮긴다
+  await name.fill("엄마");
+  const list = page.getByRole("listbox", { name: "사람" });
+  await expect(list.getByRole("option")).toHaveCount(2);
+  await expect(list.getByRole("option").first()).toHaveAttribute("aria-selected", "true");
+  await expect(list.getByRole("option").last()).toContainText("'엄마' 새로 추가");
+  await name.press("ArrowDown");
+  await expect(list.getByRole("option").last()).toHaveAttribute("aria-selected", "true");
+  await name.press("ArrowUp");
+  await name.press("Enter");
+  await expect(page.getByRole("button", { name: "엄마 빼기" })).toBeVisible();
+  await expect(page.getByText("새로", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: "이름" })).toHaveCount(0);
+
+  // Esc는 이름 칸을 닫는다
+  await page.getByRole("button", { name: "사람 더하기" }).click();
+  await page.getByRole("combobox", { name: "이름" }).press("Escape");
+  await expect(page.getByRole("combobox", { name: "이름" })).toHaveCount(0);
+
+  // 새 사람: 엄마와 함께 '민지'를 새로 추가해 저장 → 두 사람이라 이 화면에 남아 알리고, 민지는 사람들에 생긴다
+  await page.getByRole("button", { name: "사람 더하기" }).click();
+  await page.getByRole("combobox", { name: "이름" }).fill("민지");
+  await page.getByRole("option", { name: "'민지' 새로 추가" }).click();
+  await expect(page.getByRole("button", { name: "민지 빼기" })).toBeVisible();
+  await expect(page.getByText("새로", { exact: true })).toBeVisible();
+  await page.getByRole("textbox", { name: "기억해 둘 것" }).fill("엄마랑 민지 둘 다 다음 주 토요일에 시간 된대. 같이 꽃시장 가기로!");
+  await page.getByRole("button", { name: "저장", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "엄마, 민지 메모장에 적었어요" })).toBeVisible();
+  await page.goto("/people");
+  const minji = /\/people\/([0-9a-f-]{36})/.exec((await page.getByRole("link", { name: /민지/ }).first().getAttribute("href")) ?? "")?.[1];
+  expect(minji).toBeTruthy();
+  await page.goto(`/people/${minji}`);
+  await expect(page.getByText("엄마랑 민지 둘 다 다음 주 토요일에 시간 된대. 같이 꽃시장 가기로!")).toBeVisible();
+  // 환영 알림은 온보딩에서만(주소에 welcome이 없으면 뜨지 않는다)
+  await expect(page.getByRole("status").filter({ hasText: "메모장이 생겼어요" })).toHaveCount(0);
 });
 
 test("키보드가 화면을 줄이면(안드로이드 앱처럼) 하단 메뉴를 접고 아래 단추 줄이 키보드 바로 위에 온다", async ({ page }) => {
@@ -1641,6 +1742,8 @@ test("내 기록 링크로 보내기: 글에는 정보가 없고, 받은 사람�
   await r.getByRole("radio", { name: "받은 값으로 덮어쓰기" }).click();
   await r.getByRole("button", { name: "저장하기" }).click();
   await expect(r).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
+  // 사람 화면은 메모장 칸이 기본이라 '기억해 둔 것' 칸을 열어 본다
+  await r.getByRole("tab", { name: "기억해 둔 것" }).click();
   await expect(r.getByText("복숭아").first()).toBeVisible();
 
   // 같은 링크로 새 사람으로도 저장된다(보낸 사람 이름으로)
@@ -1808,56 +1911,6 @@ test("메모 가져오기: 메모 쓰기·사람 추가·편집에서 들어가�
   await expect(page.getByText("되돌렸어요")).toBeVisible({ timeout: 30_000 });
   await page.goto(`/people/${mom.id}?tab=remembered`);
   await expect(page.getByText("뜨개질")).toHaveCount(0);
-});
-
-test("메모 가져오기: 사람 추가에서는 한 사람 이야기로 읽어 이름을 정해 새로 만들고, 편집에서는 그 사람 이야기뿐이라 누구인지 묻지 않는다", async ({ browser }) => {
-  const page = await newPage(browser);
-  await page.goto("/");
-  await page.getByRole("button", { name: "데모로 둘러보기" }).click();
-  await expect(page).toHaveURL(/\/home/);
-  const setDraft = await fakeImport(page);
-
-  // 사람 추가: 읽은 이름이 이름 칸에 들어가고, 비우면 저장할 수 없다
-  await page.goto("/import?new=1");
-  await expect(page.getByRole("textbox", { name: /한 사람에 대해/ })).toBeVisible();
-  setDraft({
-    name: "다은이",
-    lines: [
-      { spoken: "다은이", target: { kind: "new", name: "다은이" }, key: "safety.allergens", field: "알레르기", text: "땅콩" },
-      { spoken: "다은이", target: { kind: "new", name: "다은이" }, key: "taste.drinks", field: "요즘 마시는 것", text: "라떼" },
-    ],
-  });
-  await page.getByRole("textbox").fill("다은이 땅콩 알레르기, 라떼 좋아함");
-  await page.getByRole("button", { name: "읽어 보기" }).click();
-  await expect(page.getByRole("heading", { name: "이렇게 적을까요?" })).toBeVisible({ timeout: 30_000 });
-  const name = page.getByLabel("이름이나 부르는 말");
-  await expect(name).toHaveValue("다은이");
-  await name.fill("");
-  await page.getByRole("button", { name: "2줄 적기" }).click();
-  await expect(page.getByText("이름을 적어 주세요")).toBeVisible();
-  await name.fill("다은");
-  await page.getByRole("button", { name: "2줄 적기" }).click();
-  await expect(page.getByText("2줄을 적었어요")).toBeVisible({ timeout: 30_000 });
-  await page.getByRole("button", { name: "다음" }).click();
-  await expect(page).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
-  await expect(page.getByRole("heading", { level: 1 }).first()).toContainText("다은");
-  await page.getByRole("tab", { name: "기억해 둔 것" }).click();
-  await expect(page.getByText("땅콩").first()).toBeVisible();
-
-  // 편집: 그 사람 이야기뿐(범위가 정해져 있어 같은 이름이 둘이어도 고르지 않는다)
-  const wife = { id: await personId(page, "아내") };
-  await page.goto(`/import?to=${wife.id}`);
-  await expect(page.getByRole("textbox", { name: /아내에 대해/ })).toBeVisible();
-  setDraft({ lines: [{ spoken: "아내", target: { kind: "person", id: wife.id }, key: "favorites.flowers", field: "꽃", text: "라넌큘러스" }] });
-  await page.getByRole("textbox").fill("라넌큘러스 좋아함");
-  await page.getByRole("button", { name: "읽어 보기" }).click();
-  await expect(page.getByRole("heading", { level: 3 })).toHaveText(["아내"]);
-  await page.getByRole("button", { name: "1줄 적기" }).click();
-  await expect(page.getByText("1줄을 적었어요")).toBeVisible({ timeout: 30_000 });
-  await page.getByRole("button", { name: "다음" }).click();
-  await expect(page).toHaveURL(new RegExp(`/people/${wife.id}$`));
-  await page.getByRole("tab", { name: "기억해 둔 것" }).click();
-  await expect(page.getByText("라넌큘러스").first()).toBeVisible();
 });
 
 test("메모 가져오기: 사진 — 이상한 파일은 올리기 전에 걸러 내고, 줄인 JPEG 파일만 보내며, 읽지 못한 사진은 안내하고, 읽은 것만 적는다", async ({ browser }) => {

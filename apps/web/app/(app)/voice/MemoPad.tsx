@@ -2,15 +2,19 @@
 
 import { weekday, weekdayLong, weekdayNames, type AvatarConfig, type Locale, type YMD } from "@readme/core";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
-import { saveMemo } from "@/app/actions/capture";
+import { useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
+import { saveFirstMemo, saveMemo } from "@/app/actions/capture";
+import { skipOnboarding } from "@/app/actions/onboarding";
 import AppLink from "@/components/AppLink";
 import { Avatar } from "@/components/Avatar";
 import { BinderPage } from "@/components/Binder";
 import { Icon } from "@/components/marks";
+import { Mascot } from "@/components/Mascot";
 import { markSaved } from "@/components/ReviewAsk";
+import { NEW_NAME_MAX, nameKey, tidyName } from "@/lib/capture-target";
 import { startListenGuard, type ListenGuard, type StopReason } from "@/lib/listen-guard";
 import { mentionLabel } from "@/lib/mention";
+import { matchesPerson } from "@/lib/search";
 import { nativeSpeech, startDictation, webCtor, type Dictation, type WebRecognition } from "@/lib/speech";
 import { u } from "@/lib/ui-scale";
 
@@ -21,6 +25,8 @@ export interface MemoPerson {
   /** 내가 붙인 태그(부르는 말). 이름과 같거나 없으면 "" */
   tag: string;
   avatar: AvatarConfig | null;
+  /** 이름이 같은 사람을 가려 볼 때 곁에 붙이는 기록 요약(없으면 생략) */
+  hint?: string;
 }
 
 export interface MemoLabels {
@@ -31,7 +37,14 @@ export interface MemoLabels {
   placeholderOf: string;
   placeholder: string;
   addPerson: string;
-  addNew: string;
+  /** 이름 칸 이름 */
+  name: string;
+  /** 이름을 치면 뜨는 목록 이름 */
+  people: string;
+  /** "'{name}' 새로 추가" */
+  newOption: string;
+  /** 새 사람 칩의 작은 표시(새로) */
+  newBadge: string;
   /** "{name} 빼기" */
   removeTag: string;
   pickWho: string;
@@ -46,6 +59,28 @@ export interface MemoLabels {
   month: string;
 }
 
+/** 온보딩(첫 메모)으로 열렸다: 하단 메뉴 없이 머리 줄(첫 메모 · 건너뛰기 · 저장)과 캐릭터가 붙고, 저장하면 온보딩이 끝난다 */
+export interface MemoOnboarding {
+  /** 끝나고 가려던 곳(/home이면 그 사람 화면으로) */
+  next: string;
+  labels: {
+    title: string;
+    skip: string;
+    /** 아직 아무도 안 골랐을 때 캐릭터 말풍선 */
+    askWho: string;
+    /** 사람을 고르고 글을 적었을 때 캐릭터 말풍선 */
+    saveEnd: string;
+    /** 본문 칸 안내 글(예시 문장) */
+    example: string;
+    /** 바로 고르는 이름들(고르면 그 이름의 새 사람) */
+    quick: string[];
+  };
+}
+
+/** 이야기의 주인공: 이미 있는 사람(id) 또는 이번에 새로 더할 사람(이름) */
+type Tag = { kind: "person"; id: string } | { kind: "new"; name: string };
+const tagKey = (t: Tag) => (t.kind === "person" ? t.id : `new:${nameKey(t.name)}`);
+
 const MAX = 1000;
 /** 앱의 '공유 받기'가 받은 글을 넘겨 두는 곳(sessionStorage) */
 const SHARED_KEY = "rm_shared_memo";
@@ -58,6 +93,9 @@ function join(a: string, b: string): string {
 }
 
 const nameOf = (p: MemoPerson) => mentionLabel(p);
+
+/** 이 기기의 시간대(온보딩이 끝날 때 프로필에 남긴다) */
+const browserZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
 
 /** 받아 적는 글: 확정된 부분과 아직 바뀔 수 있는 부분(중간 결과) */
 interface Heard {
@@ -109,6 +147,21 @@ function WeekStrip({ today, locale }: { today: YMD; locale: Locale }) {
 function Face({ p }: { p: MemoPerson }) {
   return <Avatar config={p.avatar} size={24} label={nameOf(p)} decorative />;
 }
+
+/** 새로 더할 사람의 자리표시 얼굴: 동그라미에 이름 첫 글자(얼굴은 나중에 사람 화면에서) */
+function NewFace({ name, size = 24, dashed = false }: { name: string; size?: number; dashed?: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`hand flex shrink-0 items-center justify-center rounded-full bg-[#FFF7E6] leading-none text-mango-deep ${dashed ? "border-[1.1px] border-dashed border-ink/40" : "border border-edge"}`}
+      style={{ width: u(size), height: u(size), fontSize: u(size * 0.54) }}
+    >
+      {name.trim().slice(0, 1)}
+    </span>
+  );
+}
+
+const PLUS = <path d="M12 6v12M6 12h12" />;
 
 /** 듣는 동안의 알약: 일곱 막대가 마이크 소리에 맞춰 오르내리고(재지 못하면 부드럽게) 경과 시간 m:ss. 움직임 줄이기면 막대는 가만히 */
 const BAR_BASE = [9, 17, 25, 14, 21, 11, 7];
@@ -191,6 +244,18 @@ function ListenPill({ measure }: { measure: boolean }) {
   );
 }
 
+/** 오른쪽 위 망고 저장 알약 */
+function SaveButton({ onClick, disabled, label }: { onClick: () => void; disabled: boolean; label: string }) {
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} className="hand inline-flex items-center gap-[4.5px] rounded-full border border-edge bg-sky text-[17.1px] leading-none disabled:opacity-60" style={{ height: u(36), padding: `0 ${u(15)}px 0 ${u(11)}px` }}>
+      <Svg size={16} strokeWidth={2.2}>
+        <path d="M5 12.5l4.5 4.5L19 7.5" />
+      </Svg>
+      {label}
+    </button>
+  );
+}
+
 /** 위에서 잠깐 떴다 사라지는 알림 줄(하단 메뉴 위). 오류는 role=alert */
 function Toast({ text, error }: { text: string; error: boolean }) {
   return (
@@ -204,7 +269,25 @@ function Toast({ text, error }: { text: string; error: boolean }) {
  * 메모 쓰기(하단 가운데 메모 단추): 바인더 속지 한 장에 날짜 머리 · @ 사람 칩 · 손글씨 본문. 말로 적으면(오른쪽 아래 마이크) 받아 쓴 말이 그대로 본문에 들어간다.
  * 저장하면 고른 사람마다 메모로 남고(한 사람이면 그 사람 화면으로), AI가 뒤에서 그 사람의 항목으로 정리한다(saveMemo)
  */
-export function MemoPad({ locale, today, people, fixed, shared = false, labels }: { locale: Locale; today: YMD; people: MemoPerson[]; fixed: MemoPerson | null; /** 앱의 '공유 받기'로 열렸다(?shared=1): 받은 글을 본문에 채우고 사람은 비워 둔다 */ shared?: boolean; labels: MemoLabels }) {
+export function MemoPad({
+  locale,
+  today,
+  people,
+  fixed,
+  shared = false,
+  onboarding = null,
+  labels,
+}: {
+  locale: Locale;
+  today: YMD;
+  people: MemoPerson[];
+  fixed: MemoPerson | null;
+  /** 앱의 '공유 받기'로 열렸다(?shared=1): 받은 글을 본문에 채우고 사람은 비워 둔다 */
+  shared?: boolean;
+  /** 온보딩의 첫 메모로 열렸다(/onboarding) */
+  onboarding?: MemoOnboarding | null;
+  labels: MemoLabels;
+}) {
   const router = useRouter();
   const canListen = useSyncExternalStore(
     () => () => {},
@@ -212,9 +295,14 @@ export function MemoPad({ locale, today, people, fixed, shared = false, labels }
     () => false,
   );
   const [text, setText] = useState("");
-  const [tagged, setTagged] = useState<string[]>(fixed && !shared ? [fixed.id] : []);
+  const [tags, setTags] = useState<Tag[]>(fixed && !shared ? [{ kind: "person", id: fixed.id }] : []);
   // 이미 고른 사람이 있어도 '+'로 다른 사람을 더 고를 때만 펼치는 목록
   const [picking, setPicking] = useState(false);
+  // 이름 칸(새 사람·찾기): '+'로 열고, 온보딩은 처음부터 열려 있다
+  const [naming, setNaming] = useState(!!onboarding);
+  const [query, setQuery] = useState("");
+  const [typing, setTyping] = useState(false);
+  const [active, setActive] = useState(0);
   const [listening, setListening] = useState(false);
   // 앱: 멈춘 뒤 마지막 말까지 든 최종 결과를 기다리는 중
   const [settling, setSettling] = useState(false);
@@ -222,7 +310,9 @@ export function MemoPad({ locale, today, people, fixed, shared = false, labels }
   const [micError, setMicError] = useState(false);
   const [toast, setToast] = useState<{ id: number; text: string; error: boolean } | null>(null);
   const [saving, startSave] = useTransition();
+  const [skipping, startSkip] = useTransition();
   const box = useRef<HTMLTextAreaElement>(null);
+  const nameBox = useRef<HTMLInputElement>(null);
   const alive = useRef(false);
   const guard = useRef<ListenGuard | null>(null);
   const web = useRef<WebRecognition | null>(null);
@@ -231,10 +321,15 @@ export function MemoPad({ locale, today, people, fixed, shared = false, labels }
   // 말로 적은 글이 들어 있나(저장 기록에 말로·글로를 가른다)
   const voiced = useRef(false);
   const toastTimer = useRef(0);
+  const listId = useId();
 
   const byId = new Map(people.map((p) => [p.id, p]));
-  const chosen = tagged.map((id) => byId.get(id)).filter((p): p is MemoPerson => !!p);
-  const rest = people.filter((p) => !tagged.includes(p.id));
+  // 고른 사람들(이미 있는 사람은 얼굴과 함께, 새 사람은 이름만). 내 사람이 아닌 id는 뺀다
+  const chosen = tags
+    .map((t) => (t.kind === "person" ? { key: tagKey(t), person: byId.get(t.id) ?? null, name: "", valid: byId.has(t.id) } : { key: tagKey(t), person: null, name: t.name, valid: true }))
+    .filter((c) => c.valid);
+  const pickedIds = new Set(tags.flatMap((t) => (t.kind === "person" ? [t.id] : [])));
+  const rest = people.filter((p) => !pickedIds.has(p.id));
   // 아무도 안 골랐으면 목록을 바로 보이고, 골랐으면 '+'를 눌렀을 때만
   const listOpen = rest.length > 0 && (!chosen.length || picking);
   const busy = listening || settling;
@@ -243,6 +338,13 @@ export function MemoPad({ locale, today, people, fixed, shared = false, labels }
   const hasText = !!shown.trim();
   // 듣는 동안 이미 확정된 글(본문 + 확정된 받아쓰기)
   const settled = join(text, heard.final);
+  // 이름 칸 밑 목록: 치는 이름과 맞는 내 사람들, 맨 끝에 언제나 '새로 추가'
+  const typed = tidyName(query);
+  const options: ({ kind: "person"; p: MemoPerson } | { kind: "new"; name: string })[] = typed ? [...rest.filter((p) => matchesPerson(typed, p.name, p.tag)).map((p) => ({ kind: "person" as const, p })), { kind: "new" as const, name: typed }] : [];
+  const dropOpen = naming && typing && options.length > 0;
+  const current = Math.min(active, Math.max(options.length - 1, 0));
+  // 온보딩에서 아무도 안 골랐을 때만 바로 고르는 이름과 큰 이름 칸을 보인다
+  const starting = !!onboarding && !chosen.length;
 
   useEffect(() => {
     alive.current = true;
@@ -254,6 +356,13 @@ export function MemoPad({ locale, today, people, fixed, shared = false, labels }
       web.current?.stop();
       native.current?.cancel();
     };
+  }, []);
+
+  // 온보딩의 이름 칸: 마우스·터치패드 기기에서만 열자마자 커서를 둔다(터치 기기는 키보드가 저절로 뜨지 않게)
+  useEffect(() => {
+    if (onboarding && window.matchMedia?.("(pointer: fine)").matches) nameBox.current?.focus();
+    // 처음 열릴 때 한 번
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const say = (message: string, error = false) => {
@@ -421,7 +530,7 @@ export function MemoPad({ locale, today, people, fixed, shared = false, labels }
     // 듣는 중에 눌렀으면 지금까지 들은 말까지 붙여 바로 저장한다
     const body = shown.trim().slice(0, MAX);
     if (!body || saving || settling) return;
-    // 아무도 안 골랐으면 추천 사람 칩이 이미 보이는 상태라(listOpen) 알리기만 한다
+    // 아무도 안 골랐으면 추천 사람 칩이나 이름 칸이 이미 보이는 상태라 알리기만 한다
     if (!chosen.length) return say(labels.pickWho, true);
     if (listening) {
       halt();
@@ -432,67 +541,154 @@ export function MemoPad({ locale, today, people, fixed, shared = false, labels }
       hear(NOTHING);
       setText(body);
     }
-    const ids = chosen.map((p) => p.id);
+    const ids = tags.flatMap((t) => (t.kind === "person" && byId.has(t.id) ? [t.id] : []));
+    const newNames = tags.flatMap((t) => (t.kind === "new" ? [t.name] : []));
     const via = voiced.current ? "voice" : "text";
     startSave(async () => {
-      const r = await saveMemo(body, ids, via).catch(() => null);
+      if (onboarding) {
+        // 첫 메모: 저장하면 온보딩이 끝난다. 가려던 곳이 있으면 거기로, 아니면 방금 만든 사람 화면(환영 표시)으로
+        const r = await saveFirstMemo(body, ids, via, newNames, browserZone()).catch(() => null);
+        if (!r?.ok) return say(labels.error, true);
+        voiced.current = false;
+        return router.push(onboarding.next !== "/home" ? onboarding.next : `/people/${r.ids[0]}?welcome=1`);
+      }
+      const r = await saveMemo(body, ids, via, newNames).catch(() => null);
       if (!r?.ok) return say(labels.error, true);
       markSaved();
       voiced.current = false;
       if (r.ids.length === 1) return router.push(`/people/${r.ids[0]}`);
       // 여러 사람이면 이 화면에 남아 누구 메모장에 적었는지 알리고, 다음 메모를 위해 비운다
-      const names = r.ids.map((id) => byId.get(id)).filter((p): p is MemoPerson => !!p).map(nameOf);
+      const names = r.ids.map((id) => (byId.has(id) ? nameOf(byId.get(id)!) : (r.created.find((c) => c.id === id)?.name ?? ""))).filter(Boolean);
       setText("");
-      setTagged([]);
+      setTags([]);
       setPicking(false);
+      closeNaming();
       say(labels.savedTo.replace("{names}", names.join(", ")));
+      // 방금 더한 사람이 다음 메모의 추천에 보이게
+      if (r.created.length) router.refresh();
     });
   };
 
-  const add = (id: string) => setTagged((cur) => (cur.includes(id) ? cur : [...cur, id]));
-  const drop = (id: string) => setTagged((cur) => cur.filter((x) => x !== id));
-  const placeholder = chosen.length === 1 ? labels.placeholderOf.replace("{name}", nameOf(chosen[0]!)) : labels.placeholder;
+  // 건너뛰기: 첫 메모 없이 온보딩을 마친다(가려던 곳이 있으면 거기로, 아니면 홈)
+  const skip = () => {
+    if (!onboarding || saving || skipping) return;
+    startSkip(async () => {
+      await skipOnboarding(browserZone(), onboarding.next).catch(() => say(labels.error, true));
+    });
+  };
+
+  // ── 사람 고르기 ──
+  /** 이름 칸을 닫고 비운다(온보딩에서 아무도 안 골랐으면 늘 열려 있다) */
+  const closeNaming = () => {
+    setQuery("");
+    setTyping(false);
+    setActive(0);
+    setNaming(!!onboarding && !tags.length);
+  };
+  const openNaming = () => {
+    setNaming(true);
+    setPicking(true);
+    window.setTimeout(() => nameBox.current?.focus(), 0);
+  };
+  const addTag = (tag: Tag) => {
+    setTags((cur) => (cur.some((t) => tagKey(t) === tagKey(tag)) ? cur : [...cur, tag]));
+    setQuery("");
+    setTyping(false);
+    setActive(0);
+    setNaming(false);
+  };
+  const dropTag = (key: string) => {
+    const left = tags.filter((t) => tagKey(t) !== key);
+    setTags(left);
+    // 온보딩에서 다 빼면 처음 모습(이름 칸과 바로 고르는 이름)으로
+    if (onboarding && !left.length) setNaming(true);
+  };
+  const pick = (o: (typeof options)[number] | undefined) => {
+    if (!o) return;
+    addTag(o.kind === "person" ? { kind: "person", id: o.p.id } : { kind: "new", name: o.name });
+  };
+  const onNameKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      if (!options.length) return;
+      e.preventDefault();
+      setTyping(true);
+      setActive((current + (e.key === "ArrowDown" ? 1 : options.length - 1)) % options.length);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      pick(options[current]);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      if (query) setQuery("");
+      else closeNaming();
+    }
+  };
+
+  const placeholder = onboarding ? onboarding.labels.example : chosen.length === 1 && chosen[0]!.person ? labels.placeholderOf.replace("{name}", nameOf(chosen[0]!.person)) : labels.placeholder;
   const [month, day, weekdayName] = [labels.month, today.d, weekdayLong(today, locale)];
 
   return (
     <div className="flex flex-1 flex-col">
-      {/* 위 줄: 닫기 · (글이 없으면) 메모 가져오기 알약 / (글이 있으면) 가져오기 아이콘 + 저장 */}
-      <div className="flex h-12 shrink-0 items-center justify-between pl-1.5 pr-3">
-        <AppLink href={fixed ? `/people/${fixed.id}` : "/home"} aria-label={labels.close} className="relative flex h-11 w-11 items-center justify-center before:absolute before:-inset-[2.2px]">
-          <Icon name="close" size={22} strokeWidth={1.8} />
-        </AppLink>
-        {hasText ? (
-          <div className="flex items-center gap-1">
-            <AppLink href="/import" aria-label={labels.importNotes} className="relative flex h-11 w-11 items-center justify-center before:absolute before:-inset-[2.2px]">
-              <Svg size={21}>{IMPORT_ICON}</Svg>
-            </AppLink>
-            <button
-              type="button"
-              onClick={save}
-              disabled={saving}
-              className="hand inline-flex items-center gap-[4.5px] rounded-full border border-edge bg-sky text-[17.1px] leading-none disabled:opacity-60"
-              style={{ height: u(36), padding: `0 ${u(15)}px 0 ${u(11)}px` }}
-            >
-              <Svg size={16} strokeWidth={2.2}>
-                <path d="M5 12.5l4.5 4.5L19 7.5" />
-              </Svg>
-              {labels.save}
+      {/* 위 줄: 닫기 · (글이 없으면) 메모 가져오기 알약 / (글이 있으면) 가져오기 아이콘 + 저장.
+          온보딩(첫 메모)은 닫기 대신 손글씨 제목, 오른쪽에 건너뛰기와(글이 있으면) 저장 */}
+      {onboarding ? (
+        <div className="flex h-12 shrink-0 items-center justify-between pl-[18px] pr-[10.8px]">
+          <h1 className="text-[23.4px] leading-none">{onboarding.labels.title}</h1>
+          <div className="flex items-center gap-[3.6px]">
+            <button type="button" onClick={skip} disabled={skipping || saving} className="flex min-h-11 items-center px-[9px] text-[12.6px] text-muted disabled:opacity-60">
+              {onboarding.labels.skip}
             </button>
+            {hasText ? <SaveButton onClick={save} disabled={saving || skipping} label={labels.save} /> : null}
           </div>
-        ) : (
-          <AppLink href="/import" className="inline-flex items-center gap-[4.5px] whitespace-nowrap rounded-full border border-edge bg-white text-[12.15px]" style={{ height: u(34), padding: `0 ${u(13)}px 0 ${u(10)}px` }}>
-            <Svg size={17}>{IMPORT_ICON}</Svg>
-            {labels.importNotes}
+        </div>
+      ) : (
+        <div className="flex h-12 shrink-0 items-center justify-between pl-1.5 pr-3">
+          <AppLink href={fixed ? `/people/${fixed.id}` : "/home"} aria-label={labels.close} className="relative flex h-11 w-11 items-center justify-center before:absolute before:-inset-[2.2px]">
+            <Icon name="close" size={22} strokeWidth={1.8} />
           </AppLink>
-        )}
-      </div>
+          {hasText ? (
+            <div className="flex items-center gap-1">
+              <AppLink href="/import" aria-label={labels.importNotes} className="relative flex h-11 w-11 items-center justify-center before:absolute before:-inset-[2.2px]">
+                <Svg size={21}>{IMPORT_ICON}</Svg>
+              </AppLink>
+              <SaveButton onClick={save} disabled={saving} label={labels.save} />
+            </div>
+          ) : (
+            <AppLink href="/import" className="inline-flex items-center gap-[4.5px] whitespace-nowrap rounded-full border border-edge bg-white text-[12.15px]" style={{ height: u(34), padding: `0 ${u(13)}px 0 ${u(10)}px` }}>
+              <Svg size={17}>{IMPORT_ICON}</Svg>
+              {labels.importNotes}
+            </AppLink>
+          )}
+        </div>
+      )}
 
-      <div className="relative mb-[16.2px] ml-[21.6px] mr-[14.4px] mt-[14.4px] flex flex-1 flex-col">
-        {/* 모서리에 붙은 해 스티커 */}
-        <svg aria-hidden="true" viewBox="0 0 40 40" className="absolute z-[4]" width={u(38)} height={u(38)} style={{ right: u(14), top: -u(16), transform: "rotate(10deg)" }}>
-          <circle cx="20" cy="20" r="8" fill="#FFD978" stroke={INK} strokeWidth="1.4" />
-          <path d="M20 4v5M20 31v5M4 20h5M31 20h5M8.7 8.7l3.5 3.5M27.8 27.8l3.5 3.5M8.7 31.3l3.5-3.5M27.8 12.2l3.5-3.5" stroke={INK} strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
+      <div className="relative ml-[21.6px] mr-[14.4px] flex flex-1 flex-col" style={onboarding ? { marginTop: u(62), marginBottom: "max(calc(var(--sab) + 12px), 46.8px)" } : { marginTop: u(16), marginBottom: u(18) }}>
+        {onboarding ? (
+          <>
+            {/* 캐릭터(아직 이야기할 사람이 없으면 책 읽는 모습, 사람을 고르고 글을 적었으면 하트) + 말풍선 한 줄 */}
+            <div aria-hidden="true" className="absolute z-[5] flex items-end" style={{ right: u(10), top: -u(56), height: u(53.5) }}>
+              <Mascot pose={chosen.length && hasText ? 4 : 7} size={48.4} />
+            </div>
+            {!chosen.length || hasText ? (
+              <div
+                className="hand absolute z-[5] break-keep rounded-[14.4px] border border-edge bg-white text-[17.1px] leading-[1.25] shadow-[0_7.2px_12.6px_-9px_rgb(31_35_64/0.4)]"
+                style={{ right: u(92), top: -u(54), maxWidth: u(250), padding: `${u(9)}px ${u(14)}px ${u(10)}px` }}
+              >
+                {chosen.length ? onboarding.labels.saveEnd : onboarding.labels.askWho}
+                <svg aria-hidden="true" viewBox="0 0 18 12" className="absolute" width={u(18)} height={u(12)} style={{ right: -u(11), bottom: u(10), transform: "rotate(-90deg)" }}>
+                  <path d="M1 0 L9 11 L17 0" fill="#FFFFFF" stroke="rgb(31 35 64 / 0.28)" strokeWidth="1" />
+                  <path d="M1.5 -0.6 H16.5" stroke="#FFFFFF" strokeWidth="2" />
+                </svg>
+              </div>
+            ) : null}
+          </>
+        ) : (
+          /* 모서리에 붙은 해 스티커 */
+          <svg aria-hidden="true" viewBox="0 0 40 40" className="absolute z-[4]" width={u(38)} height={u(38)} style={{ right: u(14), top: -u(16), transform: "rotate(10deg)" }}>
+            <circle cx="20" cy="20" r="8" fill="#FFD978" stroke={INK} strokeWidth="1.4" />
+            <path d="M20 4v5M20 31v5M4 20h5M31 20h5M8.7 8.7l3.5 3.5M27.8 27.8l3.5 3.5M8.7 31.3l3.5-3.5M27.8 12.2l3.5-3.5" stroke={INK} strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+        )}
         <BinderPage className="flex flex-1 flex-col" pageClassName="flex flex-1 flex-col">
           {/* 날짜 머리 */}
           <div className="flex items-end justify-between border-b-[1.35px] border-dashed border-ink/30" style={{ padding: `${u(20)}px 0 ${u(12)}px` }}>
@@ -506,52 +702,137 @@ export function MemoPad({ locale, today, people, fixed, shared = false, labels }
             <WeekStrip today={today} locale={locale} />
           </div>
 
-          {/* @ 이야기의 주인공: 고른 사람 칩 · + · (고르는 목록) */}
-          <div className="-mr-[14.4px] flex items-center gap-[6.3px] overflow-x-auto overflow-y-hidden [-webkit-mask-image:linear-gradient(90deg,#000_80%,transparent)] [mask-image:linear-gradient(90deg,#000_80%,transparent)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" style={{ height: u(52) }}>
+          {/* @ 이야기의 주인공: 고른 사람 칩 · 이름 칸 / + · (고르는 목록) */}
+          <div className="-mr-[14.4px] flex items-center gap-[6.3px] overflow-x-auto overflow-y-hidden [-webkit-mask-image:linear-gradient(90deg,#000_80%,transparent)] [mask-image:linear-gradient(90deg,#000_80%,transparent)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" style={{ height: u(starting ? 54 : 52) }}>
             <span aria-hidden="true" className="hand shrink-0 pr-[0.9px] text-[24.3px] leading-none text-mango-deep">
               @
             </span>
-            {chosen.map((p) => (
-              <span key={p.id} className="inline-flex shrink-0 items-center gap-[5.4px] rounded-full border border-edge bg-sky-soft pl-[2.7px] pr-[2.7px]" style={{ height: u(30) }}>
-                <Face p={p} />
-                <span className="hand text-[18px] leading-none">{nameOf(p)}</span>
-                <button type="button" aria-label={labels.removeTag.replace("{name}", nameOf(p))} onClick={() => drop(p.id)} className="relative flex items-center justify-center rounded-full before:absolute before:-inset-[6px]" style={{ width: u(24), height: u(24) }}>
-                  <svg aria-hidden="true" viewBox="0 0 24 24" width={u(12)} height={u(12)} fill="none" stroke="#5B5F78" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M6 6l12 12M18 6L6 18" />
-                  </svg>
-                </button>
-              </span>
-            ))}
-            {chosen.length && rest.length ? (
+            {chosen.map((c) => {
+              const label = c.person ? nameOf(c.person) : c.name;
+              return (
+                <span key={c.key} className="inline-flex shrink-0 items-center gap-[5.4px] rounded-full border border-edge bg-sky-soft pl-[2.7px] pr-[2.7px]" style={{ height: u(30) }}>
+                  {c.person ? <Face p={c.person} /> : <NewFace name={label} />}
+                  <span className="hand text-[18px] leading-none">{label}</span>
+                  {c.person ? null : (
+                    <span className="inline-flex items-center rounded-full border border-edge bg-white text-mango-deep" style={{ height: u(18), padding: `0 ${u(6)}px`, fontSize: u(10.5) }}>
+                      {labels.newBadge}
+                    </span>
+                  )}
+                  <button type="button" aria-label={labels.removeTag.replace("{name}", label)} onClick={() => dropTag(c.key)} className="relative flex items-center justify-center rounded-full before:absolute before:-inset-[6px]" style={{ width: u(24), height: u(24) }}>
+                    <svg aria-hidden="true" viewBox="0 0 24 24" width={u(12)} height={u(12)} fill="none" stroke="#5B5F78" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M6 6l12 12M18 6L6 18" />
+                    </svg>
+                  </button>
+                </span>
+              );
+            })}
+            {naming ? (
+              <label className="relative inline-flex shrink-0 items-center rounded-full border-[1.35px] border-sky bg-white shadow-[0_0_0_2.7px_rgb(255_194_61/0.22)]" style={{ height: u(34), minWidth: u(starting ? 168 : 118), padding: `0 ${u(12)}px` }}>
+                {/* 글자 수만큼 넓어지는 입력 칸: 같은 칸에 겹친 보이지 않는 글자가 폭을 정한다 */}
+                <span className="inline-grid">
+                  <span aria-hidden="true" className="hand invisible col-start-1 row-start-1 whitespace-pre text-[18px] leading-none">
+                    {query || labels.name}
+                  </span>
+                  <input
+                    ref={nameBox}
+                    value={query}
+                    onChange={(e) => {
+                      setQuery(e.target.value);
+                      setTyping(true);
+                      setActive(0);
+                    }}
+                    onFocus={() => setTyping(true)}
+                    onBlur={() => {
+                      setTyping(false);
+                      if (onboarding) return;
+                      // 비어 있는 채로 포커스를 잃으면 닫는다. 곧바로 닫으면 줄이 줄어들어 방금 누른 사람 칩의 자리가 옮겨 가 눌림이 빗나가니 잠깐 둔다
+                      window.setTimeout(() => {
+                        const el = nameBox.current;
+                        if (el && document.activeElement !== el && !el.value.trim()) setNaming(false);
+                      }, 300);
+                    }}
+                    onKeyDown={onNameKey}
+                    maxLength={NEW_NAME_MAX}
+                    placeholder={labels.name}
+                    aria-label={labels.name}
+                    role="combobox"
+                    aria-expanded={dropOpen}
+                    aria-controls={listId}
+                    aria-autocomplete="list"
+                    aria-activedescendant={dropOpen ? `${listId}-${current}` : undefined}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    enterKeyHint="done"
+                    className="hand col-start-1 row-start-1 w-full min-w-0 border-0 bg-transparent p-0 text-[18px] leading-none caret-mango-deep outline-none placeholder:text-ink/[.38]"
+                  />
+                </span>
+              </label>
+            ) : (
               <button
                 type="button"
                 aria-label={labels.addPerson}
-                aria-expanded={picking}
-                onClick={() => setPicking((v) => !v)}
+                onClick={openNaming}
                 className={`relative flex shrink-0 items-center justify-center rounded-full border border-dashed border-ink/40 before:absolute before:-inset-[6px] ${picking ? "bg-sky-soft" : ""}`}
                 style={{ width: u(30), height: u(30) }}
               >
                 <Svg size={14} strokeWidth={2}>
-                  <path d="M12 6v12M6 12h12" />
+                  {PLUS}
                 </Svg>
               </button>
-            ) : null}
-            {!people.length ? (
-              <AppLink href="/people/new" aria-label={labels.addNew} className="relative flex shrink-0 items-center justify-center rounded-full border border-dashed border-ink/40 before:absolute before:-inset-[6px]" style={{ width: u(30), height: u(30) }}>
-                <Svg size={14} strokeWidth={2}>
-                  <path d="M12 6v12M6 12h12" />
-                </Svg>
-              </AppLink>
-            ) : null}
+            )}
             {listOpen
               ? rest.map((p) => (
-                  <button key={p.id} type="button" onClick={() => add(p.id)} className="inline-flex shrink-0 items-center gap-[5.4px] rounded-full border border-edge bg-white pl-[2.7px] pr-[9.9px]" style={{ height: u(30) }}>
+                  <button key={p.id} type="button" onClick={() => addTag({ kind: "person", id: p.id })} className="inline-flex shrink-0 items-center gap-[5.4px] rounded-full border border-edge bg-white pl-[2.7px] pr-[9.9px]" style={{ height: u(30) }}>
                     <Face p={p} />
                     <span className="hand text-[18px] leading-none">{nameOf(p)}</span>
                   </button>
                 ))
               : null}
           </div>
+
+          {/* 이름을 치면 뜨는 목록: 맞는 내 사람들, 맨 끝에 '새로 추가'(같은 이름이 있어도 새 사람으로 더할 수 있다) */}
+          {dropOpen ? (
+            <div id={listId} role="listbox" aria-label={labels.people} className="relative z-[3] border border-edge bg-white" style={{ margin: `-${u(2)}px 0 ${u(10)}px ${u(22)}px`, width: u(248), padding: u(6), borderRadius: u(14), boxShadow: `0 ${u(14)}px ${u(22)}px -${u(16)}px rgb(31 35 64 / 0.55)` }}>
+              {options.map((o, i) => (
+                <div
+                  key={o.kind === "person" ? o.p.id : "new"}
+                  id={`${listId}-${i}`}
+                  role="option"
+                  aria-selected={i === current}
+                  // 눌러도 이름 칸이 포커스를 잃지 않게(잃으면 목록이 먼저 닫혀 누른 게 안 먹는다)
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => pick(o)}
+                  className={`flex cursor-pointer items-center gap-[8.1px] ${i === current ? "bg-sky-soft" : ""}`}
+                  style={{ height: u(44), padding: `0 ${u(8)}px`, borderRadius: u(10) }}
+                >
+                  {o.kind === "person" ? <Avatar config={o.p.avatar} size={28} label={nameOf(o.p)} decorative /> : <NewFace name={o.name} size={28} dashed />}
+                  <span className="hand text-[18px] leading-none">{o.kind === "person" ? nameOf(o.p) : labels.newOption.replace("{name}", o.name)}</span>
+                  {o.kind === "person" && (o.p.hint || o.p.tag) ? <span className="truncate text-[10.8px] text-muted">{o.p.hint || o.p.tag}</span> : null}
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {/* 온보딩의 처음: 바로 고르는 이름들(고르면 그 이름의 새 사람) */}
+          {starting ? (
+            <div className="flex flex-wrap pb-[10.8px] pt-[1.8px]" style={{ gap: u(7) }}>
+              {onboarding!.labels.quick.map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => addTag({ kind: "new", name })}
+                  className="hand inline-flex shrink-0 items-center gap-[4.5px] rounded-full border border-dashed border-ink/40 bg-white text-[17.1px] leading-none"
+                  style={{ height: u(32), padding: `0 ${u(12)}px 0 ${u(8)}px` }}
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24" width={u(13)} height={u(13)} fill="none" stroke="#E09A12" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    {PLUS}
+                  </svg>
+                  {name}
+                </button>
+              ))}
+            </div>
+          ) : null}
 
           {/* 본문: 점 모눈 위에 손글씨로. 듣는 동안은 받아 적는 말(아직 바뀔 수 있는 부분은 연하게 + 망고 밑줄)이 보이는 글로 */}
           <div className="relative flex-1 cursor-text pb-[28px]" onClick={() => box.current?.focus()}>
@@ -575,7 +856,7 @@ export function MemoPad({ locale, today, people, fixed, shared = false, labels }
                 maxLength={MAX}
                 placeholder={placeholder}
                 aria-label={placeholder}
-                className="hand-written block w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-[20.7px] leading-[30.6px] caret-mango-deep outline-none placeholder:text-ink/40"
+                className={`hand-written block w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-[20.7px] leading-[30.6px] caret-mango-deep outline-none ${onboarding ? "placeholder:text-ink/[.34]" : "placeholder:text-ink/40"}`}
               />
             )}
           </div>
@@ -590,7 +871,7 @@ export function MemoPad({ locale, today, people, fixed, shared = false, labels }
 
       {/* 오른쪽 아래 마이크: 하단 메뉴 위로 띄워 둔다(.memo-mic). 높이 0짜리 sticky 줄이라 화면이 길어져도 같은 자리에 있다 */}
       {canListen ? (
-        <div className="memo-mic sticky z-20 h-0 w-full">
+        <div className="memo-mic sticky z-20 h-0 w-full" data-onboarding={onboarding ? "" : undefined}>
           <div className="absolute bottom-0" style={{ right: u(22), width: u(66), height: u(66) }}>
             {busy ? (
               <>

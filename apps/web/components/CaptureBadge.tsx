@@ -15,6 +15,3 @@ export function CaptureBadge({ line, labels }: { line: CaptureLine; labels: Capt
   const tone = line.same ? "bg-[#E4ECFA] text-[#2F5FC4]" : line.op === "remove" ? "bg-red-soft text-red" : "chip-on";
   return <span className={`shrink-0 whitespace-nowrap rounded-full px-[6.3px] py-0.5 text-[9.9px] leading-[1.3] ${tone}`}>{text}</span>;
 }
-
-/** 지운 값은 줄을 그어 보인다 */
-export const struck = (line: CaptureLine) => (line.op === "remove" && !line.same ? "text-muted line-through decoration-2" : "");

@@ -81,15 +81,13 @@ export function NameField({
 }
 
 /**
- * 캐릭터 만들기(플래너 시안, 흰 카드 하나): 작은 폴라로이드 미리보기(오른쪽 아래에 망고 주사위 단추 '아무거나') + 오른쪽에 이름 칸 → 머리·얼굴·옷·소품·안경·색깔 탭 → 4열 고르기 칸.
- * paper: 온보딩에서 쓰는지 — 카드 윗변에 망고 테이프를 붙인다
+ * 캐릭터 만들기(플래너 시안, 흰 카드 하나): 작은 폴라로이드 미리보기(오른쪽 아래에 망고 주사위 단추 '아무거나') + 오른쪽에 이름 칸 → 머리·얼굴·옷·소품·안경·색깔 탭 → 4열 고르기 칸
  */
 export function AvatarBuilder({
   value,
   onChange,
   locale,
   side,
-  paper = false,
 }: {
   value: AvatarConfig;
   onChange: (v: AvatarConfig) => void;
@@ -98,7 +96,6 @@ export function AvatarBuilder({
   side: React.ReactNode;
   /** 예전 호출 호환용(테이프 색은 시안대로 정해져 있다) */
   tape?: unknown;
-  paper?: boolean;
 }) {
   const t = useT(locale);
   const [tab, setTab] = useState<Tab>("hair");
@@ -139,7 +136,6 @@ export function AvatarBuilder({
 
   return (
     <div className="card relative flex flex-col p-3.5">
-      {paper ? <TornTape color="mango" w={72} h={22} rotate={-4} className="-top-3 left-[40%]" /> : null}
       <div className="flex items-center gap-4 px-1 pt-1.5">
         <div className="relative shrink-0">
           <span className="relative block -rotate-3 border border-edge bg-white px-1.5 pb-[21.6px] pt-1.5">

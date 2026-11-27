@@ -1,4 +1,4 @@
-import type { AvatarConfig, DailyQuestion, DateSpec, Locale, PartialCard, ReminderOffset, SafetyData, Section, YMD } from "@readme/core";
+import type { AvatarConfig, DailyQuestion, DateSpec, Locale, PartialCard, ReminderOffset, Section, YMD } from "@readme/core";
 
 // 화면마다 서버가 읽어 주는 데이터 모양(lib/pages/<화면>.ts가 만들고 components/pages/<화면>View가 그린다).
 // 타입만 둔다(서버 전용 코드를 들이지 않는다)
@@ -36,24 +36,12 @@ export interface MeAvatarData {
   birthday: DateSpec | null;
 }
 
-export interface OnboardingAvatarData {
+/** 온보딩(첫 메모): 메모지 화면과 같은 데이터 + 끝나고 가려던 곳 */
+export interface OnboardingData {
   locale: Locale;
-  name: string;
-  avatar: AvatarConfig;
-  next: string;
-}
-
-export interface OnboardingFoodData {
-  locale: Locale;
-  safety: SafetyData | null;
-  spicy: number | null;
-  next: string;
-}
-
-export interface OnboardingBirthdayData {
-  locale: Locale;
-  birthday: DateSpec | null;
-  offsets: ReminderOffset[];
+  today: YMD;
+  /** 이미 있는 내 사람(온보딩 전에는 거의 없다) */
+  people: { id: string; name: string; tag: string; avatar: AvatarConfig | null }[];
   next: string;
 }
 
@@ -67,7 +55,6 @@ export interface PrivacyData {
   /** 명절·챙기는 날 알림 */
   holidayReminders: boolean;
   reminderOffsets: ReminderOffset[];
-  ai: boolean;
   /** 브라우저 푸시 공개 키(서버에 VAPID 키가 없으면 null: 브라우저 알림 스위치를 숨긴다) */
   webPushKey: string | null;
 }
@@ -79,12 +66,6 @@ export interface AskPersonData {
   label: string;
   avatar: AvatarConfig | null;
   missing: Section[];
-}
-
-/** 가입 직후 체험 중이면 몇 번째 단계/전체(말로 적기 → 물어보기, AI가 꺼지면 물어보기만) */
-export interface TourInfo {
-  n: number;
-  total: number;
 }
 
 export interface RequestData {
@@ -101,7 +82,6 @@ export interface RequestData {
   question: DailyQuestion["id"] | null;
   /** 브라우저 푸시 공개 키(알림이 꺼져 있거나 서버에 키가 없으면 null: 링크를 만든 뒤 '답장 오면 알려 드릴까요?'를 숨긴다) */
   webPushKey: string | null;
-  tour: TourInfo | null;
 }
 
 export interface VoiceData {
@@ -113,5 +93,4 @@ export interface VoiceData {
   fixed: { id: string; name: string; tag: string; avatar: AvatarConfig | null; hint: string } | null;
   /** 앱의 '공유 받기'로 열렸다(?shared=1): 메모 쓰기 화면이 받은 글을 본문에 채운다 */
   shared: boolean;
-  tour: TourInfo | null;
 }

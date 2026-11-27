@@ -106,7 +106,7 @@ export async function requireSession(opts: { onboarding?: boolean } = {}): Promi
   const s = await getSession();
   // ?next를 붙여 보낸다: 낡은 세션 쿠키가 남은 사람이 /로 가면 proxy가 다시 /home으로 보내는데, ?next가 있으면 그러지 않아서 돌고 돌지 않는다
   if (!s) redirect("/?next=%2Fhome");
-  if (!opts.onboarding && !s.profile.onboardedAt) redirect("/onboarding/avatar");
+  if (!opts.onboarding && !s.profile.onboardedAt) redirect("/onboarding");
   return s;
 }
 

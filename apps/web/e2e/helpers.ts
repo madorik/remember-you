@@ -22,33 +22,41 @@ export async function signIn(page: Page) {
   await page.waitForURL((u) => !u.searchParams.has("demo"));
 }
 
-/** 온보딩 세 단계와 이어지는 체험(기본은 건너뛰기, intro: "stay"면 체험 첫 화면에서 멈춘다) */
-export async function onboard(page: Page, opts: { name: string; allergy?: string; dislike?: string; lunar?: { month: number; day: number }; solar?: { month: number; day: number }; intro?: "skip" | "stay" }) {
-  await expect(page).toHaveURL(/\/onboarding\/avatar/);
-  await page.getByLabel("부를 이름").fill(opts.name);
-  await page.getByRole("button", { name: "단발" }).click();
-  await page.getByRole("button", { name: "이 얼굴로 할게요" }).click();
-
-  await expect(page).toHaveURL(/\/onboarding\/food/);
-  if (opts.allergy) await page.getByRole("button", { name: opts.allergy, exact: true }).first().click();
-  if (opts.dislike) await page.getByRole("button", { name: opts.dislike, exact: true }).first().click();
-  await page.getByRole("button", { name: "다음" }).click();
-
-  await expect(page).toHaveURL(/\/onboarding\/birthday/);
-  const date = opts.lunar ?? opts.solar ?? { month: 1, day: 1 };
-  if (opts.lunar) await page.getByRole("radio", { name: "음력" }).click();
-  await page.getByLabel("월").selectOption(String(date.month));
-  await page.getByLabel("일").selectOption(String(date.day));
-  if (opts.lunar) await expect(page.getByText(/올해는 양력/)).toBeVisible();
-  if (process.env.SHOTS && opts.lunar) await page.screenshot({ path: `${process.env.SHOTS}/00-birthday.png`, fullPage: true });
-  await page.getByRole("button", { name: "이제 시작해요" }).click();
-
-  // 온보딩을 마치면 직접 해 보는 체험이 시작된다(말로·글로 적기 → 물어보기 → 홈). 기본은 안내 화면만 확인하고 건너뛰고, "stay"면 그 화면에서 멈춘다
-  await expect(page).toHaveURL(/\/voice\?tour=1/);
-  await expect(page.getByText("1 / 2")).toBeVisible();
-  await expect(page.getByText("“엄마는 장미꽃을 좋아해”")).toBeVisible();
-  if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/00-tour-voice.png` });
-  if (opts.intro === "stay") return;
+/**
+ * 가입 직후의 온보딩(첫 메모 화면)은 건너뛰고 홈으로, 그 뒤 테스트가 쓸 내 기록(이름 · 알레르기 · 안 먹는 것 · 생일)은 내 화면에서 직접 채운다.
+ * 첫 메모를 쓰는 흐름은 따로 시험한다(flows.spec.ts의 "가입 직후 첫 메모")
+ */
+export async function onboard(page: Page, opts: { name: string; allergy?: string; dislike?: string; lunar?: { month: number; day: number }; solar?: { month: number; day: number } }) {
+  await expect(page).toHaveURL(/\/onboarding$/);
   await page.getByRole("button", { name: "건너뛰기" }).click();
   await expect(page).toHaveURL(/\/home$/);
+
+  // 이름(내 프로필)
+  await page.goto("/me/avatar");
+  await page.getByLabel("닉네임").fill(opts.name);
+  await page.getByRole("button", { name: "저장" }).click();
+  await expect(page).toHaveURL(/\/me$/);
+
+  // 알레르기 · 안 먹는 것
+  if (opts.allergy || opts.dislike) {
+    await page.goto("/me/edit/safety");
+    if (opts.allergy) await page.getByRole("button", { name: opts.allergy, exact: true }).first().click();
+    if (opts.dislike) await page.getByRole("button", { name: opts.dislike, exact: true }).first().click();
+    await page.getByRole("button", { name: "저장" }).click();
+    await expect(page.getByText("저장했어요.", { exact: true })).toBeVisible();
+  }
+
+  // 생일(음력이면 음력으로)
+  const date = opts.lunar ?? opts.solar;
+  if (date) {
+    await page.goto("/me/edit/dates");
+    if (opts.lunar) await page.getByRole("radio", { name: "음력" }).click();
+    await page.getByLabel("월").selectOption(String(date.month));
+    await page.getByLabel("일").selectOption(String(date.day));
+    if (opts.lunar) await expect(page.getByText(/올해는 양력/)).toBeVisible();
+    if (process.env.SHOTS && opts.lunar) await page.screenshot({ path: `${process.env.SHOTS}/00-birthday.png`, fullPage: true });
+    await page.getByRole("button", { name: "저장" }).click();
+    await expect(page.getByText("저장했어요.", { exact: true })).toBeVisible();
+  }
+  await page.goto("/home");
 }

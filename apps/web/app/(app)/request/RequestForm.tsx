@@ -1,9 +1,8 @@
 "use client";
 
 import { ASK_DEFAULT_TOPICS, QUESTION_SECTION, SECTIONS, SECTIONS_BY_IMPORTANCE, aboutPrompt, askMinutes, defaultAskTopics, type AvatarConfig, type DailyQuestion, type Locale, type Section } from "@readme/core";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRequest, type InviteState } from "@/app/actions/request";
-import { leaveTour, trackTour } from "@/app/actions/tour";
 import { useT } from "@/components/editors/shared";
 import { Avatar } from "@/components/Avatar";
 import { TornTape } from "@/components/TornTape";
@@ -54,7 +53,6 @@ export function RequestForm({
   focus = null,
   question = null,
   webPushKey = null,
-  tour = false,
 }: {
   locale: Locale;
   people: AskPerson[];
@@ -66,7 +64,6 @@ export function RequestForm({
   /** 오늘의 질문 하나만 묻는다(?q=) */
   question?: DailyQuestion["id"] | null;
   webPushKey?: string | null;
-  tour?: boolean;
 }) {
   const t = useT(locale);
   // 한 질문만 묻는 물어보기(question)는 항목을 고르지 않고 그 질문 하나만(서버가 그 질문이 속한 항목으로 저장한다)
@@ -84,14 +81,12 @@ export function RequestForm({
   const [topics, setTopics] = useState<Section[]>(topicsFor(fixedPerson));
   const formRef = useRef<HTMLFormElement>(null);
   const whoRef = useRef<HTMLInputElement>(null);
-  const startRef = useRef<HTMLButtonElement>(null);
   // 만든 링크(같은 사람·같은 항목이면 한 번만 만든다: 머리말 공유 아이콘·공유 팝업이 모두 이걸 쓴다. 사람이나 항목을 바꾸면 다음에 새로 만든다 — 앞 링크는 그대로 열린다)
   const stored = useRef<{ sig: string; link: Link } | null>(null);
   const creating = useRef<{ sig: string; promise: Promise<InviteState> } | null>(null);
   const busy = useRef(false);
   const [pending, setPending] = useState(false);
-  // 링크를 만들었다(체험 끝 단추·체험 기록용). 보내지 못했거나 공유창을 못 열면 우리 공유 팝업이 뜬다
-  const [made, setMade] = useState(false);
+  // 보내지 못했거나 공유창을 못 열면 우리 공유 팝업이 뜬다
   const [sheet, setSheet] = useState<Link | null>(null);
   // 보낸 뒤(또 못 보내는 까닭을 알릴 때) 잠깐 뜨는 아래 알림, 보낸 뒤 처음 한 번은 '답장 오면 알려 드릴까요?'도 곁들인다
   const [toast, setToast] = useState<Toast | null>(null);
@@ -106,13 +101,6 @@ export function RequestForm({
     },
     [],
   );
-  // 가입 직후 체험이면: 이 화면을 봤다는 기록(한 번), 링크를 만들면 그 기록(누구에게: 있는 사람/새로)
-  const seen = useRef(false);
-  useEffect(() => {
-    if (!tour || seen.current) return;
-    seen.current = true;
-    void trackTour("view", "ask");
-  }, [tour]);
   const q = query.replace(/\s+/g, " ").trim();
   const matches = (q ? people.filter((p) => matchesPerson(q, p.name, p.tag)) : people).slice(0, 12);
   const exact = people.some((p) => [p.name, p.tag, p.label].some((x) => x && x.replace(/\s+/g, "") === q.replace(/\s+/g, "")));
@@ -120,13 +108,6 @@ export function RequestForm({
   const typedNew = !who && !!q && !matches.length;
   const target: Who | null = who ?? (typedNew ? { kind: "new", name: q.slice(0, 40) } : null);
   const name = target ? (target.kind === "person" ? target.person.label : target.name) : "";
-  const targetKind = target?.kind;
-  const tracked = useRef(false);
-  useEffect(() => {
-    if (!tour || !made || tracked.current) return;
-    tracked.current = true;
-    void trackTour("ask", targetKind === "person" ? "person" : "new");
-  }, [tour, made, targetKind]);
   const choose = (p: AskPerson) => {
     setWho({ kind: "person", person: p });
     setTopics(topicsFor(p));
@@ -154,18 +135,6 @@ export function RequestForm({
   // 아직 못 보내는 까닭(짧게): 공유 아이콘을 누르면 이 글을 알린다
   const reason = pending ? null : !name.trim() ? (q && !typedNew ? "request.pickWho" : "request.needName") : !topics.length ? "request.pickOne" : null;
 
-  // 체험의 끝(시작하기): 마쳤다고 알리고 홈으로(서버가 이동시킨다)
-  const [leaving, startLeaving] = useTransition();
-  const endTour = () => {
-    const f = new FormData();
-    f.set("kind", "done");
-    f.set("source", "ask");
-    startLeaving(() => leaveTour(f));
-  };
-  // 체험이면 링크를 만든 순간 '시작하기'가 폼 맨 아래에 생기니 눈에 들어오게 가져온다
-  useEffect(() => {
-    if (tour && made) startRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [tour, made]);
   // 같은 사람·같은 항목인지(바뀌면 앞서 만든 링크는 두고 다음에 새로 만든다)
   const sig = JSON.stringify([target?.kind === "person" ? target.person.id : null, name, topics, question]);
   const sigRef = useRef(sig);
@@ -197,7 +166,6 @@ export function RequestForm({
     }
     const link = { url: r.url, text: r.text };
     stored.current = { sig: s, link };
-    setMade(true);
     return link;
   };
   const showToast = (next: Toast, ms: number) => {
@@ -464,14 +432,6 @@ export function RequestForm({
         )}
       </section>
 
-      {/* 체험의 끝: 링크를 만들었으면 시작하기로 마치고 홈으로 */}
-      {tour && made ? (
-        <div className="mx-4 mt-3.5">
-          <button ref={startRef} type="button" disabled={leaving} onClick={endTour} className="btn-outline btn-outline-lift w-full">
-            {t("tour.start")}
-          </button>
-        </div>
-      ) : null}
       {/* 아래에 붙는 단추가 없으니 마지막 카드가 하단 메뉴에 가리지 않게 화면 끝 여백 */}
       <div className="page-end" />
       {status}

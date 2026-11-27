@@ -2,7 +2,6 @@
 // 장식은 모두 aria-hidden + pointer-events-none이고 absolute다(자리는 className으로). 감싸는 요소에는 relative가 있어야 하고,
 // 새로 relative·transform을 씌우지 않도록 이미 relative인 카드(.card relative) 안에 넣는다.
 
-import { TornTape } from "./TornTape";
 import { u } from "@/lib/ui-scale";
 
 const INK = "#1F2340";
@@ -89,20 +88,6 @@ export function HandCircle({ w: wIn = 40, h: hIn = 36, stroke = 2.2, className =
   return (
     <svg aria-hidden="true" viewBox="0 0 44 40" width={w} height={h} fill="none" stroke={MANGO_DEEP} strokeWidth={stroke} strokeLinecap="round" className={`${PLACE} ${className}`}>
       <path d="M7 21 C5 10 15 4 24 5 C35 6 41 13 39 22 C37 31 27 36 18 34 C10 32 6 26 8.5 17" />
-    </svg>
-  );
-}
-
-/** 누를 곳(가운데 구슬)을 가리키는 손그림 화살표: 끝이 왼쪽 위를 향한다. 부모는 relative, 자리는 className으로 */
-export function PointArrow({ w: wIn = 76, className = "" }: { w?: number; className?: string }) {
-  const w = u(wIn);
-  return (
-    <svg aria-hidden="true" viewBox="0 0 72 72" width={w} height={w} fill="none" strokeLinecap="round" strokeLinejoin="round" className={`${PLACE} ${className}`}>
-      <g stroke={INK} strokeWidth="2.8">
-        <path d="M60 66 C 66 46 52 30 26 22" />
-        <path d="M35 36 L25 22 L41 19" />
-      </g>
-      <path d="M52 18 L58 12 M60 26 L68 24" stroke={MANGO_DEEP} strokeWidth="2.6" />
     </svg>
   );
 }
@@ -196,19 +181,5 @@ export function Highlight({ text, word }: { text: string; word: string }) {
       <span className="hl">{word}</span>
       {text.slice(i + word.length)}
     </>
-  );
-}
-
-/**
- * 체험(?tour=) 안내 상자(플래너 모양): 흰 종이 카드 + 남색 선, 윗변에 찢은 망고 테이프, 모서리에 별.
- * 키보드가 뜨면(html[data-kb]) 접는다. 안에는 순서(1 / 2)·제목·예시를 넣는다
- */
-export function TourNote({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
-  return (
-    <section aria-label={label} className={`card relative mx-4 flex flex-col items-center gap-0.5 px-5 pb-[16.2px] pt-[19.8px] text-center [html[data-kb]_&]:hidden ${className}`}>
-      <TornTape color="mango" w={78} h={24} rotate={-3} className="-top-3 left-1/2 -ml-[35.1px]" />
-      {children}
-      <Star size={22} rotate={14} className="-right-2 -top-2.5" />
-    </section>
   );
 }

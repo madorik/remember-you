@@ -1,12 +1,11 @@
 "use server";
 
 import { track } from "@/lib/track";
-import { emptySection, isSection, sanitizeAvatar, sanitizeOffsets, type Section } from "@readme/core";
+import { isSection, sanitizeAvatar, sanitizeOffsets, type Section } from "@readme/core";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { readCard, requireSession, writeSection } from "@/lib/data";
-import { safeNext } from "@/lib/site";
-import { tourStart } from "@/lib/tour";
+import { requireSession, writeSection } from "@/lib/data";
+import { validTimeZone } from "@/lib/onboarding";
 
 function json(v: FormDataEntryValue | null): unknown {
   try {
@@ -16,60 +15,15 @@ function json(v: FormDataEntryValue | null): unknown {
   }
 }
 
-function validTimeZone(v: unknown): string {
-  const tz = String(v ?? "");
-  try {
-    new Intl.DateTimeFormat("en", { timeZone: tz });
-    return tz.slice(0, 64) || "Asia/Seoul";
-  } catch {
-    return "Asia/Seoul";
-  }
-}
-
-function withNext(path: string, next: string): string {
-  return next && next !== "/home" ? `${path}?next=${encodeURIComponent(next)}` : path;
-}
-
-/** 아바타·이름 저장. 온보딩 1단계와 내 리드미의 "얼굴 고치기"가 같이 쓴다 */
+/** 내 프로필(얼굴·이름) 저장: 내 리드미의 "얼굴 고치기"가 쓴다 */
 export async function saveAvatar(form: FormData): Promise<void> {
-  const s = await requireSession({ onboarding: true });
+  const s = await requireSession();
   const name = String(form.get("name") ?? "").replace(/\s+/g, " ").trim().slice(0, 40);
   const avatar = sanitizeAvatar(json(form.get("avatar")));
   const tz = form.get("tz") ? validTimeZone(form.get("tz")) : null;
   await s.tx((q) => q("update profiles set display_name = $2, avatar = $3, time_zone = coalesce($4, time_zone) where id = $1", [s.user.id, name, JSON.stringify(avatar), tz]));
-  const next = safeNext(String(form.get("next") ?? ""));
-  if (form.get("mode") === "edit") {
-    revalidatePath("/me");
-    redirect("/me");
-  }
-  redirect(withNext("/onboarding/food", next));
-}
-
-/** 온보딩 2단계: 알레르기·안 먹는 것 + 매운맛 */
-export async function saveFood(form: FormData): Promise<void> {
-  const s = await requireSession({ onboarding: true });
-  await s.tx(async (q) => {
-    await writeSection(q, s.user.id, "safety", json(form.get("safety")));
-    const { card } = await readCard(q, s.user.id);
-    await writeSection(q, s.user.id, "taste", { ...(card.taste ?? emptySection("taste")), spicy: json(form.get("spicy")) });
-  });
-  redirect(withNext("/onboarding/birthday", safeNext(String(form.get("next") ?? ""))));
-}
-
-/** 온보딩 3단계: 생일 + 알림 시점, 그리고 온보딩 끝(그 뒤 말로 적기·물어보기 페이지로 옮겨 가며 설명하는 안내로). '나중에'면 생일은 건드리지 않는다 */
-export async function finishOnboarding(form: FormData): Promise<void> {
-  const s = await requireSession({ onboarding: true });
-  const later = form.get("later") === "1";
-  await s.tx(async (q) => {
-    const { card } = await readCard(q, s.user.id);
-    const base = card.dates ?? emptySection("dates");
-    await writeSection(q, s.user.id, "dates", { ...base, birthday: later ? base.birthday : json(form.get("birthday")) });
-    await q("update profiles set reminder_offsets = $2, onboarded_at = coalesce(onboarded_at, now()) where id = $1", [s.user.id, sanitizeOffsets(json(form.get("offsets")))]);
-  });
-  track("onboarding_done", { userId: s.user.id });
-  const next = safeNext(String(form.get("next") ?? ""));
-  // 홈으로 가는 가입이면 안내의 첫 페이지(말로 적기)로 보낸다. 초대 링크 등 다른 곳으로 가던 중이면 그곳으로 먼저 보낸다
-  redirect(next === "/home" ? tourStart() : next);
+  revalidatePath("/me");
+  redirect("/me");
 }
 
 export interface SaveState {

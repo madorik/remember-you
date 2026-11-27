@@ -1,4 +1,3 @@
-import Link from "@/components/AppLink";
 import { cancelInvite } from "@/app/actions/request";
 import { AppLockSetting, HolidaySetting, PendingButton, PushSetting, ReminderSetting, WebPushSetting } from "@/app/(app)/privacy/Settings";
 import { DeleteAccount } from "@/components/DeleteAccount";
@@ -12,7 +11,7 @@ import { qrShape } from "@/lib/qr";
 import { absoluteUrl } from "@/lib/site";
 import { makeT } from "@/lib/t";
 
-export function PrivacyView({ locale, isAnonymous, invites, localeChoice, appLock, pushEnabled, holidayReminders, reminderOffsets, ai, webPushKey }: PrivacyData) {
+export function PrivacyView({ locale, isAnonymous, invites, localeChoice, appLock, pushEnabled, holidayReminders, reminderOffsets, webPushKey }: PrivacyData) {
   const t = makeT(locale);
   // 앱 공유하기: 보는 사람 기기에 맞는 스토어로 이어 주는 주소(/get). QR은 서버에서 모양만 만들어 넘긴다
   const shareUrl = absoluteUrl("/get?from=share");
@@ -72,10 +71,6 @@ export function PrivacyView({ locale, isAnonymous, invites, localeChoice, appLoc
               <ReminderSetting locale={locale} offsets={reminderOffsets} />
             </div>
           ) : null}
-          <Link href={ai ? "/voice?tour=1" : "/request?tour=1"} className="flex min-h-[40.5px] items-center gap-3 border-t border-dashed border-ink/30">
-            <span className="flex-1 text-[13.5px]">{t("privacy.replayIntro")}</span>
-            <Icon name="chevron" size={15} strokeWidth={2} className="shrink-0 text-muted" />
-          </Link>
           <ShareAppRow locale={locale} url={shareUrl} qr={qrShape(shareUrl)} />
         </div>
       </section>

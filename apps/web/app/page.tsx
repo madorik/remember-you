@@ -41,7 +41,7 @@ export default async function Start({ searchParams }: { searchParams: Promise<{ 
   const next = safeNext(rawNext);
   // 세션 쿠키가 있고 ?next가 없으면 proxy가 먼저 /home으로 보낸다. 여기는 ?next가 있거나 쿠키가 낡은 때
   const session = await getSession();
-  if (session) redirect(session.profile.onboardedAt ? next : `/onboarding/avatar${next !== "/home" ? `?next=${encodeURIComponent(next)}` : ""}`);
+  if (session) redirect(session.profile.onboardedAt ? next : `/onboarding${next !== "/home" ? `?next=${encodeURIComponent(next)}` : ""}`);
 
   const locale = await requestLocale();
   const t = makeT(locale);

@@ -8,7 +8,9 @@ import { aiConfigured, classifyCapture, classifyImport, classifyImportImage, typ
 import { cleanCaptureItems, tidyImportItems, type CapturePerson } from "@/lib/capture-ai";
 import { findLeftovers } from "@/lib/capture-leftover";
 import { holdsForConfirm, nameKey, resolveCapture, resolveSaved, sameSectionValue, tidyName, whoOf, type CaptureTarget, type ResolvedCapture } from "@/lib/capture-target";
+import { markOnboarded } from "@/lib/onboarding";
 import { refundAi, reserveAi } from "@/lib/ai-quota";
+import type { Q } from "@/lib/db";
 import { displayName, listNotes, listPeopleLite, readCard, readContactCard, requireSession, sealNote, writeContactSection, writeSection, type Note, type Person, type Session } from "@/lib/data";
 import { LIMITS } from "@/lib/data-core";
 import { isUuid } from "@/lib/uuid";
@@ -43,17 +45,12 @@ export interface CaptureState {
   lines: CaptureLine[];
   undo: UndoOp[];
   error: "ai_off" | "failed" | "nothing" | "limit" | null;
-  /**
-   * 바로 적지 않고 한 번 더 확인받을 줄: 알레르기·못 먹는 것·식단을 지우거나 바꾸는 말(holdsForConfirm).
-   * 화면이 확인을 받으면 이 줄의 item을 saveCapture로 보낸다(그때 되돌리기도 생긴다)
-   */
-  held?: CaptureDraftLine[];
 }
 
 /**
- * 확인 화면의 한 줄: 화면에 보일 한 줄 + 그 줄이 된 항목(고친 값은 이 항목을 고쳐 저장 단계로 되돌려 보낸다)
+ * 확인 화면의 한 줄(메모 가져오기): 화면에 보일 한 줄 + 그 줄이 된 항목(고친 값은 이 항목을 고쳐 저장 단계로 되돌려 보낸다)
  * target: 누구의 이야기로 정했나(같은 이름이 여럿이라 못 정했으면 pick). spoken: 말한 이름. candidates: 같은 이름 후보(contactId)
- * idx: 이 줄이 된 항목이 보낸 목록에서 몇 번째인가(미리 보기가 줄을 항목에 맞춰 돌려준다)
+ * idx: 이 줄이 된 항목이 보낸 목록에서 몇 번째인가
  */
 export interface CaptureDraftLine extends CaptureLine {
   item: CaptureItem;
@@ -61,21 +58,6 @@ export interface CaptureDraftLine extends CaptureLine {
   target: CaptureTarget;
   spoken: string;
   candidates: string[];
-}
-
-/** 대상·항목을 바꾼 줄을 다시 따져 본 결과(이미 알고 있어요 표시만). 줄이 빠졌으면 저장해도 아무것도 안 적히는 줄이다 */
-export interface CapturePreview {
-  /** false면 따져 보지 못했다(그대로 둔다) */
-  ok: boolean;
-  lines: { idx: number; same: boolean }[];
-}
-
-/** 나누기만 한 초안(아직 아무것도 저장하지 않았다) */
-export interface CaptureDraft {
-  lines: CaptureDraftLine[];
-  error: CaptureState["error"];
-  /** 어느 줄에도 안 들어간 안전한 말(알레르기·못 먹는 것) — 화면이 '메모로 남기기·다시 하기'를 보인다. 없으면 생략 */
-  leftover?: string[];
 }
 
 const failed = (error: NonNullable<CaptureState["error"]>) => ({ error }) as const;
@@ -88,8 +70,8 @@ const failed = (error: NonNullable<CaptureState["error"]>) => ({ error }) as con
  */
 const asCapture = (p: Person): CapturePerson => ({ id: p.contactId, name: p.name, nickname: p.nickname });
 
-async function classify(raw: string, aboutId?: string, picked?: { id: string; label: string }[]) {
-  const s = await requireSession();
+async function classify(raw: string, aboutId?: string, picked?: { id: string; label: string }[], given?: Session) {
+  const s = given ?? (await requireSession());
   const { locale } = s.profile;
   const said = clip(String(raw ?? "").replace(/\s+/g, " ").trim(), 500).trim();
   if (!said) return failed("nothing");
@@ -266,157 +248,126 @@ function committed(s: Session) {
 /** 확인 화면에 보일 줄(저장 단계가 쓰는 항목은 빼고 화면용 줄만) */
 const plain = (l: CaptureDraftLine): CaptureLine => ({ who: l.who, isNew: l.isNew, op: l.op, same: l.same, field: l.field, value: l.value, href: l.href });
 
-/**
- * 말(글) 한 번을 나눠 바로 사람 기록·내 리드미·메모에 넣는다(되돌리기로 취소). 그 사람 화면의 한 줄 적기가 쓴다
- * aboutId·picked는 classify와 같다
- */
-export async function captureNote(raw: string, aboutId?: string, picked?: { id: string; label: string }[]): Promise<CaptureState> {
-  const c = await classify(raw, aboutId, picked);
-  if ("error" in c) return { lines: [], undo: [], error: c.error };
-  let done;
-  let held: CaptureDraftLine[] = [];
-  try {
-    const rows = resolveCapture(c.items, c.people.map(asCapture), { detect: false });
-    // 알레르기·못 먹는 것·식단을 지우거나 바꾸는 말은 바로 적지 않는다: 말을 잘못 알아들으면 알레르기가 조용히 사라질 수 있다. 나머지는 바로 적는다
-    const hold = rows.filter((r) => holdsForConfirm(r.item));
-    done = await apply(c.s, c.people, rows.filter((r) => !hold.includes(r)), true);
-    // 확인받을 줄은 아무것도 쓰지 않고 어떻게 바뀔지만 만든다(이미 그렇게 되어 있는 줄은 확인할 게 없다)
-    if (hold.length) held = (await apply(c.s, c.people, hold, false)).lines.filter((l) => !l.same);
-  } catch {
-    return { lines: [], undo: [], error: "failed" };
-  }
-  if (!done.lines.length && !held.length) return { lines: [], undo: [], error: "nothing" };
-  if (done.lines.length) committed(c.s);
-  return { lines: done.lines.map(plain), undo: done.undo, error: null, ...(held.length ? { held } : {}) };
-}
-
-/** 메모 저장 결과: ids는 실제로 메모가 들어간 사람(contactId) */
+/** 메모 저장 결과 */
 export interface MemoResult {
   ok: boolean;
   error: "nothing" | "failed" | null;
+  /** 실제로 메모가 들어간 사람(contactId): 고른 사람이 고른 순서대로, 이번에 새로 더한 사람이 뒤에 */
   ids: string[];
+  /** 이번에 새로 더한 사람(contactId와 이름) */
+  created: { id: string; name: string }[];
 }
 
+/** 한 번에 새로 더할 수 있는 사람 수 */
+const NEW_PEOPLE_MAX = 5;
+
 /**
- * 메모 쓰기 화면의 저장: 적은 글을 고른 사람마다 메모로 바로 남기고 곧바로 돌려준다(사람마다 한 건, 글은 그대로).
- * 그 뒤 응답을 보낸 다음(after) AI가 그 글을 그 사람의 항목(좋아하는 것·사이즈 …)으로 정리해 더한다 — 메모는 이미 저장됐으니
- * AI가 꺼져 있거나 하루 한도에 닿거나 실패하면 정리만 안 된다. 이때 정리는 고른 사람에게 더하기·바꾸기만: 새 사람은 만들지 않고,
- * 메모 칸(통째로 이미 저장했다)과 알레르기·못 먹는 것을 지우거나 바꾸는 줄(확인이 필요한 줄)은 건너뛴다
+ * 메모 저장 본체(메모 쓰기와 온보딩의 첫 메모가 같이 쓴다): 글을 고른 사람마다 메모로 남기고, 아직 없는 사람(newNames)은 사람 더하기와 같은 길로 만들어 그 사람 메모로 남긴다 — 한 트랜잭션.
+ * 그 뒤 응답을 보낸 다음(after) AI가 그 글을 그 사람들의 항목으로 정리한다(organizeMemo).
+ * extra는 같은 트랜잭션 안에서 메모가 하나라도 들어갔을 때만 한 번 더 부르는 일(온보딩 마침)
  */
-export async function saveMemo(rawText: string, rawIds: string[], via: "voice" | "text"): Promise<MemoResult> {
-  const none: MemoResult = { ok: false, error: "nothing", ids: [] };
-  const s = await requireSession();
+async function commitMemo(s: Session, rawText: string, rawIds: string[], via: "voice" | "text", rawNames: string[], extra?: (q: Q) => Promise<void>): Promise<MemoResult> {
+  const none: MemoResult = { ok: false, error: "nothing", ids: [], created: [] };
   const text = clip(String(rawText ?? "").trim(), 1000).trim();
-  const wanted = (Array.isArray(rawIds) ? rawIds : []).filter((id): id is string => typeof id === "string" && isUuid(id));
-  if (!text || !wanted.length) return none;
-  let people: Person[];
-  let saved: string[];
+  const wanted = [...new Set((Array.isArray(rawIds) ? rawIds : []).filter((id): id is string => typeof id === "string" && isUuid(id)))];
+  // 새 사람 이름: 다듬고(길이 한도), 같은 이름은 한 명으로, 한 번에 NEW_PEOPLE_MAX명까지
+  const seen = new Set<string>();
+  const names = (Array.isArray(rawNames) ? rawNames : [])
+    .filter((n): n is string => typeof n === "string")
+    .map(tidyName)
+    .filter((n) => {
+      const key = nameKey(n);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, NEW_PEOPLE_MAX);
+  if (!text || (!wanted.length && !names.length)) return none;
+  let saved: string[] = [];
+  const created: { id: string; name: string }[] = [];
   try {
-    people = await listPeopleLite(s);
-    const mine = new Set(people.map((p) => p.contactId));
-    const ids = [...new Set(wanted)].filter((id) => mine.has(id));
-    if (!ids.length) return none;
     saved = await s.tx(async (q) => {
       const done: string[] = [];
-      for (const id of ids) {
+      // 내 사람만(RLS가 남의 줄은 안 보여 준다). 고른 순서를 지킨다
+      const mine = wanted.length ? new Set((await q<{ id: string }>("select id from contacts where user_id = $1 and id = any($2::uuid[])", [s.user.id, wanted])).map((r) => r.id)) : new Set<string>();
+      for (const id of wanted.filter((x) => mine.has(x))) {
         // 한 사람에게 메모는 LIMITS.notes개까지(넘으면 그 사람은 건너뛴다)
         const n = await q.one<{ n: number }>("select count(*)::int as n from notes where contact_id = $1", [id]);
         if ((n?.n ?? 0) >= LIMITS.notes) continue;
         await q("insert into notes (author_id, contact_id, label, payload) values ($1, $2, '', $3)", [s.user.id, id, JSON.stringify(sealNote(s.user.id, id, text))]);
         done.push(id);
       }
+      if (names.length) {
+        // 사람 수 한도(LIMITS.people)를 지키며 새 사람을 더한다(말로 적기·사람 더하기와 같다): 같은 사람이 동시에 두 번 적어도 한도가 어긋나지 않게 줄 세운다
+        await q("select pg_advisory_xact_lock(hashtext($1))", [`capture:${s.user.id}`]);
+        let total = (await q.one<{ n: number }>("select count(*)::int as n from contacts where user_id = $1", [s.user.id]))?.n ?? 0;
+        for (const name of names) {
+          if (total >= LIMITS.people) break;
+          total++;
+          const c = await q.one<{ id: string }>("insert into contacts (user_id, nickname) values ($1, $2) returning id", [s.user.id, name]);
+          await q("insert into contact_cards (contact_id, author_id) values ($1, $2)", [c!.id, s.user.id]);
+          await q("insert into notes (author_id, contact_id, label, payload) values ($1, $2, '', $3)", [s.user.id, c!.id, JSON.stringify(sealNote(s.user.id, c!.id, text))]);
+          created.push({ id: c!.id, name });
+          done.push(c!.id);
+        }
+      }
+      if (done.length) await extra?.(q);
       return done;
     });
   } catch {
-    return { ok: false, error: "failed", ids: [] };
+    return { ok: false, error: "failed", ids: [], created: [] };
   }
-  if (!saved.length) return { ok: false, error: "failed", ids: [] };
+  if (!saved.length) return { ok: false, error: "failed", ids: [], created: [] };
   track("note_add", { userId: s.user.id, source: via });
+  for (let i = 0; i < created.length; i++) track("person_add", { userId: s.user.id, source: "memo" });
   revalidatePath("/people", "layout");
+  if (created.length) revalidatePath("/home");
   // 응답을 보낸 뒤에 정리한다(서버 액션 안의 after는 요청 정보·세션을 그대로 쓸 수 있다)
-  const picked = saved.map((id) => people.find((p) => p.contactId === id)).filter((p): p is Person => !!p);
-  after(() => organizeMemo(text, picked));
-  return { ok: true, error: null, ids: saved };
+  after(() => organizeMemo(s, text, saved));
+  return { ok: true, error: null, ids: saved, created };
 }
 
-/** 저장한 메모를 고른 사람들의 항목으로 정리한다(실패는 삼킨다: 메모는 이미 저장됐다) */
-async function organizeMemo(text: string, picked: Person[]): Promise<void> {
+/**
+ * 메모 쓰기 화면의 저장: 적은 글을 고른 사람마다 메모로 바로 남기고(사람마다 한 건, 글은 그대로) 곧바로 돌려준다. 아직 없는 사람은 이름(newNames)으로 새로 더한다.
+ * AI 정리(organizeMemo)는 응답 뒤: 메모는 이미 저장됐으니 AI가 꺼져 있거나 하루 한도에 닿거나 실패하면 정리만 안 된다. 이때 정리는 고른 사람에게 더하기·바꾸기만: 새 사람은 만들지 않고(고른 사람들뿐),
+ * 메모 칸(통째로 이미 저장했다)과 알레르기·못 먹는 것을 지우거나 바꾸는 줄(확인이 필요한 줄)은 건너뛴다
+ */
+export async function saveMemo(rawText: string, rawIds: string[], via: "voice" | "text", newNames: string[] = []): Promise<MemoResult> {
+  const s = await requireSession();
+  return commitMemo(s, rawText, rawIds, via, newNames);
+}
+
+/**
+ * 온보딩의 첫 메모 저장: saveMemo와 같고, 메모가 들어가면 같은 트랜잭션에서 온보딩을 마친다(markOnboarded: 아직 온보딩 전인 사람만 부를 수 있다).
+ * AI가 꺼져 있어도 메모는 저장된다(정리만 건너뛴다). tz는 그 사람 기기의 시간대
+ */
+export async function saveFirstMemo(rawText: string, rawIds: string[], via: "voice" | "text", newNames: string[], tz: string): Promise<MemoResult> {
+  const s = await requireSession({ onboarding: true });
+  const first = !s.profile.onboardedAt;
+  const r = await commitMemo(s, rawText, rawIds, via, newNames, (q) => markOnboarded(q, s.user.id, tz));
+  if (r.ok && first) track("onboarding_done", { userId: s.user.id, source: via === "voice" ? "memo_voice" : "memo_text" });
+  return r;
+}
+
+/** 저장한 메모를 그 사람들의 항목으로 정리한다(실패는 삼킨다: 메모는 이미 저장됐다). 새 사람이 방금 만들어졌으니 사람 목록은 여기서 처음 읽는다 */
+async function organizeMemo(s: Session, text: string, ids: string[]): Promise<void> {
   try {
-    const ids = picked.map((p) => p.contactId);
+    const all = await listPeopleLite(s);
+    const picked = ids.map((id) => all.find((p) => p.contactId === id)).filter((p): p is Person => !!p);
+    if (!picked.length) return;
+    const pickedIds = picked.map((p) => p.contactId);
     // 여러 사람이면 글 앞에 @이름을 붙여 누구 이야기인지 짚는다(한 사람이면 그 사람 화면에서 적은 것처럼)
-    const said = ids.length === 1 ? text : `${picked.map((p) => `@${displayName(p)}`).join(" ")} ${text}`;
-    const c = await classify(said, ids.length === 1 ? ids[0] : undefined, picked.map((p) => ({ id: p.contactId, label: displayName(p) })));
+    const said = pickedIds.length === 1 ? text : `${picked.map((p) => `@${displayName(p)}`).join(" ")} ${text}`;
+    const c = await classify(said, pickedIds.length === 1 ? pickedIds[0] : undefined, picked.map((p) => ({ id: p.contactId, label: displayName(p) })), s);
     if ("error" in c) return;
     const rows = resolveCapture(c.items, c.people.map(asCapture), { detect: true, certain: c.certain }).filter(
-      (r) => r.target.kind === "person" && ids.includes(r.target.id) && r.item.target !== "memo" && !holdsForConfirm(r.item),
+      (r) => r.target.kind === "person" && pickedIds.includes(r.target.id) && r.item.target !== "memo" && !holdsForConfirm(r.item),
     );
     if (!rows.length) return;
     const done = await apply(c.s, c.people, rows, true);
     if (done.lines.length) committed(c.s);
   } catch {
     /* 정리하지 못해도 메모는 그대로 */
-  }
-}
-
-/**
- * 말로 적기 1단계 — 나누기만 한다: AI가 (사람 · 칸 · 값)으로 나눈 결과를 아무것도 저장하지 않고 초안으로 돌려준다.
- * 화면은 초안의 값을 고치게 하고, 저장 단계(saveCapture)에 고친 항목을 되돌려 보낸다
- */
-export async function draftCapture(raw: string, aboutId?: string, picked?: { id: string; label: string }[], only = false): Promise<CaptureDraft> {
-  const c = await classify(raw, aboutId, picked);
-  if ("error" in c) return { lines: [], error: c.error };
-  let done;
-  try {
-    // only: 사람 화면에서 온 말(?to=)이라 모든 줄이 aboutId 사람의 기록이다(누구 이야기인지 따지지 않는다). 내 사람이 아니면 아무 줄도 만들지 않는다
-    const target = only && aboutId ? c.people.find((p) => p.contactId === aboutId) : undefined;
-    const rows: ResolvedCapture[] = target
-      ? c.items.map((item, idx) => ({ idx, item, target: { kind: "person", id: target.contactId }, spoken: displayName(target), candidates: [] }))
-      : // 같은 이름이 여럿이면 어느 쪽인지 고르게(pick) 하고, 후보를 같이 돌려준다
-        resolveCapture(c.items, c.people.map(asCapture), { detect: true, certain: c.certain });
-    done = await apply(c.s, c.people, rows, false);
-  } catch {
-    return { lines: [], error: "failed" };
-  }
-  if (!done.lines.length) return { lines: [], error: "nothing" };
-  const leftover = findLeftovers(c.said, done.lines);
-  return { lines: done.lines, error: null, ...(leftover.length ? { leftover } : {}) };
-}
-
-/**
- * 말로 적기 2단계 — 저장: 초안에서 대상을 정하고 값을 고치고 줄을 뺀 항목들을 실제 기록에 넣는다(기존 합치기·'이미 알고 있어요' 판단·새 사람 더하기를 그대로).
- * 항목의 who가 정해진 대상이다: 내 사람(contactId)이거나 새 사람(이름). contactId가 내 사람이 아니면 그 줄은 건너뛰고(새 사람으로 둔갑시키지 않는다),
- * 새 사람은 같은 이름당 한 명만 만든다. 화면에서 온 값이라 모양을 다시 맞추고, AI는 부르지 않는다. 내 기록만 고칠 수 있다(RLS)
- */
-export async function saveCapture(raw: unknown): Promise<CaptureState> {
-  const s = await requireSession();
-  const items = cleanCaptureItems(raw);
-  if (!items.length) return { lines: [], undo: [], error: "nothing" };
-  let done;
-  try {
-    const people = await listPeopleLite(s);
-    done = await apply(s, people, resolveSaved(items, people.map(asCapture)), true);
-  } catch {
-    return { lines: [], undo: [], error: "failed" };
-  }
-  if (!done.lines.length) return { lines: [], undo: [], error: "nothing" };
-  committed(s);
-  return { lines: done.lines.map(plain), undo: done.undo, error: null };
-}
-
-/**
- * 초안에서 줄의 대상·항목을 바꾼 뒤 '이미 알고 있어요'를 다시 따진다(아무것도 저장하지 않고, AI도 부르지 않는다).
- * 보낸 항목 순서대로 idx를 돌려주고, 줄이 안 오면 저장해도 적히지 않는 줄이다
- */
-export async function previewCapture(raw: unknown): Promise<CapturePreview> {
-  const s = await requireSession();
-  const items = cleanCaptureItems(raw);
-  if (!items.length) return { ok: false, lines: [] };
-  try {
-    const people = await listPeopleLite(s);
-    const done = await apply(s, people, resolveSaved(items, people.map(asCapture)), false);
-    return { ok: true, lines: done.lines.map((l) => ({ idx: l.idx, same: !!l.same })) };
-  } catch {
-    return { ok: false, lines: [] };
   }
 }
 

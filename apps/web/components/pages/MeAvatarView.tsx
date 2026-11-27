@@ -7,7 +7,7 @@ export function MeAvatarView({ locale, name, avatar, today, birthday }: MeAvatar
   const t = makeT(locale);
   return (
     <div className="flex flex-1 flex-col">
-      <AvatarStep locale={locale} name={name} avatar={avatar} next="/me" mode="edit" title={t("profile.title")} back="/me" today={today} birthday={birthday} />
+      <AvatarStep locale={locale} name={name} avatar={avatar} title={t("profile.title")} back="/me" today={today} birthday={birthday} />
     </div>
   );
 }

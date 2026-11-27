@@ -113,16 +113,14 @@ export interface FunnelStep {
   n: number;
 }
 
-/** 가입 직후 체험(말로·글로 적기 → 물어보기)에서 한 것: 적은 방식·건너뜀·실패(가입한 사람 수) */
-export interface TourStats {
+/** 온보딩 첫 메모를 저장한 사람이 어떻게 적었나, 건너뛴 사람(가입한 사람 수) */
+export interface FirstMemoStats {
   byVoice: number;
   byText: number;
-  skipVoice: number;
-  skipAsk: number;
-  failed: number;
+  skipped: number;
 }
 
-async function funnel(start: string, end: string): Promise<{ steps: FunnelStep[]; onboarding: FunnelStep[]; tour: TourStats } | null> {
+async function funnel(start: string, end: string): Promise<{ steps: FunnelStep[]; onboarding: FunnelStep[]; firstMemo: FirstMemoStats } | null> {
   return safe(async (q) => {
     const r = await q.one(
       `with c as (select u.id from "user" u where ${REAL} and u."createdAt" >= $1::timestamptz and u."createdAt" < $2::timestamptz),
@@ -136,19 +134,11 @@ async function funnel(start: string, end: string): Promise<{ steps: FunnelStep[]
          (select count(distinct i.inviter_id) from invites i join c on c.id = i.inviter_id where i.used_at is not null) as answered,
          (select count(distinct user_id) from ev where name = 'gift_picks_view') as gift_view,
          (select count(distinct user_id) from ev where name = 'gift_click') as gift_click,
-         (select count(distinct user_id) from ev where name = 'page_view' and path = '/onboarding/avatar') as ob1,
-         (select count(distinct user_id) from ev where name = 'page_view' and path = '/onboarding/food') as ob2,
-         (select count(distinct user_id) from ev where name = 'page_view' and path = '/onboarding/birthday') as ob3,
-         (select count(distinct user_id) from ev where name = 'tour_view' and source = 'voice') as tv_voice,
-         (select count(distinct user_id) from ev where name = 'tour_capture') as tc,
-         (select count(distinct user_id) from ev where name = 'tour_capture' and source = 'voice') as tc_voice,
-         (select count(distinct user_id) from ev where name = 'tour_capture' and source = 'text') as tc_text,
-         (select count(distinct user_id) from ev where name = 'tour_view' and source = 'ask') as tv_ask,
-         (select count(distinct user_id) from ev where name = 'tour_ask') as ta,
-         (select count(distinct user_id) from ev where name = 'tour_done') as td,
-         (select count(distinct user_id) from ev where name = 'tour_skip' and source = 'voice') as ts_voice,
-         (select count(distinct user_id) from ev where name = 'tour_skip' and source = 'ask') as ts_ask,
-         (select count(distinct user_id) from ev where name = 'tour_fail') as tf`,
+         (select count(distinct user_id) from ev where name = 'page_view' and path = '/onboarding') as ob_open,
+         (select count(distinct user_id) from ev where name = 'onboarding_done' and source like 'memo%') as ob_memo,
+         (select count(distinct user_id) from ev where name = 'onboarding_done' and source = 'memo_voice') as ob_voice,
+         (select count(distinct user_id) from ev where name = 'onboarding_done' and source = 'memo_text') as ob_text,
+         (select count(distinct user_id) from ev where name = 'onboarding_skip') as ob_skip`,
       [start, end],
     );
     return {
@@ -164,23 +154,10 @@ async function funnel(start: string, end: string): Promise<{ steps: FunnelStep[]
       ],
       onboarding: [
         { key: "signup", label: "가입", n: num(r?.signup) },
-        { key: "ob1", label: "1 · 얼굴", n: num(r?.ob1) },
-        { key: "ob2", label: "2 · 음식", n: num(r?.ob2) },
-        { key: "ob3", label: "3 · 생일", n: num(r?.ob3) },
-        { key: "done", label: "온보딩 끝", n: num(r?.onboarded) },
-        { key: "tv_voice", label: "체험 ① 적기 화면 봄", n: num(r?.tv_voice) },
-        { key: "tc", label: "체험 ① 말로·글로 적음", n: num(r?.tc) },
-        { key: "tv_ask", label: "체험 ② 물어보기 화면 봄", n: num(r?.tv_ask) },
-        { key: "ta", label: "체험 ② 링크 만듦", n: num(r?.ta) },
-        { key: "td", label: "체험 마침", n: num(r?.td) },
+        { key: "ob_open", label: "첫 메모 화면 열기", n: num(r?.ob_open) },
+        { key: "ob_memo", label: "첫 메모 저장", n: num(r?.ob_memo) },
       ],
-      tour: {
-        byVoice: num(r?.tc_voice),
-        byText: num(r?.tc_text),
-        skipVoice: num(r?.ts_voice),
-        skipAsk: num(r?.ts_ask),
-        failed: num(r?.tf),
-      },
+      firstMemo: { byVoice: num(r?.ob_voice), byText: num(r?.ob_text), skipped: num(r?.ob_skip) },
     };
   });
 }

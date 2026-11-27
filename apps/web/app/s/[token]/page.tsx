@@ -47,7 +47,7 @@ export default async function ReceiveSharePage({ params }: { params: Promise<{ t
 
   // 로그인 전: 앱에서 열기·앱 받기·로그인(받은 내용은 로그인한 뒤에야 보인다)
   if (!session || !session.profile.onboardedAt) {
-    if (session) redirect("/onboarding/avatar");
+    if (session) redirect(`/onboarding?next=${encodeURIComponent(`/s/${token}`)}`);
     const next = encodeURIComponent(`/s/${token}`);
     return message(
       t("share.in.title"),

@@ -8,6 +8,7 @@ import { ViewBeacon } from "@/app/(app)/people/[id]/ViewBeacon";
 import { PersonBook } from "@/app/(app)/people/[id]/PersonBook";
 import { ResendLink } from "@/components/ResendLink";
 import { TagEditor } from "@/app/(app)/people/[id]/TagEditor";
+import { WelcomeToast } from "@/app/(app)/people/[id]/WelcomeToast";
 import { cancelInvite } from "@/app/actions/request";
 import { Avatar } from "@/components/Avatar";
 import { lunarDots } from "@/components/BirthdayLine";
@@ -79,6 +80,8 @@ export function PersonView({ locale, back, today, person: p, name, notes, tab, f
       </div>
 
       <ViewBeacon contactId={p.contactId} />
+      {/* 온보딩에서 첫 메모를 저장하고 막 왔을 때(?welcome=1) 한 번 뜨는 알림 */}
+      <WelcomeToast text={t("person.welcome", { name: displayName })} />
       {p.askOff ? (
         <div className="px-4 pt-2">
           <AskOnButton contactId={p.contactId} label={t("person.askOn")} />

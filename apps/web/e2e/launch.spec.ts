@@ -29,14 +29,14 @@ test.describe("앱 첫 실행 로딩 덮개", () => {
 
     // 사라진 뒤에는 눌러진다(데모 가입 → 온보딩)
     await signIn(page);
-    await expect(page).toHaveURL(/\/onboarding\/avatar/);
+    await expect(page).toHaveURL(/\/onboarding$/);
     await expect(page.locator(".ry-boot")).toHaveCount(0);
 
     // 전체 새로고침해도 이 앱 실행 중에는 처음부터 숨겨져 있다
     await page.reload({ waitUntil: "commit" });
     await expect(page.locator("html")).toHaveClass(/ry-seen/);
     await expect(page.locator(".ry-boot")).toBeHidden();
-    await expect(page.getByLabel("부를 이름")).toBeVisible();
+    await expect(page.getByRole("button", { name: "건너뛰기" })).toBeVisible();
   });
 });
 
