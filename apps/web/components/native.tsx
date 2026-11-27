@@ -6,7 +6,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExter
 import { Wordmark } from "./chrome";
 import { Icon } from "./marks";
 
-// 앱(Capacitor) 안에서만 하는 일: 푸시 토큰 등록, 기기 로컬 생일 알림, Face ID·지문 앱 잠금, 링크로 앱 열기.
+// 앱(Capacitor) 안에서만 하는 일: 푸시 토큰 등록, 기기 로컬 생일 알림, Face ID·지문 앱 잠금, 링크로 앱 열기, 다른 앱에서 공유 받은 글 넘기기.
 // 웹 브라우저에서는 아무것도 하지 않는다. (낱말 사전을 끌어오지 않게 잠금 화면 문구는 서버가 번역해 prop으로 준다)
 
 export function isNativeApp(): boolean {
@@ -55,6 +55,32 @@ const MAX_LOCAL = 60;
 /** 앱 안 주소만(//로 시작하는 바깥 주소는 막는다) */
 function appPath(p: unknown): p is string {
   return typeof p === "string" && /^\/(?!\/)/.test(p);
+}
+
+// ── 다른 앱에서 공유 받은 글 ──────────────────────────────────────
+// 삼성 노트·Google Keep·메모 앱 등의 "공유 → 기억해유"로 온 글은 앱 안쪽(ShareInbox 플러그인: 안드로이드 ShareInboxPlugin.java, iOS 공유 확장 + ShareInboxPlugin.swift)에 쌓인다.
+// take()로 꺼내(꺼내면 비워진다) 메모 쓰는 화면이 읽는 sessionStorage에 두고 /voice?shared=1 로 연다. 글은 주소·서버로 보내지 않고 로그에도 남기지 않는다.
+const SHARED_MEMO_KEY = "rm_shared_memo";
+
+interface ShareInboxPlugin {
+  take(): Promise<{ text: string | null }>;
+  addListener(event: "shared", listener: () => void): Promise<{ remove: () => Promise<void> }>;
+}
+
+let shareInbox: Promise<ShareInboxPlugin | null> | null = null;
+
+/** 공유 받은 편지함 플러그인(공유 받기를 넣기 전에 만든 앱 빌드에는 없어서 null). 한 번만 등록한다 */
+function loadShareInbox(): Promise<ShareInboxPlugin | null> {
+  shareInbox ??= (async () => {
+    try {
+      const { Capacitor, registerPlugin } = await import("@capacitor/core");
+      if (!Capacitor.isPluginAvailable("ShareInbox")) return null;
+      return registerPlugin<ShareInboxPlugin>("ShareInbox");
+    } catch {
+      return null;
+    }
+  })();
+  return shareInbox;
 }
 
 // ── 푸시 알림 ─────────────────────────────────────────────────────
@@ -239,7 +265,8 @@ export function NativeBridge({
     void (async () => {
       const { App } = await import("@capacitor/app");
       const h = await App.addListener("appUrlOpen", ({ url }) => {
-        if (url.startsWith("kr.readme.app://auth")) return;
+        // auth는 로그인 되돌아오기, share는 공유 받은 글(아래 effect가 받는다): 둘 다 화면 주소가 아니다
+        if (url.startsWith("kr.readme.app://auth") || url.startsWith("kr.readme.app://share")) return;
         try {
           const u = new URL(url);
           const path = u.protocol.startsWith("http") ? u.pathname + u.search : `/${u.host}${u.pathname}${u.search}`;
@@ -254,6 +281,57 @@ export function NativeBridge({
     return () => {
       gone = true;
       remove?.();
+    };
+  }, []);
+
+  // 다른 앱에서 공유 받은 글: 앱이 켜질 때, 앱 안쪽의 "shared" 알림이 올 때, 앱으로 돌아올 때, kr.readme.app://share 로 열릴 때
+  // 받은 편지함에서 꺼내(없으면 아무 일도 없다) 메모 쓰는 화면으로 넘긴다. 같은 공유로 여러 번 불려도 꺼내는 건 한 번뿐이다
+  useEffect(() => {
+    if (!isNativeApp()) return;
+    let gone = false;
+    const handles: { remove: () => Promise<void> }[] = [];
+    const take = async (plugin: ShareInboxPlugin) => {
+      try {
+        const { text } = await plugin.take();
+        if (typeof text !== "string" || !text.trim()) return;
+        try {
+          sessionStorage.setItem(SHARED_MEMO_KEY, text);
+        } catch {
+          /* 저장소를 못 쓰면 빈 채로 연다 */
+        }
+        routerRef.current.push("/voice?shared=1");
+      } catch {
+        /* 꺼내지 못하면 넘어간다 */
+      }
+    };
+    void (async () => {
+      try {
+        const plugin = await loadShareInbox();
+        if (!plugin || gone) return;
+        const { App } = await import("@capacitor/app");
+        const added = await Promise.all([
+          plugin.addListener("shared", () => void take(plugin)),
+          App.addListener("appStateChange", ({ isActive }) => {
+            if (isActive) void take(plugin);
+          }),
+          App.addListener("appUrlOpen", ({ url }) => {
+            if (url.startsWith("kr.readme.app://share")) void take(plugin);
+          }),
+        ]);
+        if (gone) {
+          for (const h of added) void h.remove();
+          return;
+        }
+        handles.push(...added);
+        // 알림을 달아 둔 뒤에 한 번 꺼낸다(앱이 공유로 켜졌으면 글이 이미 들어와 있다)
+        void take(plugin);
+      } catch {
+        /* 공유 받기가 없는 앱이면 넘어간다 */
+      }
+    })();
+    return () => {
+      gone = true;
+      for (const h of handles) void h.remove();
     };
   }, []);
 

@@ -166,9 +166,10 @@ public class SpeechRecognitionPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 }
 
-/// 앱 첫 화면: Capacitor 화면에 위의 플러그인을 붙인다(Main.storyboard가 이 클래스를 쓴다)
+/// 앱 첫 화면: Capacitor 화면에 위의 플러그인과 공유 받은 편지함(ShareInboxPlugin.swift)을 붙인다(Main.storyboard가 이 클래스를 쓴다)
 class MainViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(SpeechRecognitionPlugin())
+        bridge?.registerPluginInstance(ShareInboxPlugin())
     }
 }

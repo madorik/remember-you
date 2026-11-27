@@ -40,6 +40,13 @@
                 <data android:scheme="https" android:host="@string/app_link_host" android:pathPrefix="/s/" />
             </intent-filter>
 
+            <!-- 다른 앱(삼성 노트·Google Keep 등)의 공유 메뉴에서 "기억해유"로 보낸 글을 메모 쓰는 화면으로 받는다(ShareInboxPlugin) -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+
         </activity>
 
         <provider
