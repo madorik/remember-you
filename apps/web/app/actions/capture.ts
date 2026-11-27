@@ -1,13 +1,13 @@
 "use server";
 
 import { track } from "@/lib/track";
-import { IMAGE_MAX_BYTES, IMAGE_MAX_COUNT, captureField, checkJpegBytes, cleanMemo, clip, describeCapture, isSection, mergeCapture, mergeImport, NOTE_EFFECTS_MAX, parseEffects, recordEffect, revertEffects, sanitizeSection, splitMemo, translate, type CaptureOp, type CardData, type NoteEffect, type PartialCard, type Section } from "@readme/core";
+import { IMAGE_MAX_BYTES, IMAGE_MAX_COUNT, captureField, checkJpegBytes, cleanMemo, clip, describeCapture, isSection, mergeCapture, mergeImport, NOTE_EFFECTS_MAX, parseEffects, recordEffect, revertEffects, sanitizeSection, splitMemo, translate, whyUnchanged, type CaptureOp, type CardData, type NoteEffect, type PartialCard, type Section } from "@readme/core";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { aiConfigured, classifyCapture, classifyImport, classifyImportImage, type CaptureItem, type ImageKind, type ImageReading, type ImportScope } from "@/lib/ai";
 import { cleanCaptureItems, tidyImportItems, type CapturePerson } from "@/lib/capture-ai";
 import { findLeftovers } from "@/lib/capture-leftover";
-import { NEW_PEOPLE_MAX, holdsForConfirm, nameKey, resolveCapture, resolveSaved, sameSectionValue, tidyName, whoOf, type CaptureTarget, type ResolvedCapture } from "@/lib/capture-target";
+import { NEW_PEOPLE_MAX, nameKey, resolveCapture, resolveSaved, sameSectionValue, tidyName, unfitForOrganize, whoOf, type CaptureTarget, type ResolvedCapture } from "@/lib/capture-target";
 import { markOnboarded } from "@/lib/onboarding";
 import { refundAi, reserveAi } from "@/lib/ai-quota";
 import type { Q } from "@/lib/db";
@@ -58,6 +58,20 @@ export interface CaptureDraftLine extends CaptureLine {
   target: CaptureTarget;
   spoken: string;
   candidates: string[];
+}
+
+/**
+ * 항목 하나가 어떻게 됐나(진단용): 칸 이름·할 일·이유 코드뿐이다(값·이름·글은 담지 않는다)
+ * - applied 적었다 · same 이미 그렇게 적혀 있다(지울 게 없다) · limit 한도(목록 20개·메모 수·사람 수…)에 막혀 못 들어갔다
+ * - invalid_value 그 칸에 맞지 않는 값 · no_field 없는 칸 · not_known 내 사람이 아니다 · note_gone 그 사이 메모를 지웠다
+ * - unresolved 아직 누구인지 못 정했다(저장은 건너뛴다) · skipped 이 길에서는 하지 않는 일(가져오기의 지우기·메모 고치기)
+ */
+export type OutcomeWhy = "applied" | "same" | "limit" | "invalid_value" | "no_field" | "not_known" | "note_gone" | "unresolved" | "skipped";
+export interface CaptureOutcome {
+  /** 칸 이름(taste.likes) 또는 memo */
+  f: string;
+  op: CaptureOp;
+  why: OutcomeWhy;
 }
 
 const failed = (error: NonNullable<CaptureState["error"]>) => ({ error }) as const;
@@ -116,11 +130,14 @@ const ghost = (id: string) => id.startsWith("new:") || id.startsWith("pick:");
  * importing이면 메모 가져오기: 더하기만 한다(바꾸기는 더하기로, 지우기는 건너뛴다). 이미 값이 있는 한 칸짜리는 건드리지 않는다(mergeImport)
  * noteOf(사람 contactId → 그 사람에게 남긴 메모 id)를 주면 메모를 정리하는 것: 그 메모가 아직 있는 사람에게만 적고(그 사이 지운 메모는 건너뛴다),
  * 실제로 바뀐 것을 그 메모의 암호화된 내용에 같이 남긴다(메모를 지울 때 같이 되돌릴 수 있게)
+ * outcomes는 항목마다 어떻게 됐는지(칸·할 일·이유 코드, 값은 없다): 아무것도 못 적은 이유를 로그로 남기려고.
+ * 합칠 게 없던 더하기·바꾸기 중 한도에 막혀 못 들어간 것은 '이미 알고 있어요'(same)로 보이지 않게 줄 없이 limit로 남긴다
  */
-async function apply(s: Session, people: Person[], rows: ResolvedCapture[], write: boolean, importing = false, noteOf?: ReadonlyMap<string, string>): Promise<{ lines: CaptureDraftLine[]; undo: UndoOp[] }> {
+async function apply(s: Session, people: Person[], rows: ResolvedCapture[], write: boolean, importing = false, noteOf?: ReadonlyMap<string, string>): Promise<{ lines: CaptureDraftLine[]; undo: UndoOp[]; outcomes: CaptureOutcome[] }> {
   const { locale } = s.profile;
   const lines: CaptureDraftLine[] = [];
   const undo: UndoOp[] = [];
+  const outcomes: CaptureOutcome[] = []; // 항목마다 하나씩(들어온 차례대로)
   const me = translate(locale, "voice.me");
   await s.tx(async (q) => {
     // 저장은 사람마다 한 번에 하나씩(같은 사람이 동시에 두 번 적어도 서로 덮어쓰지 않게), 저장하는 사람의 기록은 읽을 때 잠가서 그 사이 다른 저장이 못 끼어들게 한다
@@ -155,12 +172,19 @@ async function apply(s: Session, people: Person[], rows: ResolvedCapture[], writ
     };
 
     for (const row of rows) {
-      if (importing && row.item.op === "remove") continue; // 가져오기는 지우지 않는다
+      const out = (why: OutcomeWhy) => outcomes.push({ f: row.item.target, op: row.item.op, why });
+      if (importing && row.item.op === "remove") {
+        out("skipped"); // 가져오기는 지우지 않는다
+        continue;
+      }
       const { target } = row;
       let who: string;
       if (target.kind === "me") who = "me";
       else if (target.kind === "person") {
-        if (!known.has(target.id) || target.id === "me") continue; // 내 사람이 아니면 어디에도 적지 않는다
+        if (!known.has(target.id) || target.id === "me") {
+          out("not_known"); // 내 사람이 아니면 어디에도 적지 않는다
+          continue;
+        }
         who = target.id;
       } else if (target.kind === "new") {
         const key = nameKey(target.name);
@@ -169,7 +193,10 @@ async function apply(s: Session, people: Person[], rows: ResolvedCapture[], writ
         else {
           if (write) {
             total ??= (await q.one<{ n: number }>("select count(*)::int as n from contacts where user_id = $1", [s.user.id]))?.n ?? 0;
-            if (total >= LIMITS.people) continue; // 사람이 너무 많으면 새 사람은 더하지 않는다(사람 더하기와 같다)
+            if (total >= LIMITS.people) {
+              out("limit"); // 사람이 너무 많으면 새 사람은 더하지 않는다(사람 더하기와 같다)
+              continue;
+            }
             total++;
             const c = await q.one<{ id: string }>("insert into contacts (user_id, nickname) values ($1, $2) returning id", [s.user.id, target.name]);
             await q("insert into contact_cards (contact_id, author_id) values ($1, $2)", [c!.id, s.user.id]);
@@ -182,13 +209,19 @@ async function apply(s: Session, people: Person[], rows: ResolvedCapture[], writ
           names.set(who, target.name);
         }
       } else {
-        if (write) continue; // 못 정한 줄은 저장하지 않는다
+        if (write) {
+          out("unresolved"); // 못 정한 줄은 저장하지 않는다
+          continue;
+        }
         who = `pick:${row.idx}`;
         cards.set(who, {});
         notes.set(who, []);
         names.set(who, row.spoken);
       }
-      if (noteOf && write && !live.has(who)) continue; // 그 사이 지운 메모
+      if (noteOf && write && !live.has(who)) {
+        out("note_gone"); // 그 사이 지운 메모
+        continue;
+      }
       // 화면이 줄과 함께 되돌려 받는 것: 대상까지 반영한 항목과 대상·말한 이름·후보
       const item = { ...row.item, who: whoOf(target, row.spoken), ...(importing ? { op: "add" as const } : {}) };
       const extra = { item, idx: row.idx, target, spoken: row.spoken, candidates: row.candidates };
@@ -196,13 +229,25 @@ async function apply(s: Session, people: Person[], rows: ResolvedCapture[], writ
       const href = who === "me" ? "/me" : ghost(who) ? "" : `/people/${who}`;
 
       if (item.target === "memo") {
-        if (item.op !== "add") continue; // 메모를 고치거나 지우는 건 메모 칸에서
+        if (item.op !== "add") {
+          out("skipped"); // 메모를 고치거나 지우는 건 메모 칸에서
+          continue;
+        }
         const body = clip((item.text ?? "").trim(), 1000).trim();
-        if (!body || who === "me") continue; // 나에 대한 메모 칸은 없다
+        if (!body || who === "me") {
+          out("invalid_value"); // 나에 대한 메모 칸은 없다
+          continue;
+        }
         // 같은 말을 또 하면 메모를 두 번 남기지 않는다
         const kept = await notesOf(who);
-        if (kept.some((n) => n.body.trim() === body)) continue;
-        if (write && kept.length >= LIMITS.notes) continue; // 메모가 너무 많으면 더하지 않는다(메모 더하기와 같다)
+        if (kept.some((n) => n.body.trim() === body)) {
+          out("same");
+          continue;
+        }
+        if (write && kept.length >= LIMITS.notes) {
+          out("limit"); // 메모가 너무 많으면 더하지 않는다(메모 더하기와 같다)
+          continue;
+        }
         if (write) {
           const n = await q.one<{ id: string }>("insert into notes (author_id, contact_id, label, payload) values ($1, $2, '', $3) returning id", [
             s.user.id,
@@ -213,11 +258,15 @@ async function apply(s: Session, people: Person[], rows: ResolvedCapture[], writ
           undo.push({ type: "note", contactId: who, id: n!.id });
         } else kept.unshift({ id: "", label: "", body, effects: [], createdAt: new Date().toISOString() });
         lines.push({ who: names.get(who)!, isNew, op: "add", field: translate(locale, "voice.memo"), value: body, href, ...extra });
+        out("applied");
         continue;
       }
 
       const field = captureField(item.target);
-      if (!field) continue;
+      if (!field) {
+        out("no_field");
+        continue;
+      }
       const card = await cardOf(who);
       const op = item.op;
       const merged = importing ? mergeImport(field, card[field.section], item) : mergeCapture(field, card[field.section], item, op);
@@ -229,8 +278,10 @@ async function apply(s: Session, people: Person[], rows: ResolvedCapture[], writ
       const label = who === "me" && field.key === "gifts.wishlist" ? translate(locale, "gift.wishTitle") : field.label[locale];
       const line = { who: names.get(who)!, isNew, op, field: label, value: describeCapture(field, item, locale), href, ...extra };
       if (!merged) {
-        // 이미 그대로 적혀 있으면 '이미 알고 있어요', 지울 게 없으면 '이미 없어요'(값이 틀린 더하기·바꾸기는 버린다)
-        if (op === "remove" || (importing ? mergeImport(field, null, item) : mergeCapture(field, null, item, op))) lines.push({ ...line, same: true });
+        // 이미 그대로 적혀 있으면 '이미 알고 있어요', 지울 게 없으면 '이미 없어요'(값이 틀린 더하기·바꾸기는 버린다. 한도에 막혀 못 들어간 것도 '이미 알고 있어요'가 아니라 버린다)
+        const why = importing ? (op === "remove" || mergeImport(field, null, item) ? "same" : "invalid") : whyUnchanged(field, item, op, card[field.section]);
+        if (why === "same") lines.push({ ...line, same: true });
+        out(why === "same" ? "same" : why === "capped" ? "limit" : "invalid_value");
         continue;
       }
       const key = `${who}:${field.section}`;
@@ -248,6 +299,7 @@ async function apply(s: Session, people: Person[], rows: ResolvedCapture[], writ
       }
       (card as Record<string, unknown>)[field.section] = merged;
       lines.push(line);
+      out("applied");
     }
     for (const [who, list] of effects) {
       const row = live.get(who);
@@ -256,7 +308,7 @@ async function apply(s: Session, people: Person[], rows: ResolvedCapture[], writ
       await q("update notes set payload = $2::jsonb where id = $1::uuid", [row.id, JSON.stringify(sealNote(s.user.id, who, note.body, [...note.effects, ...list].slice(0, NOTE_EFFECTS_MAX)))]);
     }
   });
-  return { lines, undo };
+  return { lines, undo, outcomes };
 }
 
 /** 저장이 끝난 뒤 화면을 새로 그리게 하고 이용 기록을 남긴다 */
@@ -371,18 +423,20 @@ export async function saveFirstMemo(rawText: string, rawIds: string[], via: "voi
   return r;
 }
 
-/** 정리가 어떻게 끝났나: ok 항목을 적었다 · ai_off AI가 꺼져 있다 · limit 하루 한도 · nothing 적을 게 없었다 · failed 실패 */
-type OrganizeResult = "ok" | "ai_off" | "limit" | "nothing" | "failed";
+/** 정리가 어떻게 끝났나: ok 항목을 적었다 · known 말한 건 전부 이미 적혀 있었다 · ai_off AI가 꺼져 있다 · limit 하루 한도 · nothing 적을 게 없었다 · failed 실패 */
+type OrganizeResult = "ok" | "known" | "ai_off" | "limit" | "nothing" | "failed";
 
 /**
  * 저장한 메모를 그 사람들의 항목으로 정리한다(실패는 삼킨다: 메모는 이미 저장됐다). 새 사람이 방금 만들어졌으니 사람 목록은 여기서 처음 읽는다.
  * 응답 뒤(after)에 돌아 화면에 아무 흔적이 없으니 실행마다 한 줄을 로그로 남긴다(Vercel 런타임 로그): 글·이름은 담지 않고 결과와 개수만.
  * people 정리할 사람 수 · items AI가 나눈 항목 수 · rows 그중 이 사람들에게 더할 항목 수(memo·다른 사람·확인이 필요한 줄은 뺀 것) · lines 실제로 적은 줄 · ms 걸린 시간
+ * why 항목마다 "칸/할 일/이유"(taste.likes/add/same처럼 코드뿐, 값·이름·글은 없다): 항목은 있는데 lines가 0인 이유를 알아보려고.
+ *   이유는 applied·same·limit·invalid_value·note_gone…(CaptureOutcome) 또는 행이 되지 못한 것: memo 메모 칸 · held 확인이 필요한 줄 · other 이 사람들이 아닌 대상 · no_target 누구인지 못 정함
  */
 async function organizeMemo(s: Session, text: string, ids: string[], noteOf: ReadonlyMap<string, string>): Promise<void> {
   const t0 = Date.now();
   let result: OrganizeResult = "nothing";
-  const stat = { people: 0, items: 0, rows: 0, lines: 0 };
+  const stat = { people: 0, items: 0, rows: 0, lines: 0, why: "" };
   try {
     const all = await listPeopleLite(s);
     const picked = ids.map((id) => all.find((p) => p.contactId === id)).filter((p): p is Person => !!p);
@@ -400,20 +454,30 @@ async function organizeMemo(s: Session, text: string, ids: string[], noteOf: Rea
       return;
     }
     stat.items = c.items.length;
-    const rows = resolveCapture(c.items, c.people.map(asCapture), { detect: true, certain: c.certain }).filter(
-      (r) => r.target.kind === "person" && pickedIds.includes(r.target.id) && r.item.target !== "memo" && !holdsForConfirm(r.item),
-    );
+    const resolved = resolveCapture(c.items, c.people.map(asCapture), { detect: true, certain: c.certain });
+    const rows = resolved.filter((r) => !unfitForOrganize(r, pickedIds));
     stat.rows = rows.length;
+    const why = (f: string, op: CaptureOp, reason: string) => `${f}/${op}/${reason}`;
+    const dropped = [
+      ...c.items.flatMap((it, i) => (resolved.some((r) => r.idx === i) ? [] : [why(it.target, it.op, "no_target")])),
+      ...resolved.flatMap((r) => {
+        const reason = unfitForOrganize(r, pickedIds);
+        return reason ? [why(r.item.target, r.item.op, reason)] : [];
+      }),
+    ];
+    stat.why = dropped.join(", ");
     if (!rows.length) return;
     const done = await apply(c.s, c.people, rows, true, false, noteOf);
+    stat.why = [...done.outcomes.map((o) => why(o.f, o.op, o.why)), ...dropped].join(", ");
     stat.lines = done.lines.filter((l) => !l.same).length;
     if (done.lines.length) committed(c.s);
-    if (stat.lines) result = "ok";
+    result = stat.lines ? "ok" : done.lines.length ? "known" : "nothing";
   } catch (e) {
     result = "failed";
     console.error("[organize] failed", { message: e instanceof Error ? e.message : String(e) });
   } finally {
-    console.info("[organize]", { result, ...stat, ms: Date.now() - t0 });
+    // JSON 한 줄로(객체를 그대로 찍으면 길어질 때 여러 줄로 갈라진다)
+    console.info("[organize]", JSON.stringify({ result, ...stat, ms: Date.now() - t0 }));
   }
 }
 

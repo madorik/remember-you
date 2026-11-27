@@ -14,6 +14,16 @@ export function holdsForConfirm(item: Pick<CaptureItem, "target" | "op">): boole
   return item.target.startsWith("safety.") && item.op !== "add";
 }
 
+/**
+ * 저장한 메모를 AI가 정리할 때, 줄을 그 사람들(pickedIds)의 기록에 적어도 되나. 적으면 null, 아니면 이유:
+ * other 이 사람들이 아닌 대상(나·다른 사람·새 사람·못 정한 줄) · memo 메모 칸(메모는 이미 통째로 저장했다) · held 확인이 필요한 줄(holdsForConfirm)
+ */
+export function unfitForOrganize(r: Pick<ResolvedCapture, "target" | "item">, pickedIds: readonly string[]): "other" | "memo" | "held" | null {
+  if (r.target.kind !== "person" || !pickedIds.includes(r.target.id)) return "other";
+  if (r.item.target === "memo") return "memo";
+  return holdsForConfirm(r.item) ? "held" : null;
+}
+
 /** 새 사람 이름 길이 위쪽 한도 */
 export const NEW_NAME_MAX = 40;
 

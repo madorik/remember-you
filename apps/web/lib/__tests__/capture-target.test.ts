@@ -4,7 +4,7 @@ import { sanitizeSection } from "@readme/core";
 import { cleanCaptureItems, type CaptureItem, type CapturePerson } from "../capture-ai";
 import { makeT } from "../t";
 import { personHint } from "../summary";
-import { firstPick, holdsForConfirm, matchPeople, resolveCapture, resolveSaved, retarget, sameSectionValue, sameTarget, siblingCount, tidyName, whoOf, type CaptureTarget } from "../capture-target";
+import { firstPick, holdsForConfirm, matchPeople, resolveCapture, resolveSaved, retarget, sameSectionValue, sameTarget, siblingCount, tidyName, unfitForOrganize, whoOf, type CaptureTarget } from "../capture-target";
 
 const person = (id: string, name: string, nickname = ""): CapturePerson => ({ id, name, nickname });
 const item = (who: CaptureItem["who"], extra: Partial<CaptureItem> = {}): CaptureItem => ({ who, target: "favorites.flowers", op: "add", text: "수국", codes: null, number: null, date: null, label: null, ...extra });
@@ -221,3 +221,28 @@ test("바로 적지 않고 확인받을 것: 알레르기·못 먹는 것·식�
   }
 });
 
+
+test("메모 정리: '마라탕 좋아함' 같은 칸 항목은 고른 사람에게 적고, 메모·확인이 필요한 줄·다른 대상은 이유와 함께 거른다", () => {
+  const likes = (who: CaptureItem["who"], extra: Partial<CaptureItem> = {}) => item(who, { target: "taste.likes", text: "마라탕", ...extra });
+  const rows = resolveCapture(
+    [
+      likes(existing("wife")), // 고른 사람 → 적는다
+      likes(existing("mom")), // 다른 사람
+      likes({ type: "me", contactId: null, name: null }), // 나
+      likes(existing("wife"), { target: "memo", text: "마라탕을 좋아함" }), // 메모 칸
+      likes(existing("wife"), { target: "safety.dislikes", op: "remove" }), // 확인이 필요한 줄
+      likes(existing("wife"), { target: "safety.dislikes", op: "add", text: "오이" }), // 더하기는 안전 칸이라도 바로 적는다
+      likes(fresh("처제")), // 새 사람
+    ],
+    [MOM, WIFE],
+    { detect: true, certain: new Set(["wife"]) },
+  );
+  assert.deepEqual(
+    rows.map((r) => unfitForOrganize(r, ["wife"])),
+    [null, "other", "other", "memo", "held", null, "other"],
+  );
+  // 같은 이름 둘이 있어 못 정한 줄(pick)도 적지 않는다
+  const [twin] = resolveCapture([likes(fresh("지수"))], [WIFE, JISU], { detect: true });
+  assert.equal(twin!.target.kind, "pick");
+  assert.equal(unfitForOrganize(twin!, ["wife", "jisu"]), "other");
+});

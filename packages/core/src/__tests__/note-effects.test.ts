@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { captureField, describeEffect, emptySection, mergeCapture, parseEffects, recordEffect, revertEffects, sanitizeSection, type CaptureOp, type CaptureValue, type NoteEffect, type PartialCard, type Section } from "../index";
+import { captureField, describeEffect, emptySection, mergeCapture, parseEffects, recordEffect, revertEffects, sanitizeSection, whyUnchanged, type CaptureOp, type CaptureValue, type NoteEffect, type PartialCard, type Section } from "../index";
 
 const field = (key: string) => {
   const f = captureField(key);
@@ -37,6 +37,61 @@ test("이미 그렇게 적혀 있던 말은 '다시 말했다'(known)만 남기�
   assert.equal(put(card, "taste.spicy", { number: 99 }), null, "범위 밖 값");
   assert.equal(put(card, "taste.likes", { text: "마라탕" }, "remove"), null, "지우기는 기록하지 않는다");
   assert.equal(put(card, "taste.likes", { text: "" }), null);
+});
+
+// ── 합친 게 없을 때 이유(whyUnchanged): 로그의 same·limit·invalid_value ─────────────────────────────
+
+const likesOf = (likes: string[]): PartialCard => ({ taste: { ...emptySection("taste"), likes } });
+const reason = (key: string, value: CaptureValue, card: PartialCard, op: CaptureOp = "add") => {
+  const f = field(key);
+  const before = card[f.section] ?? emptySection(f.section);
+  assert.equal(mergeCapture(f, before as never, value, op), null, "이 시험은 합친 게 없는 경우만"); // 합쳐졌다면 이유를 물을 일이 아니다
+  return whyUnchanged(f, value, op, before);
+};
+
+test("합친 게 없는 이유: 이미 그렇게 적혀 있으면 same ('마라탕 좋아함'을 또 말한 경우)", () => {
+  assert.equal(reason("taste.likes", { text: "마라탕" }, likesOf(["마라탕", "김치찌개"])), "same");
+  assert.equal(reason("taste.likes", { text: "마라탕, 김치찌개" }, likesOf(["김치찌개", "마라탕"])), "same");
+  assert.equal(reason("taste.likes", { text: " 마라탕 " }, likesOf(["마라탕"])), "same");
+  // 한 칸짜리(수·고르는 한 칸)도 같은 값이면 same
+  assert.equal(reason("taste.spicy", { number: 3 }, { taste: { ...emptySection("taste"), spicy: 3 } }), "same");
+  assert.equal(reason("sizes.shoe", { number: 245 }, { sizes: { ...emptySection("sizes"), shoe: 245 } }), "same");
+  assert.equal(reason("taste.alcoholLevel", { codes: ["lots"] }, { taste: { ...emptySection("taste"), alcohol: { level: "lots", kinds: [] } } }), "same");
+  // 지울 게 없으면 same ('이미 없어요')
+  assert.equal(reason("taste.likes", { text: "마라탕" }, likesOf(["김치찌개"]), "remove"), "same");
+});
+
+test("합친 게 없는 이유: 목록이 한도(20개)에 차서 새 값이 못 들어갔으면 same이 아니라 capped", () => {
+  const full = Array.from({ length: 20 }, (_, i) => `음식${i + 1}`);
+  assert.equal(reason("taste.likes", { text: "마라탕" }, likesOf(full)), "capped");
+  // 한도에 찬 목록에 이미 있는 값은 그냥 same
+  assert.equal(reason("taste.likes", { text: "음식3" }, likesOf(full)), "same");
+  // 글 한 줄 칸이 글자 수 한도(120자)에 차서 이어 붙이지 못한 경우
+  const long = "가".repeat(120);
+  assert.equal(reason("taste.drinks", { text: "아메리카노" }, { taste: { ...emptySection("taste"), drinks: long } }), "capped");
+});
+
+test("합친 게 없는 이유: 칸에 맞지 않는 값은 invalid(없는 코드·범위 밖 수·빈 값·수가 아닌 값)", () => {
+  assert.equal(reason("taste.spicy", { number: 7 }, {}), "invalid");
+  assert.equal(reason("taste.spicy", { text: "마라탕" }, {}), "invalid"); // 매운맛 칸에 글: 칸을 잘못 고른 것
+  assert.equal(reason("taste.spicy", { number: null }, { taste: { ...emptySection("taste"), spicy: 3 } }), "invalid");
+  assert.equal(reason("taste.alcoholLevel", { text: "마라탕" }, {}), "invalid");
+  assert.equal(reason("favorites.colors", { codes: ["nope"] }, {}), "invalid");
+  assert.equal(reason("taste.likes", { text: "  " }, likesOf(["마라탕"])), "invalid");
+  assert.equal(reason("dates.birthday", { date: { calendar: "solar", month: 4, day: 31 } }, {}), "invalid");
+});
+
+test("한도에 막혀 못 들어간 값은 메모가 '이미 말했다'(known)로 남기지 않는다(나중에 다른 메모를 지울 때 뒷받침으로 오해하지 않게)", () => {
+  const full = Array.from({ length: 20 }, (_, i) => `음식${i + 1}`);
+  const card = likesOf(full);
+  assert.equal(put(card, "taste.likes", { text: "마라탕" }), null);
+  assert.deepEqual(card.taste?.likes, full);
+  // 19개 + 새 둘: 하나만 들어가고(add), 못 들어간 하나는 known이 아니다
+  const nearly = likesOf(full.slice(0, 19));
+  assert.deepEqual(fx(put(nearly, "taste.likes", { text: "마라탕, 꿔바로우" })), { f: "taste.likes", t: "items", add: ["마라탕"] });
+  // 한 칸짜리·기념일: 값이 다른데 못 합쳤다면(글자 수 한도) ok 표시를 남기지 않는다
+  const long = "가".repeat(120);
+  assert.equal(put({ taste: { ...emptySection("taste"), drinks: long } }, "taste.drinks", { text: "아메리카노" }), null);
 });
 
 test("한 칸짜리: 전 값(prev)과 적은 값(next)을 남긴다", () => {

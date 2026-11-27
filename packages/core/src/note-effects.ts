@@ -78,6 +78,8 @@ const anniversariesOf = (data: unknown): Anniversary[] => ((data as { anniversar
  */
 export function recordEffect(field: CaptureField, value: CaptureValue, op: CaptureOp, before: unknown, merged: unknown | null): NoteEffect | null {
   if (op === "remove") return null;
+  // 합치기 전 칸을 저장 모양으로(합칠 게 없었던 말이 '이미 있다'인지 가리는 데 쓴다)
+  const prior = sanitizeSection(field.section, before ?? emptySection(field.section));
   // 아무것도 없는 칸에 이 말만 합친 것: 이 말이 말하는 값 전체(이미 있던 것까지)
   const stated = mergeCapture(field, null, value, op) as unknown;
   const form = formOf(field, op);
@@ -87,7 +89,9 @@ export function recordEffect(field: CaptureField, value: CaptureValue, op: Captu
       const now = merged ? itemsOf(field, merged) : was;
       const add = now.filter((x) => !has(was, x));
       const drop = was.filter((x) => !has(now, x));
-      const known = (stated ? itemsOf(field, stated) : []).filter((x) => !has(add, x));
+      // 이미 있던 것만(한도에 막혀 못 들어간 값은 '이미 있다'가 아니다)
+      const present = itemsOf(field, prior);
+      const known = (stated ? itemsOf(field, stated) : []).filter((x) => !has(add, x) && has(present, x));
       if (!add.length && !known.length) return null;
       return { f: field.key, t: "items", add, ...(add.length && drop.length ? { drop } : {}), ...(known.length ? { known } : {}) };
     }
@@ -98,7 +102,7 @@ export function recordEffect(field: CaptureField, value: CaptureValue, op: Captu
         return eq(prev, next) ? null : { f: field.key, t: "one", next, prev };
       }
       const next = stated ? oneOf(field, stated) : null;
-      return next == null ? null : { f: field.key, t: "one", next, ok: 1 };
+      return next == null || !eq(oneOf(field, prior), next) ? null : { f: field.key, t: "one", next, ok: 1 };
     }
     case "anniversary": {
       const was = anniversariesOf(before);
@@ -108,7 +112,7 @@ export function recordEffect(field: CaptureField, value: CaptureValue, op: Captu
         return { f: field.key, t: "one", next, prev: was.find((b) => same(b.label, next.label)) ?? null };
       }
       const next = stated ? anniversariesOf(stated)[0] : undefined;
-      return next ? { f: field.key, t: "one", next, ok: 1 } : null;
+      return next && anniversariesOf(prior).some((b) => same(b.label, next.label) && eq(b.spec, next.spec)) ? { f: field.key, t: "one", next, ok: 1 } : null;
     }
     case "pet": {
       const was = petsOf(before);
@@ -121,6 +125,36 @@ export function recordEffect(field: CaptureField, value: CaptureValue, op: Captu
       const said = stated ? petsOf(stated)[0] : undefined;
       const next = said ? findPet(was, said.name, said.kind) : null;
       return next ? { f: field.key, t: "one", next, ok: 1 } : null;
+    }
+  }
+}
+
+/**
+ * 합친 게 없는(mergeCapture가 null) 더하기·바꾸기가 왜 그랬나(칸 하나에 대해). before는 합치기 전 그 칸
+ * - same: 이미 그렇게 적혀 있다(다시 말했을 뿐)
+ * - capped: 말한 값이 칸에 아직 없는데 못 들어갔다(목록 20개·글자 수 같은 한도에 막힘). 조용히 버려지는 경우라 따로 가린다
+ * - invalid: 이 칸에 맞지 않는 값(없는 코드·범위 밖 수·없는 날짜·빈 값)
+ * 지우기는 지울 게 없었다는 뜻이라 항상 same
+ */
+export function whyUnchanged(field: CaptureField, value: CaptureValue, op: CaptureOp, before: unknown): "same" | "capped" | "invalid" {
+  if (op === "remove") return "same";
+  const stated = mergeCapture(field, null, value, op) as unknown;
+  if (!stated) return "invalid";
+  const was = sanitizeSection(field.section, before ?? emptySection(field.section)) as unknown;
+  switch (formOf(field, op)) {
+    case "items": {
+      const have = itemsOf(field, was);
+      return itemsOf(field, stated).every((x) => has(have, x)) ? "same" : "capped";
+    }
+    case "one":
+      return eq(oneOf(field, was), oneOf(field, stated)) ? "same" : "capped";
+    case "anniversary": {
+      const next = anniversariesOf(stated)[0];
+      return next && anniversariesOf(was).some((b) => same(b.label, next.label) && eq(b.spec, next.spec)) ? "same" : "capped";
+    }
+    case "pet": {
+      const said = petsOf(stated)[0];
+      return said && findPet(petsOf(was), said.name, said.kind) ? "same" : "capped";
     }
   }
 }
