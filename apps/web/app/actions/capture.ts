@@ -7,7 +7,7 @@ import { after } from "next/server";
 import { aiConfigured, classifyCapture, classifyImport, classifyImportImage, type CaptureItem, type ImageKind, type ImageReading, type ImportScope } from "@/lib/ai";
 import { cleanCaptureItems, tidyImportItems, type CapturePerson } from "@/lib/capture-ai";
 import { findLeftovers } from "@/lib/capture-leftover";
-import { holdsForConfirm, nameKey, resolveCapture, resolveSaved, sameSectionValue, tidyName, whoOf, type CaptureTarget, type ResolvedCapture } from "@/lib/capture-target";
+import { NEW_PEOPLE_MAX, holdsForConfirm, nameKey, resolveCapture, resolveSaved, sameSectionValue, tidyName, whoOf, type CaptureTarget, type ResolvedCapture } from "@/lib/capture-target";
 import { markOnboarded } from "@/lib/onboarding";
 import { refundAi, reserveAi } from "@/lib/ai-quota";
 import type { Q } from "@/lib/db";
@@ -93,9 +93,11 @@ async function classify(raw: string, aboutId?: string, picked?: { id: string; la
   let items;
   try {
     items = await classifyCapture(text, people.map(asCapture), locale, about ? asCapture(about) : null, mentioned.map(asCapture));
-  } catch {
+  } catch (e) {
     // 불러 보지도 못하고 실패했으니 하루 한도는 돌려준다
     await refundAi(s.user.id, "capture");
+    // 글·이름은 남기지 않고 실패 이유(ai_http_401·시간 초과 등)만
+    console.error("[classify] ai request failed", { message: e instanceof Error ? e.message : String(e) });
     return failed("failed");
   }
   if (!items.length) return failed("nothing");
@@ -258,9 +260,6 @@ export interface MemoResult {
   created: { id: string; name: string }[];
 }
 
-/** 한 번에 새로 더할 수 있는 사람 수 */
-const NEW_PEOPLE_MAX = 5;
-
 /**
  * 메모 저장 본체(메모 쓰기와 온보딩의 첫 메모가 같이 쓴다): 글을 고른 사람마다 메모로 남기고, 아직 없는 사람(newNames)은 사람 더하기와 같은 길로 만들어 그 사람 메모로 남긴다 — 한 트랜잭션.
  * 그 뒤 응답을 보낸 다음(after) AI가 그 글을 그 사람들의 항목으로 정리한다(organizeMemo).
@@ -349,25 +348,46 @@ export async function saveFirstMemo(rawText: string, rawIds: string[], via: "voi
   return r;
 }
 
-/** 저장한 메모를 그 사람들의 항목으로 정리한다(실패는 삼킨다: 메모는 이미 저장됐다). 새 사람이 방금 만들어졌으니 사람 목록은 여기서 처음 읽는다 */
+/** 정리가 어떻게 끝났나: ok 항목을 적었다 · ai_off AI가 꺼져 있다 · limit 하루 한도 · nothing 적을 게 없었다 · failed 실패 */
+type OrganizeResult = "ok" | "ai_off" | "limit" | "nothing" | "failed";
+
+/**
+ * 저장한 메모를 그 사람들의 항목으로 정리한다(실패는 삼킨다: 메모는 이미 저장됐다). 새 사람이 방금 만들어졌으니 사람 목록은 여기서 처음 읽는다.
+ * 응답 뒤(after)에 돌아 화면에 아무 흔적이 없으니 실행마다 한 줄을 로그로 남긴다(Vercel 런타임 로그): 글·이름은 담지 않고 결과와 개수만.
+ * people 정리할 사람 수 · items AI가 나눈 항목 수 · rows 그중 이 사람들에게 더할 항목 수(memo·다른 사람·확인이 필요한 줄은 뺀 것) · lines 실제로 적은 줄 · ms 걸린 시간
+ */
 async function organizeMemo(s: Session, text: string, ids: string[]): Promise<void> {
+  const t0 = Date.now();
+  let result: OrganizeResult = "nothing";
+  const stat = { people: 0, items: 0, rows: 0, lines: 0 };
   try {
     const all = await listPeopleLite(s);
     const picked = ids.map((id) => all.find((p) => p.contactId === id)).filter((p): p is Person => !!p);
+    stat.people = picked.length;
     if (!picked.length) return;
     const pickedIds = picked.map((p) => p.contactId);
     // 여러 사람이면 글 앞에 @이름을 붙여 누구 이야기인지 짚는다(한 사람이면 그 사람 화면에서 적은 것처럼)
     const said = pickedIds.length === 1 ? text : `${picked.map((p) => `@${displayName(p)}`).join(" ")} ${text}`;
     const c = await classify(said, pickedIds.length === 1 ? pickedIds[0] : undefined, picked.map((p) => ({ id: p.contactId, label: displayName(p) })), s);
-    if ("error" in c) return;
+    if ("error" in c) {
+      result = c.error;
+      return;
+    }
+    stat.items = c.items.length;
     const rows = resolveCapture(c.items, c.people.map(asCapture), { detect: true, certain: c.certain }).filter(
       (r) => r.target.kind === "person" && pickedIds.includes(r.target.id) && r.item.target !== "memo" && !holdsForConfirm(r.item),
     );
+    stat.rows = rows.length;
     if (!rows.length) return;
     const done = await apply(c.s, c.people, rows, true);
+    stat.lines = done.lines.filter((l) => !l.same).length;
     if (done.lines.length) committed(c.s);
-  } catch {
-    /* 정리하지 못해도 메모는 그대로 */
+    if (stat.lines) result = "ok";
+  } catch (e) {
+    result = "failed";
+    console.error("[organize] failed", { message: e instanceof Error ? e.message : String(e) });
+  } finally {
+    console.info("[organize]", { result, ...stat, ms: Date.now() - t0 });
   }
 }
 

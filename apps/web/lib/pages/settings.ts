@@ -1,7 +1,5 @@
 import "server-only";
 import { SECTIONS, defaultAskTopics, sanitizeQuestionIds, type Section } from "@readme/core";
-import { notFound } from "next/navigation";
-import { aiConfigured } from "@/lib/ai";
 import { displayName, listOpenInvites, listPeople, requireSession, todayFor } from "@/lib/data";
 import { makeT } from "@/lib/t";
 import { personHint } from "@/lib/summary";
@@ -65,9 +63,8 @@ export async function loadRequest({ searchParams }: PageInput): Promise<RequestD
   };
 }
 
-/** 말로 적기: 말하면(또는 적으면) 누구의 어느 칸인지 나눠서 바로 넣는다. 없는 사람은 새로, 맞는 칸이 없으면 메모로 */
+/** 메모 쓰기: 적은 글은 그대로 메모로 저장되고(AI가 꺼져 있어도 열린다), AI는 저장 뒤에 그 사람의 항목으로 정리할 때만 쓴다 */
 export async function loadVoice({ searchParams }: PageInput): Promise<VoiceData> {
-  if (!aiConfigured()) notFound();
   const s = await requireSession();
   // @로 부를 사람: 이름과 내가 붙인 태그(부르는 말), 즐겨찾기가 먼저. hint는 이름이 같은 사람을 가려 볼 때 곁에 붙이는 기록 요약
   const t = makeT(s.profile.locale);

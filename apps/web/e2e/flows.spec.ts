@@ -1498,6 +1498,118 @@ test("메모 쓰기: +로 이름 칸을 열어 이름을 치면 맞는 내 사�
   await expect(page.getByRole("status").filter({ hasText: "메모장이 생겼어요" })).toHaveCount(0);
 });
 
+test("메모 쓰기: 본문에서 @를 치면 같은 이름 목록이 글 밑에 뜨고(위아래·엔터·Esc), 고르면 '@이름 '이 들어가고 칩이 생기며, 칩을 빼면 저장할 때 다시 넣지 않는다", async ({ browser }) => {
+  const page = await newPage(browser);
+  await page.goto("/");
+  await page.getByRole("button", { name: "데모로 둘러보기" }).click();
+  await expect(page).toHaveURL(/\/home/);
+  await page.goto("/voice");
+  const field = page.getByRole("textbox", { name: "기억해 둘 것" });
+  const list = page.getByRole("listbox", { name: "사람" });
+
+  // @와 글자: 맞는 내 사람이 먼저, 맨 끝에 '새로 추가'. 위아래 화살표로 옮기고 Esc로 닫는다(그 @에서는 다시 안 뜬다)
+  await field.click();
+  await field.pressSequentially("오늘 @엄");
+  await expect(list.getByRole("option")).toHaveCount(2);
+  await expect(list.getByRole("option").first()).toContainText("엄마");
+  await expect(list.getByRole("option").first()).toHaveAttribute("aria-selected", "true");
+  await expect(list.getByRole("option").last()).toContainText("'엄' 새로 추가");
+  await field.press("ArrowDown");
+  await expect(list.getByRole("option").last()).toHaveAttribute("aria-selected", "true");
+  await field.press("ArrowUp");
+  await expect(list.getByRole("option").first()).toHaveAttribute("aria-selected", "true");
+  await field.press("Escape");
+  await expect(list).toHaveCount(0);
+  await field.pressSequentially("마");
+  await expect(list).toHaveCount(0);
+  await expect(field).toHaveValue("오늘 @엄마");
+  await expect(page.getByRole("button", { name: "엄마 빼기" })).toHaveCount(0);
+
+  // 새 @: 엔터로 고르면 글이 '@아빠 '로 바뀌고(앞뒤 글은 그대로) 아빠 칩이 생기며 커서는 그 뒤에 있어 이어서 적는다
+  await field.pressSequentially(" 장미 @아빠");
+  await expect(list.getByRole("option").first()).toContainText("아빠");
+  await field.press("Enter");
+  await expect(list).toHaveCount(0);
+  await expect(field).toHaveValue("오늘 @엄마 장미 @아빠 ");
+  await expect(page.getByRole("button", { name: "아빠 빼기" })).toBeVisible();
+  await field.pressSequentially("막걸리");
+  await expect(field).toHaveValue("오늘 @엄마 장미 @아빠 막걸리");
+  await shot(page, "memo-inline-mention");
+
+  // 아직 없는 이름: '새로 추가'를 눌러 고르면 그 이름의 새 사람 칩('새로' 표시)이 생긴다
+  await field.pressSequentially(" @민지");
+  await page.getByRole("option", { name: "'민지' 새로 추가" }).click();
+  await expect(field).toHaveValue("오늘 @엄마 장미 @아빠 막걸리 @민지 ");
+  await expect(page.getByRole("button", { name: "민지 빼기" })).toBeVisible();
+  await expect(page.getByText("새로", { exact: true })).toBeVisible();
+
+  // 칩을 ×로 빼면 글에 @이름이 남아 있어도 저장할 때 다시 넣지 않는다: 아무도 안 남으면 고르라고 알린다
+  await page.getByRole("button", { name: "아빠 빼기" }).click();
+  await page.getByRole("button", { name: "민지 빼기" }).click();
+  await field.fill("@아빠 막걸리 @민지 좋아함");
+  await page.getByRole("button", { name: "저장", exact: true }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "누구 이야기인지 골라 주세요" })).toBeVisible();
+  await expect(page).toHaveURL(/\/voice$/);
+});
+
+test("메모 쓰기: 칩을 안 골라도 본문의 @이름(있는 사람이면 그 사람 · 없으면 새 사람)과 적어 둔 이름으로 누구 이야기인지 정해 저장한다", async ({ browser }) => {
+  const page = await newPage(browser);
+  await page.goto("/");
+  await page.getByRole("button", { name: "데모로 둘러보기" }).click();
+  await expect(page).toHaveURL(/\/home/);
+  await page.goto("/voice");
+  const field = page.getByRole("textbox", { name: "기억해 둘 것" });
+
+  // 칩 없이 '@엄마 … @은서 …'만: 엄마는 그 사람으로, 은서는 새 사람으로. 이 화면에 남아 알리고 비운다(글은 적은 그대로 저장된다)
+  await field.fill("@엄마 홍삼을 좋아함 @은서 곶감을 좋아함");
+  await page.getByRole("button", { name: "저장", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "엄마, 은서 메모장에 적었어요" })).toBeVisible();
+  await expect(page).toHaveURL(/\/voice$/);
+  await expect(field).toHaveValue("");
+  await page.goto("/people");
+  const eunseo = /\/people\/([0-9a-f-]{36})/.exec((await page.getByRole("link", { name: /은서/ }).first().getAttribute("href")) ?? "")?.[1];
+  expect(eunseo).toBeTruthy();
+  await page.goto(`/people/${eunseo}`);
+  await expect(page.getByText("@엄마 홍삼을 좋아함 @은서 곶감을 좋아함")).toBeVisible();
+
+  // @ 없이 이름만 적어도(조사가 붙어도) 아무도 안 골랐으면 그 사람 이야기로: 한 사람이라 그 사람 화면으로 간다
+  await page.goto("/voice");
+  await field.fill("아빠는 막걸리를 좋아해");
+  await page.getByRole("button", { name: "저장", exact: true }).click();
+  await expect(page).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
+  await expect(page.getByRole("heading", { name: "아빠" })).toBeVisible();
+  await expect(page.getByText("아빠는 막걸리를 좋아해")).toBeVisible();
+  // 저장하면 정리가 끝날 즈음 이 화면이 스스로 다시 받아 오도록 표시를 남긴다(응답 뒤에 도는 AI 정리 결과가 새로 고침 없이 보이게)
+  expect(await page.evaluate(() => sessionStorage.getItem("rm_organizing"))).toContain('"ids":["');
+
+  // 이름도 @도 없으면 여전히 고르라고 알린다
+  await page.goto("/voice");
+  await field.fill("부모님 결혼기념일 저녁 예약해 드리기");
+  await page.getByRole("button", { name: "저장", exact: true }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "누구 이야기인지 골라 주세요" })).toBeVisible();
+});
+
+test("가입 직후 첫 메모: 본문에 @새이름을 적으면 칩을 안 골라도 그 새 사람의 메모장으로 저장하고 온보딩이 끝난다", async ({ browser }) => {
+  const page = await newPage(browser);
+  await page.goto("/");
+  await signIn(page);
+  await expect(page).toHaveURL(/\/onboarding$/);
+  const field = page.getByRole("textbox", { name: "엄마는 장미꽃을 좋아해" });
+  // 온보딩에서도 @를 치면 같은 목록(아직 사람이 없으니 '새로 추가'만)이 글 밑에 뜬다
+  await field.click();
+  await field.pressSequentially("@새친구");
+  await expect(page.getByRole("listbox", { name: "사람" }).getByRole("option")).toHaveCount(1);
+  await expect(page.getByRole("option", { name: "'새친구' 새로 추가" })).toBeVisible();
+  await field.pressSequentially(" 떡볶이 좋아함");
+  await page.getByRole("button", { name: "저장", exact: true }).click();
+  await expect(page).toHaveURL(/\/people\/[0-9a-f-]{36}(\?welcome=1)?$/);
+  await expect(page.getByRole("heading", { name: "새친구" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "새친구 메모장이 생겼어요" })).toBeVisible();
+  await expect(page.getByText("@새친구 떡볶이 좋아함")).toBeVisible();
+  await page.goto("/onboarding");
+  await expect(page).toHaveURL(/\/home$/);
+});
+
 test("키보드가 화면을 줄이면(안드로이드 앱처럼) 하단 메뉴를 접고 아래 단추 줄이 키보드 바로 위에 온다", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 780 });
   await page.goto("/");

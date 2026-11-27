@@ -11,9 +11,10 @@ import { BinderPage } from "@/components/Binder";
 import { Icon } from "@/components/marks";
 import { Mascot } from "@/components/Mascot";
 import { markSaved } from "@/components/ReviewAsk";
-import { NEW_NAME_MAX, nameKey, tidyName } from "@/lib/capture-target";
+import { markOrganizing } from "@/lib/organizing";
+import { NEW_NAME_MAX, tidyName } from "@/lib/capture-target";
 import { startListenGuard, type ListenGuard, type StopReason } from "@/lib/listen-guard";
-import { mentionLabel } from "@/lib/mention";
+import { insertMention, mentionAt, mentionLabel, mentionWord, tagKey, tagsForSave, type MentionTag } from "@/lib/mention";
 import { matchesPerson } from "@/lib/search";
 import { nativeSpeech, startDictation, webCtor, type Dictation, type WebRecognition } from "@/lib/speech";
 import { u } from "@/lib/ui-scale";
@@ -78,8 +79,13 @@ export interface MemoOnboarding {
 }
 
 /** 이야기의 주인공: 이미 있는 사람(id) 또는 이번에 새로 더할 사람(이름) */
-type Tag = { kind: "person"; id: string } | { kind: "new"; name: string };
-const tagKey = (t: Tag) => (t.kind === "person" ? t.id : `new:${nameKey(t.name)}`);
+type Tag = MentionTag;
+
+/** 이름 목록의 한 줄: 맞는 내 사람 또는 '새로 추가' */
+type Option = { kind: "person"; p: MemoPerson } | { kind: "new"; name: string };
+
+/** 본문에서 @를 치면 한 번에 보이는 내 사람 수(이름을 치면 맞는 사람 전부) */
+const AT_LIST = 5;
 
 const MAX = 1000;
 /** 앱의 '공유 받기'가 받은 글을 넘겨 두는 곳(sessionStorage) */
@@ -162,6 +168,49 @@ function NewFace({ name, size = 24, dashed = false }: { name: string; size?: num
 }
 
 const PLUS = <path d="M12 6v12M6 12h12" />;
+
+/** 이름을 치면 뜨는 목록(이름 칸 밑·본문 @ 밑이 같이 쓴다): 맞는 내 사람들, 맨 끝에 '새로 추가'(같은 이름이 있어도 새 사람으로 더할 수 있다) */
+function OptionList({
+  id,
+  label,
+  options,
+  current,
+  newOption,
+  onPick,
+  style,
+  innerRef,
+}: {
+  id: string;
+  label: string;
+  options: Option[];
+  current: number;
+  newOption: string;
+  onPick: (o: Option) => void;
+  style: React.CSSProperties;
+  innerRef?: React.Ref<HTMLDivElement>;
+}) {
+  return (
+    <div ref={innerRef} id={id} role="listbox" aria-label={label} className="relative z-[3] border border-edge bg-white" style={style}>
+      {options.map((o, i) => (
+        <div
+          key={o.kind === "person" ? o.p.id : "new"}
+          id={`${id}-${i}`}
+          role="option"
+          aria-selected={i === current}
+          // 눌러도 이름 칸·본문이 포커스를 잃지 않게(잃으면 목록이 먼저 닫혀 누른 게 안 먹는다)
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => onPick(o)}
+          className={`flex cursor-pointer items-center gap-[8.1px] ${i === current ? "bg-sky-soft" : ""}`}
+          style={{ height: u(44), padding: `0 ${u(8)}px`, borderRadius: u(10) }}
+        >
+          {o.kind === "person" ? <Avatar config={o.p.avatar} size={28} label={nameOf(o.p)} decorative /> : <NewFace name={o.name} size={28} dashed />}
+          <span className="hand text-[18px] leading-none">{o.kind === "person" ? nameOf(o.p) : newOption.replace("{name}", o.name)}</span>
+          {o.kind === "person" && (o.p.hint || o.p.tag) ? <span className="truncate text-[10.8px] text-muted">{o.p.hint || o.p.tag}</span> : null}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 /** 듣는 동안의 알약: 일곱 막대가 마이크 소리에 맞춰 오르내리고(재지 못하면 부드럽게) 경과 시간 m:ss. 움직임 줄이기면 막대는 가만히 */
 const BAR_BASE = [9, 17, 25, 14, 21, 11, 7];
@@ -303,6 +352,10 @@ export function MemoPad({
   const [query, setQuery] = useState("");
   const [typing, setTyping] = useState(false);
   const [active, setActive] = useState(0);
+  // 본문 @이름: 커서 자리, 목록에서 고르는 줄, Esc로 닫아 둔 @의 자리
+  const [caret, setCaret] = useState(0);
+  const [atActive, setAtActive] = useState(0);
+  const [atClosed, setAtClosed] = useState<number | null>(null);
   const [listening, setListening] = useState(false);
   // 앱: 멈춘 뒤 마지막 말까지 든 최종 결과를 기다리는 중
   const [settling, setSettling] = useState(false);
@@ -313,6 +366,11 @@ export function MemoPad({
   const [skipping, startSkip] = useTransition();
   const box = useRef<HTMLTextAreaElement>(null);
   const nameBox = useRef<HTMLInputElement>(null);
+  const atList = useRef<HTMLDivElement>(null);
+  // 본문 @목록에서 고른 뒤 커서를 둘 자리(글이 바뀐 화면이 그려진 직후 한 번 놓는다)
+  const nextCaret = useRef<number | null>(null);
+  // 칩의 ×로 일부러 뺀 사람의 열쇠(본문에 @이름이 남아 있어도 저장할 때 다시 넣지 않는다)
+  const dropped = useRef(new Set<string>());
   const alive = useRef(false);
   const guard = useRef<ListenGuard | null>(null);
   const web = useRef<WebRecognition | null>(null);
@@ -322,6 +380,7 @@ export function MemoPad({
   const voiced = useRef(false);
   const toastTimer = useRef(0);
   const listId = useId();
+  const atId = useId();
 
   const byId = new Map(people.map((p) => [p.id, p]));
   // 고른 사람들(이미 있는 사람은 얼굴과 함께, 새 사람은 이름만). 내 사람이 아닌 id는 뺀다
@@ -340,9 +399,20 @@ export function MemoPad({
   const settled = join(text, heard.final);
   // 이름 칸 밑 목록: 치는 이름과 맞는 내 사람들, 맨 끝에 언제나 '새로 추가'
   const typed = tidyName(query);
-  const options: ({ kind: "person"; p: MemoPerson } | { kind: "new"; name: string })[] = typed ? [...rest.filter((p) => matchesPerson(typed, p.name, p.tag)).map((p) => ({ kind: "person" as const, p })), { kind: "new" as const, name: typed }] : [];
+  const options: Option[] = typed ? [...rest.filter((p) => matchesPerson(typed, p.name, p.tag)).map((p) => ({ kind: "person" as const, p })), { kind: "new" as const, name: typed }] : [];
   const dropOpen = naming && typing && options.length > 0;
   const current = Math.min(active, Math.max(options.length - 1, 0));
+  // 본문에서 @를 치면 같은 목록이 본문 밑에 뜬다: 이미 고른 사람도 포함해 맞는 내 사람들(@만이면 몇 명), 이름을 쳤으면 맨 끝에 '새로 추가'.
+  // 듣는 동안은 본문 칸이 없어 열지 않는다
+  const at = busy ? null : mentionAt(text, caret);
+  const atWord = at ? mentionWord(at.query) : "";
+  const atName = tidyName(atWord);
+  const atOptions: Option[] =
+    at && at.start !== atClosed
+      ? [...people.filter((p) => !atWord || matchesPerson(atWord, p.name, p.tag)).slice(0, atWord ? undefined : AT_LIST).map((p) => ({ kind: "person" as const, p })), ...(atName ? [{ kind: "new" as const, name: atName }] : [])]
+      : [];
+  const atOpen = atOptions.length > 0;
+  const atCurrent = Math.min(atActive, Math.max(atOptions.length - 1, 0));
   // 온보딩에서 아무도 안 골랐을 때만 바로 고르는 이름과 큰 이름 칸을 보인다
   const starting = !!onboarding && !chosen.length;
 
@@ -404,7 +474,18 @@ export function MemoPad({
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${el.scrollHeight}px`;
+    // 타이머로 늦게 놓으면 곧바로 이어 치는 글자가 먼저 들어가 커서가 되돌려지니, 글이 바뀐 이 자리에서 바로 놓는다
+    if (nextCaret.current != null) {
+      el.focus();
+      el.setSelectionRange(nextCaret.current, nextCaret.current);
+      nextCaret.current = null;
+    }
   }, [text, listening]);
+
+  // @ 목록이 뜨면 화면 안으로(긴 글이면 본문 맨 밑이라 아래 메뉴에 가리지 않게 조금 여유를 둔다)
+  useEffect(() => {
+    if (atOpen) atList.current?.scrollIntoView({ block: "nearest" });
+  }, [atOpen, atOptions.length]);
 
   // ── 말로 적기: 받아 쓴 말을 본문에 그대로 이어 붙인다 ──
   const hear = (h: Heard) => {
@@ -530,8 +611,18 @@ export function MemoPad({
     // 듣는 중에 눌렀으면 지금까지 들은 말까지 붙여 바로 저장한다
     const body = shown.trim().slice(0, MAX);
     if (!body || saving || settling) return;
-    // 아무도 안 골랐으면 추천 사람 칩이나 이름 칸이 이미 보이는 상태라 알리기만 한다
-    if (!chosen.length) return say(labels.pickWho, true);
+    // 이야기의 주인공: 칩으로 고른 사람 + 본문에 적은 @이름(있는 사람이면 그 사람, 아니면 새 사람) + 아무도 안 골랐고 @도 없으면 본문에 적힌 내 사람의 이름. 본문은 적은 그대로 보낸다
+    const picked = tagsForSave(
+      body,
+      people,
+      tags.filter((t) => t.kind === "new" || byId.has(t.id)),
+      dropped.current,
+    );
+    const ids = picked.flatMap((t) => (t.kind === "person" ? [t.id] : []));
+    const newNames = picked.flatMap((t) => (t.kind === "new" ? [t.name] : []));
+    // 아무도 못 정했으면 추천 사람 칩이나 이름 칸이 이미 보이는 상태라 알리기만 한다
+    if (!ids.length && !newNames.length) return say(labels.pickWho, true);
+    setTags(picked);
     if (listening) {
       halt();
       web.current = null;
@@ -541,8 +632,6 @@ export function MemoPad({
       hear(NOTHING);
       setText(body);
     }
-    const ids = tags.flatMap((t) => (t.kind === "person" && byId.has(t.id) ? [t.id] : []));
-    const newNames = tags.flatMap((t) => (t.kind === "new" ? [t.name] : []));
     const via = voiced.current ? "voice" : "text";
     startSave(async () => {
       if (onboarding) {
@@ -550,17 +639,20 @@ export function MemoPad({
         const r = await saveFirstMemo(body, ids, via, newNames, browserZone()).catch(() => null);
         if (!r?.ok) return say(labels.error, true);
         voiced.current = false;
+        markOrganizing(r.ids);
         return router.push(onboarding.next !== "/home" ? onboarding.next : `/people/${r.ids[0]}?welcome=1`);
       }
       const r = await saveMemo(body, ids, via, newNames).catch(() => null);
       if (!r?.ok) return say(labels.error, true);
       markSaved();
+      markOrganizing(r.ids);
       voiced.current = false;
       if (r.ids.length === 1) return router.push(`/people/${r.ids[0]}`);
       // 여러 사람이면 이 화면에 남아 누구 메모장에 적었는지 알리고, 다음 메모를 위해 비운다
       const names = r.ids.map((id) => (byId.has(id) ? nameOf(byId.get(id)!) : (r.created.find((c) => c.id === id)?.name ?? ""))).filter(Boolean);
       setText("");
       setTags([]);
+      dropped.current.clear();
       setPicking(false);
       closeNaming();
       say(labels.savedTo.replace("{names}", names.join(", ")));
@@ -591,6 +683,7 @@ export function MemoPad({
     window.setTimeout(() => nameBox.current?.focus(), 0);
   };
   const addTag = (tag: Tag) => {
+    dropped.current.delete(tagKey(tag));
     setTags((cur) => (cur.some((t) => tagKey(t) === tagKey(tag)) ? cur : [...cur, tag]));
     setQuery("");
     setTyping(false);
@@ -598,14 +691,42 @@ export function MemoPad({
     setNaming(false);
   };
   const dropTag = (key: string) => {
+    dropped.current.add(key);
     const left = tags.filter((t) => tagKey(t) !== key);
     setTags(left);
     // 온보딩에서 다 빼면 처음 모습(이름 칸과 바로 고르는 이름)으로
     if (onboarding && !left.length) setNaming(true);
   };
-  const pick = (o: (typeof options)[number] | undefined) => {
+  const tagOf = (o: Option): Tag => (o.kind === "person" ? { kind: "person", id: o.p.id } : { kind: "new", name: o.name });
+  const pick = (o: Option | undefined) => {
     if (!o) return;
-    addTag(o.kind === "person" ? { kind: "person", id: o.p.id } : { kind: "new", name: o.name });
+    addTag(tagOf(o));
+  };
+  // 본문 @목록에서 고르면 '@이름 '으로 바꿔 넣고(커서는 그 뒤) 그 사람을 칩에 더한다
+  const pickAt = (o: Option | undefined) => {
+    if (!o || !at) return;
+    const done = insertMention(text, at.start, box.current?.selectionStart ?? caret, o.kind === "person" ? nameOf(o.p) : o.name);
+    setText(done.text.slice(0, MAX));
+    setCaret(done.caret);
+    setAtClosed(null);
+    setAtActive(0);
+    nextCaret.current = done.caret;
+    addTag(tagOf(o));
+  };
+  const onBodyKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!atOpen || !at) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      setAtActive((atCurrent + (e.key === "ArrowDown" ? 1 : atOptions.length - 1)) % atOptions.length);
+    } else if (e.key === "Enter") {
+      // 한글을 조합하는 중의 엔터는 글자를 확정하는 것뿐(고르는 게 아니다). 줄바꿈(Shift+엔터)도 그대로 둔다
+      if (e.nativeEvent.isComposing || e.keyCode === 229 || e.shiftKey) return;
+      e.preventDefault();
+      pickAt(atOptions[atCurrent]);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setAtClosed(at.start);
+    }
   };
   const onNameKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.nativeEvent.isComposing) return;
@@ -793,25 +914,15 @@ export function MemoPad({
 
           {/* 이름을 치면 뜨는 목록: 맞는 내 사람들, 맨 끝에 '새로 추가'(같은 이름이 있어도 새 사람으로 더할 수 있다) */}
           {dropOpen ? (
-            <div id={listId} role="listbox" aria-label={labels.people} className="relative z-[3] border border-edge bg-white" style={{ margin: `-${u(2)}px 0 ${u(10)}px ${u(22)}px`, width: u(248), padding: u(6), borderRadius: u(14), boxShadow: `0 ${u(14)}px ${u(22)}px -${u(16)}px rgb(31 35 64 / 0.55)` }}>
-              {options.map((o, i) => (
-                <div
-                  key={o.kind === "person" ? o.p.id : "new"}
-                  id={`${listId}-${i}`}
-                  role="option"
-                  aria-selected={i === current}
-                  // 눌러도 이름 칸이 포커스를 잃지 않게(잃으면 목록이 먼저 닫혀 누른 게 안 먹는다)
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => pick(o)}
-                  className={`flex cursor-pointer items-center gap-[8.1px] ${i === current ? "bg-sky-soft" : ""}`}
-                  style={{ height: u(44), padding: `0 ${u(8)}px`, borderRadius: u(10) }}
-                >
-                  {o.kind === "person" ? <Avatar config={o.p.avatar} size={28} label={nameOf(o.p)} decorative /> : <NewFace name={o.name} size={28} dashed />}
-                  <span className="hand text-[18px] leading-none">{o.kind === "person" ? nameOf(o.p) : labels.newOption.replace("{name}", o.name)}</span>
-                  {o.kind === "person" && (o.p.hint || o.p.tag) ? <span className="truncate text-[10.8px] text-muted">{o.p.hint || o.p.tag}</span> : null}
-                </div>
-              ))}
-            </div>
+            <OptionList
+              id={listId}
+              label={labels.people}
+              options={options}
+              current={current}
+              newOption={labels.newOption}
+              onPick={pick}
+              style={{ margin: `-${u(2)}px 0 ${u(10)}px ${u(22)}px`, width: u(248), padding: u(6), borderRadius: u(14), boxShadow: `0 ${u(14)}px ${u(22)}px -${u(16)}px rgb(31 35 64 / 0.55)` }}
+            />
           ) : null}
 
           {/* 온보딩의 처음: 바로 고르는 이름들(고르면 그 이름의 새 사람) */}
@@ -851,14 +962,35 @@ export function MemoPad({
                 onChange={(e) => {
                   voiced.current = voiced.current && e.target.value.length > 0;
                   setText(e.target.value);
+                  setCaret(e.target.selectionStart);
+                  setAtActive(0);
+                  // Esc로 닫아 둔 @는 그 @를 지우거나 다른 @로 옮겨 가면 풀린다
+                  if (!mentionAt(e.target.value, e.target.selectionStart)) setAtClosed(null);
                 }}
+                onSelect={(e) => setCaret(e.currentTarget.selectionStart)}
+                onKeyDown={onBodyKey}
                 rows={1}
                 maxLength={MAX}
                 placeholder={placeholder}
                 aria-label={placeholder}
+                aria-controls={atOpen ? atId : undefined}
+                aria-activedescendant={atOpen ? `${atId}-${atCurrent}` : undefined}
                 className={`hand-written block w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-[20.7px] leading-[30.6px] caret-mango-deep outline-none ${onboarding ? "placeholder:text-ink/[.34]" : "placeholder:text-ink/40"}`}
               />
             )}
+            {/* 본문에서 @를 치면 뜨는 목록: 글 바로 밑(아래 메뉴에 가리지 않게 여유) */}
+            {atOpen ? (
+              <OptionList
+                innerRef={atList}
+                id={atId}
+                label={labels.people}
+                options={atOptions}
+                current={atCurrent}
+                newOption={labels.newOption}
+                onPick={pickAt}
+                style={{ marginTop: u(6), width: u(248), maxWidth: "100%", padding: u(6), borderRadius: u(14), boxShadow: `0 ${u(14)}px ${u(22)}px -${u(16)}px rgb(31 35 64 / 0.55)`, scrollMarginBottom: u(110) }}
+              />
+            ) : null}
           </div>
         </BinderPage>
       </div>

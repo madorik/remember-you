@@ -17,6 +17,9 @@ export function holdsForConfirm(item: Pick<CaptureItem, "target" | "op">): boole
 /** 새 사람 이름 길이 위쪽 한도 */
 export const NEW_NAME_MAX = 40;
 
+/** 메모 한 번 저장에 새로 더할 수 있는 사람 수(메모 쓰기 화면과 서버가 같이 쓴다) */
+export const NEW_PEOPLE_MAX = 5;
+
 /** 이름 비교용: 모양을 맞추고 소문자로, 띄어쓰기·붙임표·점을 없앤다 */
 export function nameKey(s: string): string {
   return s.normalize("NFKC").toLowerCase().replace(/[\s\-_.·ㆍ]+/g, "");

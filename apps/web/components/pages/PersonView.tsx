@@ -3,6 +3,7 @@ import Link from "@/components/AppLink";
 import { AskOnButton } from "@/app/(app)/people/[id]/AskOnButton";
 import { FavoriteStar } from "@/app/(app)/people/[id]/FavoriteStar";
 import { NameEditor } from "@/app/(app)/people/[id]/NameEditor";
+import { OrganizeRefresh } from "@/app/(app)/people/[id]/OrganizeRefresh";
 import { PersonMenu } from "@/app/(app)/people/[id]/PersonMenu";
 import { ViewBeacon } from "@/app/(app)/people/[id]/ViewBeacon";
 import { PersonBook } from "@/app/(app)/people/[id]/PersonBook";
@@ -80,6 +81,8 @@ export function PersonView({ locale, back, today, person: p, name, notes, tab, f
       </div>
 
       <ViewBeacon contactId={p.contactId} />
+      {/* 메모를 막 저장하고 왔으면 AI 정리가 끝날 즈음 화면을 다시 받아 온다 */}
+      <OrganizeRefresh contactId={p.contactId} />
       {/* 온보딩에서 첫 메모를 저장하고 막 왔을 때(?welcome=1) 한 번 뜨는 알림 */}
       <WelcomeToast text={t("person.welcome", { name: displayName })} />
       {p.askOff ? (
