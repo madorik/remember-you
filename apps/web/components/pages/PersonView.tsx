@@ -161,7 +161,7 @@ export function PersonView({ locale, back, today, person: p, name, notes, tab, f
         </div>
       ) : null}
 
-      {/* 바인더(시안 D-Person): 메모장 칸(오늘 이야기 적기 + 달별 메모 타임라인) · 기억해 둔 것 칸(나 화면의 '나에 대한 기록'과 같은 목록, RememberedList) */}
+      {/* 바인더(시안 D-Person): 메모장 칸(달별 메모 타임라인 + 오른쪽 아래 연필 단추) · 기억해 둔 것 칸(나 화면의 '나에 대한 기록'과 같은 목록, RememberedList) */}
       <PersonBook
         contactId={p.contactId}
         name={displayName}
@@ -173,7 +173,6 @@ export function PersonView({ locale, back, today, person: p, name, notes, tab, f
         labels={{
           memo: t("memo.tab"),
           remembered: t("person.mineList"),
-          today: t("memo.today"),
           write: t("memo.writeAbout", { name }),
           close: t("common.close"),
           del: t("common.delete"),

@@ -616,15 +616,18 @@ test("메모장: 사람 화면의 칸막이(메모장 · 기억해 둔 것)와 �
   const memoButton = page.getByRole("navigation", { name: "메뉴" }).getByRole("link", { name: "메모", exact: true });
   await expect(memoButton).toHaveAttribute("href", `/voice?to=${id}`);
 
-  // 기본은 메모장 칸: 샘플 메모가 날짜와 함께 보이고, 맨 위에 오늘 '이야기 적기' 줄이 있다
+  // 기본은 메모장 칸: 샘플 메모가 날짜와 함께 보이고, 오른쪽 아래에 둥근 연필 단추(‘이야기 적기’ 진입은 이것 하나)가 떠 있다
   const tabs = page.getByRole("tablist", { name: "엄마" });
   await expect(tabs.getByRole("tab", { name: /^메모장/ })).toHaveAttribute("aria-selected", "true");
   await expect(tabs.getByRole("tab", { name: "기억해 둔 것" })).toHaveAttribute("aria-selected", "false");
   await expect(page.getByText("홍삼 세트 드렸음")).toBeVisible();
+  const pen = page.getByRole("link", { name: "엄마 이야기 적기" });
+  await expect(pen).toHaveCount(1);
+  await expect(pen).toHaveAttribute("href", `/voice?to=${id}`);
   await shot(page, "person-memo-tab");
 
-  // 이야기 적기 → 메모 쓰기: 그 사람이 이미 붙어 있고(× 로 뺄 수 있고), 글을 적으면 오른쪽 위에 저장이 생긴다
-  await page.getByRole("link", { name: "엄마 이야기 적기" }).click();
+  // 연필 단추 → 메모 쓰기: 그 사람이 이미 붙어 있고(× 로 뺄 수 있고), 글을 적으면 오른쪽 위에 저장이 생긴다
+  await pen.click();
   await expect(page).toHaveURL(new RegExp(`/voice\\?to=${id}`));
   await expect(page.getByRole("button", { name: "엄마 빼기" })).toBeVisible();
   await expect(page.getByRole("link", { name: "메모 가져오기" })).toHaveAttribute("href", "/import");
@@ -652,9 +655,12 @@ test("메모장: 사람 화면의 칸막이(메모장 · 기억해 둔 것)와 �
   await expect(page.getByRole("link", { name: "수정", exact: true })).toHaveAttribute("href", `/people/${id}/edit`);
   await expect(page.getByText("홍삼 세트 드렸음")).toHaveCount(0);
   await shot(page, "person-remembered-tab");
-  // 메모장으로 돌아오면 연필은 사라진다
+  // 기억해 둔 것 칸에는 메모 연필 단추가 없다
+  await expect(page.getByRole("link", { name: "엄마 이야기 적기" })).toHaveCount(0);
+  // 메모장으로 돌아오면 고치기 연필은 사라지고 메모 연필 단추가 다시 뜬다
   await tabs.getByRole("tab", { name: /^메모장/ }).click();
   await expect(page.getByRole("link", { name: "수정", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "엄마 이야기 적기" })).toBeVisible();
   // 주소로도 칸을 연다
   await page.goto(`/people/${id}?tab=remembered`);
   await expect(tabs.getByRole("tab", { name: "기억해 둔 것" })).toHaveAttribute("aria-selected", "true");

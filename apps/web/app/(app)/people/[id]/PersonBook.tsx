@@ -9,6 +9,7 @@ import { Icon } from "@/components/marks";
 import { SectionIcon } from "@/components/SectionIcon";
 import { Sheet } from "@/components/Sheet";
 import { useUndoToast } from "@/components/UndoToast";
+import { u } from "@/lib/ui-scale";
 
 export interface BookNote {
   id: string;
@@ -23,8 +24,7 @@ export interface BookLabels {
   /** 탭 이름: 메모장 · 기억해 둔 것 */
   memo: string;
   remembered: string;
-  today: string;
-  /** "엄마 이야기 적기" */
+  /** 오른쪽 아래 연필 단추의 이름: "엄마 이야기 적기" */
   write: string;
   close: string;
   del: string;
@@ -37,6 +37,9 @@ export interface BookLabels {
 }
 
 type Tab = "memo" | "remembered";
+
+/** 메모장 끝에 비워 두는 높이: 연필 단추(66 × 0.9)가 하단 메뉴 위 54px에 뜨므로 마지막 메모가 그 위에서 끝나게 한다 */
+const PEN_ROOM = 72;
 
 /** 메모 한 줄의 달 라벨(올해가 아니면 연도도) */
 function monthLabel(d: YMD, today: YMD, locale: Locale): string {
@@ -62,7 +65,8 @@ function MonthTape({ label }: { label: string }) {
 
 /**
  * 사람 화면의 바인더: 프로필 카드 밑에 ‘메모장’ · ‘기억해 둔 것’ 두 칸막이가 솟은 속지 한 장.
- * 메모장은 점 모눈 위 세로 점선 타임라인(맨 위 ‘오늘 … 이야기 적기’ 줄 → 최근 메모부터 달별로, 누르면 시트에서 전부 보고 지운다).
+ * 메모장은 점 모눈 위 세로 점선 타임라인(최근 메모부터 달별로, 누르면 시트에서 전부 보고 지운다).
+ * 메모장 칸이 열려 있는 동안 오른쪽 아래에 둥근 연필 단추가 떠 있고(메모 쓰기 화면의 마이크와 같은 모양·자리), 누르면 이 사람이 붙은 채로 메모 쓰기가 열린다.
  * 기억해 둔 것은 흰 속지에 기록 목록(remembered, 서버가 그린 RememberedList)이고 칸막이 줄 오른쪽 끝 연필이 고치는 화면으로 간다.
  * 메모를 지우면 목록에서 바로 사라지고(서버에서도 바로 지운다) 5초 동안 되돌릴 수 있다.
  * 그 메모가 사람 기록에 더한 것이 아직 남아 있으면 시트에 '이 메모로 더해진 것'이 보이고, '같이 지우기'는 그것도 되돌린다(되돌리기는 메모와 되돌린 칸을 되살린다)
@@ -151,118 +155,133 @@ export function PersonBook({
   const panelId = `${uid}-panel`;
 
   return (
-    <div className="relative mb-1 ml-[21.6px] mr-[14.4px] mt-[41.4px]">
-      {/* 칸막이: 속지 윗선 밑으로 3px 파묻혀(속지가 위에 얹힌다) 윗선이 이어져 보인다. 켜진 칸이 더 높다 */}
-      <div role="tablist" aria-label={name} className="absolute left-[41.4px] flex items-end gap-[16.2px]" style={{ bottom: "calc(100% - 2.7px)" }}>
-        <button type="button" role="tab" id={`${uid}-memo`} aria-selected={tab === "memo"} aria-controls={panelId} onClick={() => pick("memo")} className={tabClass(tab === "memo", "bg-[#FFD978]", "bg-[#FFF4D6]")}>
-          {labels.memo}
-          {shown.length ? <span className="text-[10.8px] text-muted">{shown.length}</span> : null}
-        </button>
-        <button type="button" role="tab" id={`${uid}-remembered`} aria-selected={tab === "remembered"} aria-controls={panelId} onClick={() => pick("remembered")} className={tabClass(tab === "remembered", "bg-[#CDEBDD]", "bg-[#E8F6EF]")}>
-          {labels.remembered}
-        </button>
-      </div>
-      {tab === "remembered" ? (
-        <AppLink href={`/people/${contactId}/edit`} aria-label={labels.edit} className="absolute right-0 flex h-11 w-11 items-center justify-center" style={{ bottom: "calc(100% - 2.7px)" }}>
-          <Icon name="pencil" size={21} strokeWidth={1.8} />
-        </AppLink>
-      ) : null}
+    <>
+      <div className="relative mb-1 ml-[21.6px] mr-[14.4px] mt-[41.4px]">
+        {/* 칸막이: 속지 윗선 밑으로 3px 파묻혀(속지가 위에 얹힌다) 윗선이 이어져 보인다. 켜진 칸이 더 높다 */}
+        <div role="tablist" aria-label={name} className="absolute left-[41.4px] flex items-end gap-[16.2px]" style={{ bottom: "calc(100% - 2.7px)" }}>
+          <button type="button" role="tab" id={`${uid}-memo`} aria-selected={tab === "memo"} aria-controls={panelId} onClick={() => pick("memo")} className={tabClass(tab === "memo", "bg-[#FFD978]", "bg-[#FFF4D6]")}>
+            {labels.memo}
+            {shown.length ? <span className="text-[10.8px] text-muted">{shown.length}</span> : null}
+          </button>
+          <button type="button" role="tab" id={`${uid}-remembered`} aria-selected={tab === "remembered"} aria-controls={panelId} onClick={() => pick("remembered")} className={tabClass(tab === "remembered", "bg-[#CDEBDD]", "bg-[#E8F6EF]")}>
+            {labels.remembered}
+          </button>
+        </div>
+        {tab === "remembered" ? (
+          <AppLink href={`/people/${contactId}/edit`} aria-label={labels.edit} className="absolute right-0 flex h-11 w-11 items-center justify-center" style={{ bottom: "calc(100% - 2.7px)" }}>
+            <Icon name="pencil" size={21} strokeWidth={1.8} />
+          </AppLink>
+        ) : null}
 
-      <BinderPage dots={tab === "memo"} left={tab === "memo" ? 40 : 42} pageClassName="min-h-[270px]">
-        <div role="tabpanel" id={panelId} aria-labelledby={`${uid}-${tab}`}>
-          {tab === "memo" ? (
-            <div className="relative pb-[16.2px] pt-[12.6px]">
-              {/* 세로 점선 타임라인 */}
-              <span aria-hidden="true" className="absolute bottom-[18px] top-[27px] border-l-[1.35px] border-dashed border-ink/30" style={{ left: 44.1 }} />
-              {canWrite ? (
-                <AppLink href={`/voice?to=${contactId}`} className="relative grid h-[43.2px] grid-cols-[34.2px_1fr] items-center gap-x-[21.6px]">
-                  <span className="hand text-center text-[16.2px] text-mango-deep">{labels.today}</span>
-                  <span aria-hidden="true" className="absolute left-[39.6px] top-[16.2px] box-border h-[9.9px] w-[9.9px] rounded-full border border-ink bg-white" />
-                  <span className="flex items-center gap-[6.3px] border-b border-dashed border-ink/30 pb-[3.6px]">
-                    <Icon name="pencil" size={16} strokeWidth={1.8} className="shrink-0 text-muted" />
-                    <span className="hand truncate text-[18px] leading-none text-ink/45">{labels.write}</span>
-                  </span>
-                </AppLink>
-              ) : null}
-              {failed ? (
-                <p role="alert" className="py-1 text-[12.6px] text-red">
-                  {labels.error}
-                </p>
-              ) : null}
-              {groups.map((g) => (
-                <div key={g.key}>
-                  <MonthTape label={g.label} />
-                  {g.items.map((n) => (
-                    <button key={n.id} type="button" onClick={() => setOpen(n)} aria-haspopup="dialog" className="relative grid w-full grid-cols-[34.2px_1fr] gap-x-[21.6px] py-[9px] text-left">
-                      <span className="flex flex-col items-center gap-[1.8px]">
-                        <span className="hand text-[23.4px] leading-[23.4px]">{n.date.d}</span>
-                        <span className="text-[9.9px] leading-none text-muted">{weekdayShort(n.date, locale)}</span>
-                      </span>
-                      <span aria-hidden="true" className="absolute left-[39.6px] top-[16.2px] box-border h-[9.9px] w-[9.9px] rounded-full border border-ink bg-sky" />
-                      <span className="hand-written line-clamp-6 whitespace-pre-line text-[18.5px] leading-[1.45]">{n.body}</span>
-                    </button>
+        <BinderPage dots={tab === "memo"} left={tab === "memo" ? 40 : 42} pageClassName="min-h-[270px]">
+          <div role="tabpanel" id={panelId} aria-labelledby={`${uid}-${tab}`}>
+            {tab === "memo" ? (
+              <div className="pt-[12.6px]">
+                <div className="relative pb-[16.2px]">
+                  {/* 세로 점선 타임라인: 첫 달 이름표 가운데에서 시작해 메모가 있을 때만 그린다 */}
+                  {groups.length ? <span aria-hidden="true" className="absolute bottom-[18px] top-[16.2px] border-l-[1.35px] border-dashed border-ink/30" style={{ left: 44.1 }} /> : null}
+                  {failed ? (
+                    <p role="alert" className="py-1 text-[12.6px] text-red">
+                      {labels.error}
+                    </p>
+                  ) : null}
+                  {groups.map((g) => (
+                    <div key={g.key}>
+                      <MonthTape label={g.label} />
+                      {g.items.map((n) => (
+                        <button key={n.id} type="button" onClick={() => setOpen(n)} aria-haspopup="dialog" className="relative grid w-full grid-cols-[34.2px_1fr] gap-x-[21.6px] py-[9px] text-left">
+                          <span className="flex flex-col items-center gap-[1.8px]">
+                            <span className="hand text-[23.4px] leading-[23.4px]">{n.date.d}</span>
+                            <span className="text-[9.9px] leading-none text-muted">{weekdayShort(n.date, locale)}</span>
+                          </span>
+                          <span aria-hidden="true" className="absolute left-[39.6px] top-[16.2px] box-border h-[9.9px] w-[9.9px] rounded-full border border-ink bg-sky" />
+                          <span className="hand-written line-clamp-6 whitespace-pre-line text-[18.5px] leading-[1.45]">{n.body}</span>
+                        </button>
+                      ))}
+                    </div>
                   ))}
                 </div>
-              ))}
-            </div>
-          ) : (
-            remembered
-          )}
-        </div>
-      </BinderPage>
-
-      {open ? (
-        <Sheet
-          id={`${uid}-note`}
-          title={formatDayFull(open.date, locale)}
-          titleClassName="text-[19.8px] leading-none"
-          handle
-          closeLabel={labels.close}
-          onClose={close}
-          footer={
-            open.adds.length ? (
-              <div className="flex gap-[7.2px]">
-                <button type="button" onClick={() => void removeIt(open.id, false)} className="btn-outline flex-1">
-                  {labels.delOnly}
-                </button>
-                <button type="button" onClick={() => void removeIt(open.id, true)} className="btn-outline flex-1 !text-red !shadow-[inset_0_0_0_1px_var(--color-red)]">
-                  {labels.delWith}
-                </button>
+                {/* 오른쪽 아래 연필 단추(아래 PersonBook 끝)가 마지막 메모를 가리지 않게 비워 두는 자리 */}
+                {canWrite ? <div aria-hidden="true" style={{ height: PEN_ROOM }} /> : null}
               </div>
             ) : (
-              <button type="button" onClick={() => void removeIt(open.id, false)} className="flex min-h-11 items-center gap-1.5 self-start rounded-full border border-edge px-4 text-[14.4px] text-red">
-                <Icon name="trash" size={16} strokeWidth={1.8} />
-                {labels.del}
-              </button>
-            )
-          }
-        >
-          <p className="hand-written whitespace-pre-line px-6 pb-3 pt-2 text-[20.7px] leading-[1.4]">{open.body}</p>
-          {open.adds.length ? (
-            <div className="mx-6 mb-3 rounded-[12.6px] border border-edge bg-white px-[12.6px] pb-[9px] pt-[9px]">
-              <p className="text-[12.6px] text-muted">{labels.added}</p>
-              <ul className="mt-[7.2px] flex flex-col gap-[7.2px]">
-                {open.adds.map((a, i) => (
-                  <li key={`${a.label}-${i}`} className="flex items-center gap-[9px]">
-                    <SectionIcon section={a.section} size={29} />
-                    <span className="min-w-0 flex-1 leading-[1.3]">
-                      <span className="text-[12.6px] text-muted">{a.label}</span>
-                      <span aria-hidden="true" className="text-[12.6px] text-muted">
-                        {" · "}
+              remembered
+            )}
+          </div>
+        </BinderPage>
+
+        {open ? (
+          <Sheet
+            id={`${uid}-note`}
+            title={formatDayFull(open.date, locale)}
+            titleClassName="text-[19.8px] leading-none"
+            handle
+            closeLabel={labels.close}
+            onClose={close}
+            footer={
+              open.adds.length ? (
+                <div className="flex gap-[7.2px]">
+                  <button type="button" onClick={() => void removeIt(open.id, false)} className="btn-outline flex-1">
+                    {labels.delOnly}
+                  </button>
+                  <button type="button" onClick={() => void removeIt(open.id, true)} className="btn-outline flex-1 !text-red !shadow-[inset_0_0_0_1px_var(--color-red)]">
+                    {labels.delWith}
+                  </button>
+                </div>
+              ) : (
+                <button type="button" onClick={() => void removeIt(open.id, false)} className="flex min-h-11 items-center gap-1.5 self-start rounded-full border border-edge px-4 text-[14.4px] text-red">
+                  <Icon name="trash" size={16} strokeWidth={1.8} />
+                  {labels.del}
+                </button>
+              )
+            }
+          >
+            <p className="hand-written whitespace-pre-line px-6 pb-3 pt-2 text-[20.7px] leading-[1.4]">{open.body}</p>
+            {open.adds.length ? (
+              <div className="mx-6 mb-3 rounded-[12.6px] border border-edge bg-white px-[12.6px] pb-[9px] pt-[9px]">
+                <p className="text-[12.6px] text-muted">{labels.added}</p>
+                <ul className="mt-[7.2px] flex flex-col gap-[7.2px]">
+                  {open.adds.map((a, i) => (
+                    <li key={`${a.label}-${i}`} className="flex items-center gap-[9px]">
+                      <SectionIcon section={a.section} size={29} />
+                      <span className="min-w-0 flex-1 leading-[1.3]">
+                        <span className="text-[12.6px] text-muted">{a.label}</span>
+                        <span aria-hidden="true" className="text-[12.6px] text-muted">
+                          {" · "}
+                        </span>
+                        <span className="hand-written text-[18.5px]">{a.prev ? `${a.prev} → ${a.value}` : a.value}</span>
                       </span>
-                      <span className="hand-written text-[18.5px]">{a.prev ? `${a.prev} → ${a.value}` : a.value}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {/* 시트가 열려 있으면 토스트도 그 안에(열린 시트 밖은 키보드로 갈 수 없다) */}
+            {undo.toast}
+          </Sheet>
+        ) : (
+          undo.toast
+        )}
+      </div>
+      {/* 오른쪽 아래 연필: 메모 쓰기 화면의 마이크와 같은 모양·자리(.memo-mic: 하단 메뉴 위로 54px). 메모장 칸에서만, 키보드가 뜨면 숨는다.
+          높이 0짜리 sticky 줄이라 화면이 길어져도 같은 자리에 있고, 앞의 flex-1 빈칸이 짧은 화면에서도 이 줄을 화면 맨 아래로 내려 준다 */}
+      {tab === "memo" && canWrite ? (
+        <>
+          <div aria-hidden="true" className="flex-1" />
+          <div className="memo-mic sticky z-20 h-0 w-full [:root[data-kb]_&]:hidden">
+            <div className="absolute bottom-0" style={{ right: u(22), width: u(66), height: u(66) }}>
+              <AppLink
+                href={`/voice?to=${contactId}`}
+                aria-label={labels.write}
+                className="relative flex h-full w-full items-center justify-center rounded-full border border-edge bg-sky text-ink"
+                style={{ boxShadow: `0 ${u(4)}px 0 var(--color-mango-deep), 0 ${u(16)}px ${u(22)}px -${u(12)}px rgb(31 35 64 / 0.55)` }}
+              >
+                <Icon name="pencil" size={30} strokeWidth={2} />
+              </AppLink>
             </div>
-          ) : null}
-          {/* 시트가 열려 있으면 토스트도 그 안에(열린 시트 밖은 키보드로 갈 수 없다) */}
-          {undo.toast}
-        </Sheet>
-      ) : (
-        undo.toast
-      )}
-    </div>
+          </div>
+        </>
+      ) : null}
+    </>
   );
 }

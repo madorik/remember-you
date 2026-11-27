@@ -828,7 +828,7 @@ html.ry-seen .ry-boot {
   }
 }
 
-/* 메모 쓰기 화면(app/(app)/voice/MemoPad.tsx): 오른쪽 아래 마이크는 하단 메뉴 위로 54px 띄운다(키보드가 떠 있으면 키보드 바로 위, --above-tab이 알아서 바뀐다) */
+/* 메모 쓰기 화면(app/(app)/voice/MemoPad.tsx): 오른쪽 아래 마이크는 하단 메뉴 위로 54px 띄운다(사람 화면 메모장의 연필 단추도 같은 자리, PersonBook.tsx)(키보드가 떠 있으면 키보드 바로 위, --above-tab이 알아서 바뀐다) */
 .memo-mic {
   bottom: calc(var(--above-tab) + 54px);
 }
