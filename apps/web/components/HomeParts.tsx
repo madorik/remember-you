@@ -154,8 +154,8 @@ export function HeroButton({ href, label, first = true, small = false }: { href:
 }
 
 /**
- * 연말 카드 아래 줄: [작은 폴라로이드 얼굴 + 이름 ……… 작은 망고 알약 '선물 고르기 ›'].
- * 알약은 그 사람의 선물 고르기로. 얼굴·이름은 pickHref가 있으면(사람이 여럿) 다른 사람을 고르러 가는 링크, 없으면 그냥 글
+ * 연말 카드 아래: 단추 위에 [작은 폴라로이드 얼굴 + 이름] 한 줄, 그 밑에 원래 길이(카드 폭) 그대로의 망고 단추.
+ * 단추는 그 사람의 선물 고르기로. 얼굴·이름은 pickHref가 있으면(사람이 여럿) 다른 사람을 고르러 가는 링크, 없으면 그냥 글
  */
 export function HeroPickRow({ avatar, name, pickHref, giftHref, giftLabel }: { avatar: AvatarConfig | null; name: string; pickHref: string | null; giftHref: string; giftLabel: string }) {
   const who = (
@@ -169,25 +169,16 @@ export function HeroPickRow({ avatar, name, pickHref, giftHref, giftLabel }: { a
     </>
   );
   return (
-    <div className="mt-[10.8px] flex items-center gap-[10.8px]">
+    <>
       {pickHref ? (
-        <Link href={pickHref} aria-label={name} className="flex min-h-11 min-w-0 flex-1 items-center gap-[9px]">
+        <Link href={pickHref} aria-label={name} className="mt-[9px] flex min-h-11 min-w-0 items-center gap-[9px] self-start">
           {who}
         </Link>
       ) : (
-        <span className="flex min-h-11 min-w-0 flex-1 items-center gap-[9px]">{who}</span>
+        <span className="mt-[9px] flex min-h-11 min-w-0 items-center gap-[9px]">{who}</span>
       )}
-      <Link
-        href={giftHref}
-        className="hand flex h-[37.8px] shrink-0 items-center justify-center gap-[5.4px] rounded-full border pl-[14.4px] pr-[10.8px] text-[18.9px] leading-none transition-transform active:translate-y-px"
-        style={{ borderColor: EDGE, background: MANGO, boxShadow: "0 2.7px 0 #E09A12", color: INK }}
-      >
-        <span className="whitespace-nowrap">{giftLabel}</span>
-        <svg aria-hidden="true" viewBox="0 0 24 24" width={u(17)} height={u(17)} fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-          <path d="M5 12h14M13 6l6 6-6 6" />
-        </svg>
-      </Link>
-    </div>
+      <HeroButton href={giftHref} label={giftLabel} first={false} />
+    </>
   );
 }
 
