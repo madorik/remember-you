@@ -167,7 +167,7 @@ export function PersonView({ locale, back, today, person: p, name, notes, tab, f
         name={displayName}
         locale={locale}
         today={today}
-        notes={notes.map((n) => ({ id: n.id, body: n.body, date: n.date }))}
+        notes={notes.map((n) => ({ id: n.id, body: n.body, date: n.date, adds: n.adds }))}
         initialTab={tab}
         canWrite={ai}
         labels={{
@@ -177,6 +177,9 @@ export function PersonView({ locale, back, today, person: p, name, notes, tab, f
           write: t("memo.writeAbout", { name }),
           close: t("common.close"),
           del: t("common.delete"),
+          added: t("memo.added"),
+          delOnly: t("memo.deleteOnly"),
+          delWith: t("memo.deleteWith"),
           edit: t("common.edit"),
           error: t("common.error"),
         }}

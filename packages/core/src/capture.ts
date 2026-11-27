@@ -392,6 +392,9 @@ function removeFrom(field: CaptureField, base: Record<string, unknown>, text: st
   }
 }
 
+// note-effects.ts(메모가 더한 것을 기록·되돌리기)가 칸의 실제 저장 위치를 같은 방식으로 읽고 쓰려고 쓴다
+export { getRaw, setRaw, findPet };
+
 /** 화면에 보일 값 한 줄("바닐라라떼", "땅콩, 새우", "270") */
 export function describeCapture(field: CaptureField, value: CaptureValue, locale: Locale): string {
   const codeLabel = (c: string) => field.catalog?.find((x) => x.code === c)?.label[locale] ?? c;

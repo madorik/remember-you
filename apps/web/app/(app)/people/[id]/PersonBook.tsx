@@ -1,11 +1,12 @@
 "use client";
 
-import { formatDayFull, weekdayShort, type Locale, type YMD } from "@readme/core";
+import { formatDayFull, weekdayShort, type EffectLine, type Locale, type YMD } from "@readme/core";
 import { useCallback, useId, useState } from "react";
-import { deleteNote } from "@/app/actions/people";
+import { removeNote, restoreNote } from "@/app/actions/capture";
 import AppLink from "@/components/AppLink";
 import { BinderPage } from "@/components/Binder";
 import { Icon } from "@/components/marks";
+import { SectionIcon } from "@/components/SectionIcon";
 import { Sheet } from "@/components/Sheet";
 import { useUndoToast } from "@/components/UndoToast";
 
@@ -14,6 +15,8 @@ export interface BookNote {
   body: string;
   /** 적은 날(내 시간대) */
   date: YMD;
+  /** 같이 지우기로 지금 되돌려지는 것(이 메모가 사람 기록에 더한 것 중 지금도 그대로 남은 것). 없으면 메모만 지우는 단추 하나 */
+  adds: EffectLine[];
 }
 
 export interface BookLabels {
@@ -25,6 +28,10 @@ export interface BookLabels {
   write: string;
   close: string;
   del: string;
+  /** 지우는 시트: 더해진 것 상자 이름 · 메모만 지우기 · 같이 지우기 */
+  added: string;
+  delOnly: string;
+  delWith: string;
   edit: string;
   error: string;
 }
@@ -57,7 +64,8 @@ function MonthTape({ label }: { label: string }) {
  * 사람 화면의 바인더: 프로필 카드 밑에 ‘메모장’ · ‘기억해 둔 것’ 두 칸막이가 솟은 속지 한 장.
  * 메모장은 점 모눈 위 세로 점선 타임라인(맨 위 ‘오늘 … 이야기 적기’ 줄 → 최근 메모부터 달별로, 누르면 시트에서 전부 보고 지운다).
  * 기억해 둔 것은 흰 속지에 기록 목록(remembered, 서버가 그린 RememberedList)이고 칸막이 줄 오른쪽 끝 연필이 고치는 화면으로 간다.
- * 메모를 지우면 목록에서 바로 사라지고 5초 동안 되돌릴 수 있다(서버에서 지우는 건 그 뒤에)
+ * 메모를 지우면 목록에서 바로 사라지고(서버에서도 바로 지운다) 5초 동안 되돌릴 수 있다.
+ * 그 메모가 사람 기록에 더한 것이 아직 남아 있으면 시트에 '이 메모로 더해진 것'이 보이고, '같이 지우기'는 그것도 되돌린다(되돌리기는 메모와 되돌린 칸을 되살린다)
  */
 export function PersonBook({
   contactId,
@@ -100,25 +108,32 @@ export function PersonBook({
     window.history.replaceState(window.history.state, "", `${window.location.pathname}${q.size ? `?${q}` : ""}`);
   };
 
-  // 되돌리지 않고 끝났을 때 서버에서 지운다. 실패하면 목록에 다시 보인다
-  const commit = async (id: string) => {
-    const fd = new FormData();
-    fd.set("contactId", contactId);
-    fd.set("noteId", id);
-    try {
-      await deleteNote(fd);
-    } catch {
-      setGone((g) => g.filter((x) => x !== id));
-      setFailed(true);
-    }
-  };
-  const remove = (id: string) => {
+  // 메모를 지운다(revert면 그 메모가 사람 기록에 더한 것도 같이). 목록에서는 바로 감추고 서버에서 바로 지운다(AI 정리가 아직 안 끝났어도 지운 메모에는 아무것도 적히지 않게).
+  // 5초 안에 되돌리면 서버가 메모(같은 글·날짜·더한 것)와 같이 되돌린 칸을 되살린다. 실패하면 목록에 다시 보인다
+  const removeIt = async (id: string, revert: boolean) => {
     setFailed(false);
     setGone((g) => [...g, id]);
     setOpen(null);
+    let done: Awaited<ReturnType<typeof removeNote>> = { ok: false, restore: null };
+    try {
+      done = await removeNote(contactId, id, revert);
+    } catch {
+      /* 아래에서 알린다 */
+    }
+    if (!done.ok) {
+      setGone((g) => g.filter((x) => x !== id));
+      setFailed(true);
+      return;
+    }
+    const restore = done.restore;
+    if (!restore) return; // 풀 수 없는 메모라 되살릴 것이 없다
     undo.show({
-      onUndo: () => setGone((g) => g.filter((x) => x !== id)),
-      onCommit: () => void commit(id),
+      onUndo: () =>
+        void (async () => {
+          const back = await restoreNote(restore).catch(() => ({ ok: false }));
+          if (back.ok) setGone((g) => g.filter((x) => x !== id));
+          else setFailed(true);
+        })(),
     });
   };
 
@@ -205,13 +220,43 @@ export function PersonBook({
           closeLabel={labels.close}
           onClose={close}
           footer={
-            <button type="button" onClick={() => remove(open.id)} className="flex min-h-11 items-center gap-1.5 self-start rounded-full border border-edge px-4 text-[14.4px] text-red">
-              <Icon name="trash" size={16} strokeWidth={1.8} />
-              {labels.del}
-            </button>
+            open.adds.length ? (
+              <div className="flex gap-[7.2px]">
+                <button type="button" onClick={() => void removeIt(open.id, false)} className="btn-outline flex-1">
+                  {labels.delOnly}
+                </button>
+                <button type="button" onClick={() => void removeIt(open.id, true)} className="btn-outline flex-1 !text-red !shadow-[inset_0_0_0_1px_var(--color-red)]">
+                  {labels.delWith}
+                </button>
+              </div>
+            ) : (
+              <button type="button" onClick={() => void removeIt(open.id, false)} className="flex min-h-11 items-center gap-1.5 self-start rounded-full border border-edge px-4 text-[14.4px] text-red">
+                <Icon name="trash" size={16} strokeWidth={1.8} />
+                {labels.del}
+              </button>
+            )
           }
         >
           <p className="hand-written whitespace-pre-line px-6 pb-3 pt-2 text-[20.7px] leading-[1.4]">{open.body}</p>
+          {open.adds.length ? (
+            <div className="mx-6 mb-3 rounded-[12.6px] border border-edge bg-white px-[12.6px] pb-[9px] pt-[9px]">
+              <p className="text-[12.6px] text-muted">{labels.added}</p>
+              <ul className="mt-[7.2px] flex flex-col gap-[7.2px]">
+                {open.adds.map((a, i) => (
+                  <li key={`${a.label}-${i}`} className="flex items-center gap-[9px]">
+                    <SectionIcon section={a.section} size={29} />
+                    <span className="min-w-0 flex-1 leading-[1.3]">
+                      <span className="text-[12.6px] text-muted">{a.label}</span>
+                      <span aria-hidden="true" className="text-[12.6px] text-muted">
+                        {" · "}
+                      </span>
+                      <span className="hand-written text-[18.5px]">{a.prev ? `${a.prev} → ${a.value}` : a.value}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           {/* 시트가 열려 있으면 토스트도 그 안에(열린 시트 밖은 키보드로 갈 수 없다) */}
           {undo.toast}
         </Sheet>

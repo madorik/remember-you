@@ -1,11 +1,23 @@
 import "server-only";
-import { todayIn } from "@readme/core";
+import { describeEffect, revertEffects, todayIn, type EffectLine, type Locale, type PartialCard } from "@readme/core";
 import { notFound } from "next/navigation";
 import { aiConfigured } from "@/lib/ai";
-import { displayName, folderViews, listFolders, listNotes, listPeople, requireSession, todayFor, unreadAnswers } from "@/lib/data";
+import { displayName, folderViews, listFolders, listNotes, listPeople, requireSession, todayFor, unreadAnswers, type Note } from "@/lib/data";
 import { makeT } from "@/lib/t";
 import type { PersonData } from "./person.data";
 import type { PageInput } from "./routes";
+
+/**
+ * 이 메모를 지울 때 '같이 지우기'로 지금 실제로 되돌려지는 것(화면의 '이 메모로 더해진 것'). 지금 기록에 그대로 남아 있고 다른 남는 메모가 뒷받침하지 않는 것만 —
+ * 되돌려질 게 없으면 빈 목록(메모만 지우는 단추 하나만 보인다)
+ */
+function addedBy(note: Note, all: Note[], card: PartialCard, locale: Locale): EffectLine[] {
+  if (!note.effects.length) return [];
+  const others = all.filter((o) => o.id !== note.id).flatMap((o) => o.effects);
+  return revertEffects(card, note.effects, others)
+    .undone.map((e) => describeEffect(e, locale))
+    .filter((l): l is EffectLine => !!l);
+}
 
 /** 사람 하나: 기록·메모·든 폴더·안 본 답·기다리는 물어보기 */
 export async function loadPerson({ params, searchParams: sp }: PageInput): Promise<PersonData> {
@@ -34,7 +46,7 @@ export async function loadPerson({ params, searchParams: sp }: PageInput): Promi
     today,
     person: { contactId: p.contactId, personId: p.personId, name: p.name, nickname: p.nickname, avatar: p.avatar, card: p.card, favorite: p.favorite, askOff: p.askOff, folderIds: p.folderIds, answered: p.answered },
     name,
-    notes: notes.map((n) => ({ ...n, date: todayIn(s.profile.timeZone, new Date(n.createdAt)) })),
+    notes: notes.map((n) => ({ id: n.id, label: n.label, body: n.body, createdAt: n.createdAt, date: todayIn(s.profile.timeZone, new Date(n.createdAt)), adds: addedBy(n, notes, p.card, locale) })),
     tab: sp.tab === "remembered" ? "remembered" : "memo",
     folders: folderViews(folders, people, t),
     answered: answered.length > 0,

@@ -14,6 +14,7 @@ import {
   type CardData,
   type InviteStatus,
   type Locale,
+  type NoteEffect,
   type PartialCard,
   type ReminderOffset,
   type Section,
@@ -25,6 +26,7 @@ import { cache } from "react";
 import { getAuth } from "./auth";
 import { aad, open, seal, sealSection } from "./crypto";
 import { isLockedPayload } from "./data-core";
+import { packNote, unpackNote, type NoteContent } from "./note-core";
 import { isUuid } from "./uuid";
 import { asUser, type Q, type Row } from "./db";
 import { detectLocale, type T } from "./i18n";
@@ -359,6 +361,8 @@ export interface Note {
   id: string;
   label: string;
   body: string;
+  /** 이 메모가 사람 기록에 더한 것(AI 정리가 채운다. 예전 메모·아직 정리 전·더한 게 없으면 빈 목록) */
+  effects: NoteEffect[];
   createdAt: string;
 }
 
@@ -389,13 +393,19 @@ export async function listNotes(q: Q, me: string, contactId: string): Promise<No
     [contactId],
   );
   return rows.map((n) => {
-    const body = open(n.payload, aad.note(me, contactId)) as { body?: string } | null;
-    return { id: n.id, label: n.label, body: typeof body?.body === "string" ? body.body : "", createdAt: iso(n.created_at)! };
+    const c = openNote(n.payload, me, contactId);
+    return { id: n.id, label: n.label, body: c?.body ?? "", effects: c?.effects ?? [], createdAt: iso(n.created_at)! };
   });
 }
 
-export function sealNote(me: string, contactId: string, body: string): unknown {
-  return seal({ body }, aad.note(me, contactId));
+/** 메모 한 줄의 내용(글과 더한 것) 풀기. 풀 수 없으면(열쇠가 다르거나 모양이 틀리면) null */
+export function openNote(payload: unknown, me: string, contactId: string): NoteContent | null {
+  return unpackNote(open(payload, aad.note(me, contactId)));
+}
+
+/** 메모 한 줄을 암호화한다. effects(이 메모가 더한 것)가 저장 한도에 안 들어가면 덜어 낸다 */
+export function sealNote(me: string, contactId: string, body: string, effects: readonly NoteEffect[] = []): unknown {
+  return packNote(body, effects, (data) => seal(data, aad.note(me, contactId)));
 }
 
 // ── 폴더 ─────────────────────────────────────────

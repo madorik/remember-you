@@ -57,14 +57,6 @@ export async function seeAnswers(contactId: string): Promise<void> {
   revalidatePath("/home");
 }
 
-export async function deleteNote(form: FormData): Promise<void> {
-  const contactId = String(form.get("contactId"));
-  const { s } = await ownContact(contactId);
-  const noteId = String(form.get("noteId"));
-  if (isUuid(noteId)) await s.tx((q) => q("delete from notes where id = $1::uuid and contact_id = $2::uuid", [noteId, contactId]));
-  revalidatePath(`/people/${contactId}`);
-}
-
 /** 태그(내가 부르는 이름) 달기·고치기. 사람 화면 이름 밑에서 바로 저장한다(앱 사용자와 이어지지 않은 사람은 이게 이름) */
 export async function setNickname(contactId: string, raw: string): Promise<{ ok: boolean; nickname: string }> {
   const s = await requireSession();

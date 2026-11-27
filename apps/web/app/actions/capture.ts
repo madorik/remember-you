@@ -1,7 +1,7 @@
 "use server";
 
 import { track } from "@/lib/track";
-import { IMAGE_MAX_BYTES, IMAGE_MAX_COUNT, captureField, checkJpegBytes, cleanMemo, clip, describeCapture, isSection, mergeCapture, mergeImport, sanitizeSection, splitMemo, translate, type CaptureOp, type CardData, type PartialCard, type Section } from "@readme/core";
+import { IMAGE_MAX_BYTES, IMAGE_MAX_COUNT, captureField, checkJpegBytes, cleanMemo, clip, describeCapture, isSection, mergeCapture, mergeImport, NOTE_EFFECTS_MAX, parseEffects, recordEffect, revertEffects, sanitizeSection, splitMemo, translate, type CaptureOp, type CardData, type NoteEffect, type PartialCard, type Section } from "@readme/core";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { aiConfigured, classifyCapture, classifyImport, classifyImportImage, type CaptureItem, type ImageKind, type ImageReading, type ImportScope } from "@/lib/ai";
@@ -11,7 +11,7 @@ import { NEW_PEOPLE_MAX, holdsForConfirm, nameKey, resolveCapture, resolveSaved,
 import { markOnboarded } from "@/lib/onboarding";
 import { refundAi, reserveAi } from "@/lib/ai-quota";
 import type { Q } from "@/lib/db";
-import { displayName, listNotes, listPeopleLite, readCard, readContactCard, requireSession, sealNote, writeContactSection, writeSection, type Note, type Person, type Session } from "@/lib/data";
+import { displayName, listNotes, listPeopleLite, openNote, readCard, readContactCard, requireSession, sealNote, writeContactSection, writeSection, type Note, type Person, type Session } from "@/lib/data";
 import { LIMITS } from "@/lib/data-core";
 import { isUuid } from "@/lib/uuid";
 import { resolveMentions } from "@/lib/mention";
@@ -114,8 +114,10 @@ const ghost = (id: string) => id.startsWith("new:") || id.startsWith("pick:");
  * write가 false면 같은 길을 가되 아무것도 쓰지 않고(새 사람도 만들지 않는다) 어떻게 적힐지 줄만 돌려준다 — 확인 화면의 초안·미리 보기.
  * 대상이 내 사람이 아니거나(사람 목록에 없다) 저장인데 아직 못 정한 줄(pick)은 건너뛴다
  * importing이면 메모 가져오기: 더하기만 한다(바꾸기는 더하기로, 지우기는 건너뛴다). 이미 값이 있는 한 칸짜리는 건드리지 않는다(mergeImport)
+ * noteOf(사람 contactId → 그 사람에게 남긴 메모 id)를 주면 메모를 정리하는 것: 그 메모가 아직 있는 사람에게만 적고(그 사이 지운 메모는 건너뛴다),
+ * 실제로 바뀐 것을 그 메모의 암호화된 내용에 같이 남긴다(메모를 지울 때 같이 되돌릴 수 있게)
  */
-async function apply(s: Session, people: Person[], rows: ResolvedCapture[], write: boolean, importing = false): Promise<{ lines: CaptureDraftLine[]; undo: UndoOp[] }> {
+async function apply(s: Session, people: Person[], rows: ResolvedCapture[], write: boolean, importing = false, noteOf?: ReadonlyMap<string, string>): Promise<{ lines: CaptureDraftLine[]; undo: UndoOp[] }> {
   const { locale } = s.profile;
   const lines: CaptureDraftLine[] = [];
   const undo: UndoOp[] = [];
@@ -124,6 +126,13 @@ async function apply(s: Session, people: Person[], rows: ResolvedCapture[], writ
     // 저장은 사람마다 한 번에 하나씩(같은 사람이 동시에 두 번 적어도 서로 덮어쓰지 않게), 저장하는 사람의 기록은 읽을 때 잠가서 그 사이 다른 저장이 못 끼어들게 한다
     if (write) await q("select pg_advisory_xact_lock(hashtext($1))", [`capture:${s.user.id}`]);
     const mine = (await readCard(q, s.user.id, write)).card;
+    // 메모를 정리하는 중이면 그 메모들을 잠그고 읽는다: 정리가 끝나기 전에 지운 메모에는 아무것도 적지 않으려고. 지우는 쪽도 같은 차례(저장 잠금 → 메모 줄)로 잡아 서로 엇갈리지 않는다
+    const live = new Map<string, { id: string; payload: unknown }>();
+    if (write && noteOf?.size) {
+      const held = await q<{ id: string; contact_id: string; payload: unknown }>("select id, contact_id, payload from notes where id = any($1::uuid[]) for update", [[...noteOf.values()]]);
+      for (const r of held) if (noteOf.get(r.contact_id) === r.id) live.set(r.contact_id, r);
+    }
+    const effects = new Map<string, NoteEffect[]>(); // 사람 contactId → 이 정리가 실제로 적은 일들
     // 같은 말 안에서 같은 칸을 여러 번 고쳐도 차례로 합쳐지게 지금 값을 들고 다닌다. 사람의 기록은 처음 건드릴 때 읽는다(목록은 기록을 풀지 않은 것)
     const known = new Set(people.map((p) => p.contactId));
     const cards = new Map<string, PartialCard>([["me", { ...mine }]]);
@@ -179,6 +188,7 @@ async function apply(s: Session, people: Person[], rows: ResolvedCapture[], writ
         notes.set(who, []);
         names.set(who, row.spoken);
       }
+      if (noteOf && write && !live.has(who)) continue; // 그 사이 지운 메모
       // 화면이 줄과 함께 되돌려 받는 것: 대상까지 반영한 항목과 대상·말한 이름·후보
       const item = { ...row.item, who: whoOf(target, row.spoken), ...(importing ? { op: "add" as const } : {}) };
       const extra = { item, idx: row.idx, target, spoken: row.spoken, candidates: row.candidates };
@@ -199,9 +209,9 @@ async function apply(s: Session, people: Person[], rows: ResolvedCapture[], writ
             who,
             JSON.stringify(sealNote(s.user.id, who, body)),
           ]);
-          kept.unshift({ id: n!.id, label: "", body, createdAt: new Date().toISOString() });
+          kept.unshift({ id: n!.id, label: "", body, effects: [], createdAt: new Date().toISOString() });
           undo.push({ type: "note", contactId: who, id: n!.id });
-        } else kept.unshift({ id: "", label: "", body, createdAt: new Date().toISOString() });
+        } else kept.unshift({ id: "", label: "", body, effects: [], createdAt: new Date().toISOString() });
         lines.push({ who: names.get(who)!, isNew, op: "add", field: translate(locale, "voice.memo"), value: body, href, ...extra });
         continue;
       }
@@ -211,6 +221,10 @@ async function apply(s: Session, people: Person[], rows: ResolvedCapture[], writ
       const card = await cardOf(who);
       const op = item.op;
       const merged = importing ? mergeImport(field, card[field.section], item) : mergeCapture(field, card[field.section], item, op);
+      if (noteOf && write && !importing) {
+        const e = recordEffect(field, item, op, card[field.section], merged);
+        if (e) effects.set(who, [...(effects.get(who) ?? []), e]);
+      }
       // 내 리드미의 선물 목록은 '받고 싶은 것', 다른 사람 기록에서는 '해주고 싶은 선물'
       const label = who === "me" && field.key === "gifts.wishlist" ? translate(locale, "gift.wishTitle") : field.label[locale];
       const line = { who: names.get(who)!, isNew, op, field: label, value: describeCapture(field, item, locale), href, ...extra };
@@ -234,6 +248,12 @@ async function apply(s: Session, people: Person[], rows: ResolvedCapture[], writ
       }
       (card as Record<string, unknown>)[field.section] = merged;
       lines.push(line);
+    }
+    for (const [who, list] of effects) {
+      const row = live.get(who);
+      const note = row ? openNote(row.payload, s.user.id, who) : null;
+      if (!row || !note) continue; // 풀 수 없는 메모는 덮어쓰지 않는다
+      await q("update notes set payload = $2::jsonb where id = $1::uuid", [row.id, JSON.stringify(sealNote(s.user.id, who, note.body, [...note.effects, ...list].slice(0, NOTE_EFFECTS_MAX)))]);
     }
   });
   return { lines, undo };
@@ -283,6 +303,7 @@ async function commitMemo(s: Session, rawText: string, rawIds: string[], via: "v
     .slice(0, NEW_PEOPLE_MAX);
   if (!text || (!wanted.length && !names.length)) return none;
   let saved: string[] = [];
+  const noteIds = new Map<string, string>(); // 사람 contactId → 그 사람에게 남긴 메모 id(AI 정리가 어느 메모의 일인지 알도록)
   const created: { id: string; name: string }[] = [];
   try {
     saved = await s.tx(async (q) => {
@@ -293,7 +314,8 @@ async function commitMemo(s: Session, rawText: string, rawIds: string[], via: "v
         // 한 사람에게 메모는 LIMITS.notes개까지(넘으면 그 사람은 건너뛴다)
         const n = await q.one<{ n: number }>("select count(*)::int as n from notes where contact_id = $1", [id]);
         if ((n?.n ?? 0) >= LIMITS.notes) continue;
-        await q("insert into notes (author_id, contact_id, label, payload) values ($1, $2, '', $3)", [s.user.id, id, JSON.stringify(sealNote(s.user.id, id, text))]);
+        const n2 = await q.one<{ id: string }>("insert into notes (author_id, contact_id, label, payload) values ($1, $2, '', $3) returning id", [s.user.id, id, JSON.stringify(sealNote(s.user.id, id, text))]);
+        noteIds.set(id, n2!.id);
         done.push(id);
       }
       if (names.length) {
@@ -305,7 +327,8 @@ async function commitMemo(s: Session, rawText: string, rawIds: string[], via: "v
           total++;
           const c = await q.one<{ id: string }>("insert into contacts (user_id, nickname) values ($1, $2) returning id", [s.user.id, name]);
           await q("insert into contact_cards (contact_id, author_id) values ($1, $2)", [c!.id, s.user.id]);
-          await q("insert into notes (author_id, contact_id, label, payload) values ($1, $2, '', $3)", [s.user.id, c!.id, JSON.stringify(sealNote(s.user.id, c!.id, text))]);
+          const n2 = await q.one<{ id: string }>("insert into notes (author_id, contact_id, label, payload) values ($1, $2, '', $3) returning id", [s.user.id, c!.id, JSON.stringify(sealNote(s.user.id, c!.id, text))]);
+          noteIds.set(c!.id, n2!.id);
           created.push({ id: c!.id, name });
           done.push(c!.id);
         }
@@ -322,7 +345,7 @@ async function commitMemo(s: Session, rawText: string, rawIds: string[], via: "v
   revalidatePath("/people", "layout");
   if (created.length) revalidatePath("/home");
   // 응답을 보낸 뒤에 정리한다(서버 액션 안의 after는 요청 정보·세션을 그대로 쓸 수 있다)
-  after(() => organizeMemo(s, text, saved));
+  after(() => organizeMemo(s, text, saved, noteIds));
   return { ok: true, error: null, ids: saved, created };
 }
 
@@ -356,7 +379,7 @@ type OrganizeResult = "ok" | "ai_off" | "limit" | "nothing" | "failed";
  * 응답 뒤(after)에 돌아 화면에 아무 흔적이 없으니 실행마다 한 줄을 로그로 남긴다(Vercel 런타임 로그): 글·이름은 담지 않고 결과와 개수만.
  * people 정리할 사람 수 · items AI가 나눈 항목 수 · rows 그중 이 사람들에게 더할 항목 수(memo·다른 사람·확인이 필요한 줄은 뺀 것) · lines 실제로 적은 줄 · ms 걸린 시간
  */
-async function organizeMemo(s: Session, text: string, ids: string[]): Promise<void> {
+async function organizeMemo(s: Session, text: string, ids: string[], noteOf: ReadonlyMap<string, string>): Promise<void> {
   const t0 = Date.now();
   let result: OrganizeResult = "nothing";
   const stat = { people: 0, items: 0, rows: 0, lines: 0 };
@@ -365,6 +388,9 @@ async function organizeMemo(s: Session, text: string, ids: string[]): Promise<vo
     const picked = ids.map((id) => all.find((p) => p.contactId === id)).filter((p): p is Person => !!p);
     stat.people = picked.length;
     if (!picked.length) return;
+    // 응답을 보낸 뒤 AI가 끝나기 전에 메모를 모두 지웠으면 AI를 부르지도 않는다(하나라도 남았으면 apply가 남은 메모의 사람에게만 적는다)
+    const alive = await s.tx((q) => q<{ id: string }>("select id from notes where id = any($1::uuid[])", [[...noteOf.values()]]));
+    if (!alive.length) return;
     const pickedIds = picked.map((p) => p.contactId);
     // 여러 사람이면 글 앞에 @이름을 붙여 누구 이야기인지 짚는다(한 사람이면 그 사람 화면에서 적은 것처럼)
     const said = pickedIds.length === 1 ? text : `${picked.map((p) => `@${displayName(p)}`).join(" ")} ${text}`;
@@ -379,7 +405,7 @@ async function organizeMemo(s: Session, text: string, ids: string[]): Promise<vo
     );
     stat.rows = rows.length;
     if (!rows.length) return;
-    const done = await apply(c.s, c.people, rows, true);
+    const done = await apply(c.s, c.people, rows, true, false, noteOf);
     stat.lines = done.lines.filter((l) => !l.same).length;
     if (done.lines.length) committed(c.s);
     if (stat.lines) result = "ok";
@@ -390,6 +416,30 @@ async function organizeMemo(s: Session, text: string, ids: string[]): Promise<vo
     console.info("[organize]", { result, ...stat, ms: Date.now() - t0 });
   }
 }
+
+/**
+ * 칸 하나 되돌리기: 지금 값이 그때 적은 값(after) 그대로일 때만 옛 값(before)으로 — 그 사이에 고친 내용을 옛 값으로 덮어쓰지 않으려고, 달라졌으면 그 항목은 그대로 둔다.
+ * after가 없는 옛 요청은 예전처럼 되돌린다. mine은 이 트랜잭션에서 잠그고 읽은 내 기록(who가 me일 때만 쓴다)
+ */
+async function undoSection(q: Q, s: Session, op: Extract<UndoOp, { type: "section" }>, mine: PartialCard): Promise<void> {
+  const section = op.section;
+  if (op.after !== undefined) {
+    const now = op.who === "me" ? mine[section] : (await readContactCard(q, s.user.id, op.who, true))[section];
+    if (!sameSectionValue(section, now, op.after)) return;
+  }
+  if (op.who === "me") {
+    if (op.before == null) await q("delete from card_sections where owner_id = $1 and section = $2", [s.user.id, section]);
+    else await writeSection(q, s.user.id, section, sanitizeSection(section, op.before) as CardData[Section]);
+  } else if (op.before == null) {
+    await q("update contact_cards set sections = sections - $2::text where contact_id = $1::uuid", [op.who, section]);
+  } else {
+    await writeContactSection(q, s.user.id, op.who, section, sanitizeSection(section, op.before));
+  }
+}
+
+/** 화면에서 받은 UndoOp 한 칸짜리가 모양이 맞나(내 것만 고치므로 값은 받아도 되지만 칸·사람은 확인한다) */
+const validSectionOp = (op: UndoOp | undefined): op is Extract<UndoOp, { type: "section" }> =>
+  op?.type === "section" && isSection(op.section) && typeof op.who === "string" && (op.who === "me" || isUuid(op.who));
 
 /**
  * 방금 말로 적은 것 되돌리기(거꾸로). 항목은 그 뒤에 직접 고치지 않았을 때만 되돌린다(지금 값이 말로 적은 값 그대로일 때):
@@ -405,22 +455,7 @@ export async function undoCapture(ops: UndoOp[]): Promise<{ ok: boolean }> {
       for (const op of [...ops].reverse()) {
         if (op?.type === "note" && isUuid(op.id)) await q("delete from notes where id = $1::uuid", [op.id]);
         else if (op?.type === "contact" && isUuid(op.contactId)) await q("delete from contacts where id = $1::uuid", [op.contactId]);
-        else if (op?.type === "section" && isSection(op.section) && typeof op.who === "string" && (op.who === "me" || isUuid(op.who))) {
-          const section = op.section;
-          // 적은 뒤에 직접 고쳤으면(지금 값 ≠ 적은 값) 건드리지 않는다. after가 없는 옛 요청은 예전처럼 되돌린다
-          if (op.after !== undefined) {
-            const now = op.who === "me" ? mine[section] : (await readContactCard(q, s.user.id, op.who, true))[section];
-            if (!sameSectionValue(section, now, op.after)) continue;
-          }
-          if (op.who === "me") {
-            if (op.before == null) await q("delete from card_sections where owner_id = $1 and section = $2", [s.user.id, section]);
-            else await writeSection(q, s.user.id, section, sanitizeSection(section, op.before) as CardData[Section]);
-          } else if (op.before == null) {
-            await q("update contact_cards set sections = sections - $2::text where contact_id = $1::uuid", [op.who, section]);
-          } else {
-            await writeContactSection(q, s.user.id, op.who, section, sanitizeSection(section, op.before));
-          }
-        }
+        else if (validSectionOp(op)) await undoSection(q, s, op, mine);
       }
     });
   } catch {
@@ -429,6 +464,94 @@ export async function undoCapture(ops: UndoOp[]): Promise<{ ok: boolean }> {
   revalidatePath("/people", "layout");
   revalidatePath("/home");
   revalidatePath("/me");
+  return { ok: true };
+}
+
+// ── 메모 지우기(같이 지우기) ─────────────────────────────────────────────
+// 메모를 지울 때 그 메모가 사람 기록에 더한 것(AI 정리가 메모 안에 남겨 둔 일)을 같이 되돌릴 수 있다.
+// 되돌리기는 지운 메모와 되돌린 칸을 화면이 들고 있다가(NoteRestore) 5초 안에 눌렀을 때 그대로 되살린다
+
+/** 지운 메모를 되살리는 데 필요한 것(되돌린 칸은 UndoOp와 같은 뜻: 지금 값이 적힌 값 그대로일 때만 옛 값으로) */
+export interface NoteRestore {
+  id: string;
+  contactId: string;
+  label: string;
+  body: string;
+  /** ISO */
+  createdAt: string;
+  effects: NoteEffect[];
+  ops: UndoOp[];
+}
+
+/**
+ * 메모 지우기. revert면 그 메모가 더한 것도 같이 되돌린다: 지금도 그대로 남아 있고 다른 남는 메모가 뒷받침하지 않는 것만(revertEffects).
+ * 한 트랜잭션(저장 잠금 → 메모 줄 → 사람 기록)이라, AI 정리가 아직 안 끝났어도 지운 메모에는 아무것도 적히지 않는다(apply가 같은 잠금·메모 줄을 본다).
+ * 이미 지워졌으면 ok. 되살릴 것(restore)은 지운 메모를 풀 수 있었을 때 돌려준다(5초 되돌리기)
+ */
+export async function removeNote(contactId: string, noteId: string, revert: boolean): Promise<{ ok: boolean; restore: NoteRestore | null }> {
+  const s = await requireSession();
+  if (!isUuid(contactId) || !isUuid(noteId)) return { ok: false, restore: null };
+  try {
+    const restore = await s.tx(async (q) => {
+      await q("select pg_advisory_xact_lock(hashtext($1))", [`capture:${s.user.id}`]);
+      const row = await q.one<{ id: string; label: string; payload: unknown; created_at: Date }>("select id, label, payload, created_at from notes where id = $1::uuid and contact_id = $2::uuid for update", [noteId, contactId]);
+      if (!row) return null; // 이미 없다
+      const note = openNote(row.payload, s.user.id, contactId);
+      const ops: UndoOp[] = [];
+      if (revert && note?.effects.length) {
+        const rest = await q<{ payload: unknown }>("select payload from notes where contact_id = $1::uuid and id <> $2::uuid", [contactId, noteId]);
+        const others = rest.flatMap((r) => openNote(r.payload, s.user.id, contactId)?.effects ?? []);
+        const card = await readContactCard(q, s.user.id, contactId, true);
+        const result = revertEffects(card, note.effects, others);
+        for (const section of Object.keys(result.sections) as Section[]) {
+          const data = result.sections[section]!;
+          await writeContactSection(q, s.user.id, contactId, section, data);
+          ops.push({ type: "section", who: contactId, section, before: card[section] ?? null, after: data });
+        }
+      }
+      await q("delete from notes where id = $1::uuid", [noteId]);
+      if (!note) return null; // 풀 수 없는 메모는 되살릴 내용이 없다
+      return { id: row.id, contactId, label: row.label, body: note.body, createdAt: new Date(row.created_at).toISOString(), effects: note.effects, ops } satisfies NoteRestore;
+    });
+    revalidatePath("/people", "layout");
+    revalidatePath("/home");
+    return { ok: true, restore };
+  } catch {
+    return { ok: false, restore: null };
+  }
+}
+
+/** 지운 메모 되살리기(5초 안 되돌리기): 메모를 같은 id·날짜·더한 것 그대로 다시 넣고, 같이 되돌렸던 칸은 지금 값이 그때 되돌린 값 그대로일 때만 옛 값으로 */
+export async function restoreNote(input: NoteRestore): Promise<{ ok: boolean }> {
+  const s = await requireSession();
+  const contactId = input?.contactId;
+  const body = clip(String(input?.body ?? "").trim(), 1000).trim();
+  const when = new Date(String(input?.createdAt ?? ""));
+  if (!isUuid(input?.id) || !isUuid(contactId) || !body || Number.isNaN(when.getTime())) return { ok: false };
+  const label = clip(String(input.label ?? "").trim(), 40);
+  const ops = (Array.isArray(input.ops) ? input.ops : []).filter((op) => validSectionOp(op) && op.who === contactId);
+  try {
+    const ok = await s.tx(async (q) => {
+      await q("select pg_advisory_xact_lock(hashtext($1))", [`capture:${s.user.id}`]);
+      const n = await q.one<{ n: number }>("select count(*)::int as n from notes where contact_id = $1::uuid", [contactId]);
+      if ((n?.n ?? 0) >= LIMITS.notes) return false;
+      await q("insert into notes (id, author_id, contact_id, label, payload, created_at) values ($1::uuid, $2, $3::uuid, $4, $5::jsonb, $6::timestamptz) on conflict (id) do nothing", [
+        input.id,
+        s.user.id,
+        contactId,
+        label,
+        JSON.stringify(sealNote(s.user.id, contactId, body, parseEffects(input.effects))),
+        when.toISOString(),
+      ]);
+      for (const op of [...ops].reverse()) if (validSectionOp(op)) await undoSection(q, s, op, {});
+      return true;
+    });
+    if (!ok) return { ok: false };
+  } catch {
+    return { ok: false };
+  }
+  revalidatePath("/people", "layout");
+  revalidatePath("/home");
   return { ok: true };
 }
 

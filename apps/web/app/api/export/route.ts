@@ -46,7 +46,7 @@ export async function GET() {
     }
   }
 
-  const notesByContact = new Map<string, Note[]>();
+  const notesByContact = new Map<string, Omit<Note, "effects">[]>();
   for (const n of raw.notes) {
     const body = open(n.payload, aad.note(me, n.contact_id)) as { body?: unknown } | null;
     if (typeof body?.body !== "string") undecryptable++;

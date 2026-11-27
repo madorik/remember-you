@@ -1,4 +1,4 @@
-import type { AvatarConfig, Locale, PartialCard, Section, YMD } from "@readme/core";
+import type { AvatarConfig, EffectLine, Locale, PartialCard, Section, YMD } from "@readme/core";
 import type { FolderView } from "@/lib/folders";
 
 // 사람 화면 데이터(lib/pages/person.ts가 만들고 components/pages/PersonView가 그린다). 타입만 둔다
@@ -26,7 +26,7 @@ export interface PersonData {
   /** 부를 이름(내가 정한 부르는 말, 없으면 그 사람 이름) */
   name: string;
   /** 나만 보는 메모(최근 것부터). date: 적은 날(내 시간대) */
-  notes: { id: string; label: string; body: string; createdAt: string; date: YMD }[];
+  notes: { id: string; label: string; body: string; createdAt: string; date: YMD; /** 같이 지우기로 지금 되돌려지는 것(없으면 빈 목록) */ adds: EffectLine[] }[];
   /** 처음 열리는 바인더 칸(?tab=remembered면 기억해 둔 것, 아니면 메모장) */
   tab: "memo" | "remembered";
   folders: FolderView[];
