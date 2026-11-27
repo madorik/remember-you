@@ -1651,8 +1651,10 @@ test("연말엔 사람이 있어도 가까운 기념일이 없으면 크리스�
   if (yearEnd(todayIn("Asia/Seoul"))) {
     const upcoming = page.getByRole("region", { name: "다가오는 날" });
     await expect(upcoming.getByText(ko["home.yearEnd"])).toBeVisible();
-    // 사람이 있으니 곧장 선물 고르기(한 명이면 그 사람의 선물 고르기 화면으로, 크리스마스용), '사람 추가하기'로 이끄는 쪽은 없다
+    // 사람이 있으니 곧장 선물 고르기(그 사람의 선물 고르기 화면으로, 크리스마스용), 단추 앞에 그 사람의 이름이 보이고(한 명이면 글만, 누르는 곳이 아니다), '사람 추가하기'로 이끄는 쪽은 없다
     await expect(upcoming.getByRole("link", { name: ko["home.yearEndGift"] })).toHaveAttribute("href", /^\/people\/[0-9a-f-]{36}\/reminder\?xmas=1$/);
+    await expect(upcoming.getByText("할머니", { exact: true })).toBeVisible();
+    await expect(upcoming.getByRole("link", { name: "할머니", exact: true })).toHaveCount(0);
     await expect(upcoming.getByRole("link", { name: ko["home.yearEndAdd"] })).toHaveCount(0);
     await expect(upcoming.getByRole("link", { name: ko["home.yearEndAsk"] })).toHaveCount(0);
     await expect(page.getByText("새 친구 추가해 봐요")).toHaveCount(0);
@@ -1738,9 +1740,12 @@ test("연말 카드: 사람이 여럿이면 사람들에서 한 명을 고르면
     await expect(page.getByRole("heading", { name: name })).toBeVisible();
   }
   await page.goto("/home");
-  const gift = page.getByRole("region", { name: "다가오는 날" }).getByRole("link", { name: ko["home.yearEndGift"] });
-  await expect(gift).toHaveAttribute("href", "/people?pick=1&me=0&to=gift&xmas=1");
-  await gift.click();
+  // 단추 앞에 최근 본 사람의 얼굴·이름이 보이고(같은 날 연 사람끼리는 앞선 사람), 단추는 그 사람의 선물 고르기로, 얼굴·이름은 사람들에서 다른 사람을 고르러 간다
+  const upcoming = page.getByRole("region", { name: "다가오는 날" });
+  await expect(upcoming.getByRole("link", { name: ko["home.yearEndGift"] })).toHaveAttribute("href", /^\/people\/[0-9a-f-]{36}\/reminder\?xmas=1$/);
+  const pick = upcoming.getByRole("link", { name: /^(할머니|고모)$/ });
+  await expect(pick).toHaveAttribute("href", "/people?pick=1&me=0&to=gift&xmas=1");
+  await pick.click();
   await expect(page).toHaveURL(/\/people\?.*pick=1/);
   // 한 명만 고르면 그 사람의 선물 고르기 화면(크리스마스용)
   await page.getByRole("button", { name: "고모 선택" }).click();

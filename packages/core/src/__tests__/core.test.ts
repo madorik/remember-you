@@ -33,6 +33,7 @@ import {
   questionsLeft,
   questionsUsedToday,
   isCloseEnough,
+  mostRecentlyViewed,
   isRecentlyAdded,
   RECENT_PERSON_DAYS,
   CLOSE_VIEW_DAYS,
@@ -200,6 +201,15 @@ test("오늘의 질문: 가까운 사람에게만(가족·연인 폴더, 즐겨�
   assert.equal(isCloseEnough({ askOff: true, favorite: true, closeFolder: true, viewDays: 99 }), false, "다시 묻지 않기가 이긴다");
   assert.equal(isCloseEnough({ ...base, recent: true }), true, "방금 더한 사람(말로 적다가 생긴 사람)은 폴더가 없어도 묻는다");
   assert.equal(isCloseEnough({ ...base, askOff: true, recent: true }), false, "방금 더한 사람도 다시 묻지 않기는 뺀다");
+});
+
+test("가장 최근에 사람 화면을 연 사람: 연 날 늦은 순 → 연 날 수 많은 순 → 목록 앞선 순, 연 적 없으면 맨 뒤", () => {
+  const mk = (id: string, viewedOn: string | null, viewDays: number) => ({ id, viewedOn, viewDays });
+  assert.equal(mostRecentlyViewed([]), null);
+  assert.equal(mostRecentlyViewed([mk("a", null, 0), mk("b", null, 0)])?.id, "a", "연 적이 없으면 목록 첫 사람");
+  assert.equal(mostRecentlyViewed([mk("a", null, 0), mk("b", "2026-11-20", 1)])?.id, "b", "연 적 없는 사람은 뒤로");
+  assert.equal(mostRecentlyViewed([mk("a", "2026-11-25", 1), mk("b", "2026-11-26", 1), mk("c", "2026-11-20", 9)])?.id, "b", "가장 늦게 연 사람");
+  assert.equal(mostRecentlyViewed([mk("a", "2026-11-26", 2), mk("b", "2026-11-26", 5), mk("c", "2026-11-26", 5)])?.id, "b", "같은 날이면 많이 연 사람, 그래도 같으면 앞선 사람");
 });
 
 test("오늘의 질문: 더한 지 14일 안 된 사람만 '방금 더한 사람'", () => {

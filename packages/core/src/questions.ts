@@ -189,6 +189,24 @@ export function isCloseEnough(p: { askOff: boolean; favorite: boolean; closeFold
   return p.closeFolder || p.favorite || p.viewDays >= CLOSE_VIEW_DAYS || p.recent === true;
 }
 
+/**
+ * 가장 최근에 사람 화면을 연 사람: 연 날(viewedOn 'YYYY-MM-DD')이 늦은 순 → 연 날 수가 많은 순 → 받은 순서(앞선 사람).
+ * 연 적이 없는 사람(viewedOn 없음)은 맨 뒤. 목록이 비면 null
+ */
+export function mostRecentlyViewed<T extends { viewedOn: string | null; viewDays: number }>(list: readonly T[]): T | null {
+  let best: T | null = null;
+  for (const p of list) {
+    if (!best) {
+      best = p;
+      continue;
+    }
+    const a = p.viewedOn ?? "";
+    const b = best.viewedOn ?? "";
+    if (a > b || (a === b && p.viewDays > best.viewDays)) best = p;
+  }
+  return best;
+}
+
 /** 질문에 답이 들어갈 항목(물어보기로 그 항목만 물어볼 때) */
 export const QUESTION_SECTION = {
   drinks: "taste",

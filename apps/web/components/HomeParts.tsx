@@ -1,5 +1,6 @@
 import type { AvatarConfig } from "@readme/core";
 import Link from "@/components/AppLink";
+import { Avatar } from "@/components/Avatar";
 import { FaceStack } from "@/components/FaceStack";
 import { Mascot } from "@/components/Mascot";
 import { u } from "@/lib/ui-scale";
@@ -149,6 +150,44 @@ export function HeroButton({ href, label, first = true, small = false }: { href:
         <path d="M5 12h14M13 6l6 6-6 6" />
       </svg>
     </Link>
+  );
+}
+
+/**
+ * 연말 카드 아래 줄: [작은 폴라로이드 얼굴 + 이름 ……… 작은 망고 알약 '선물 고르기 ›'].
+ * 알약은 그 사람의 선물 고르기로. 얼굴·이름은 pickHref가 있으면(사람이 여럿) 다른 사람을 고르러 가는 링크, 없으면 그냥 글
+ */
+export function HeroPickRow({ avatar, name, pickHref, giftHref, giftLabel }: { avatar: AvatarConfig | null; name: string; pickHref: string | null; giftHref: string; giftLabel: string }) {
+  const who = (
+    <>
+      <span className="flex shrink-0 items-center justify-center border bg-white p-[2.7px]" style={{ borderColor: EDGE, boxShadow: "0 3.6px 7.2px -5.4px rgba(31,35,64,.5)", transform: "rotate(-4deg)" }}>
+        <span className="flex items-center justify-center" style={{ width: u(34), height: u(34), background: "#FFF4D6" }}>
+          <Avatar config={avatar} size={30} label={name} decorative />
+        </span>
+      </span>
+      <span className="hand-written min-w-0 truncate text-[19.8px] leading-none">{name}</span>
+    </>
+  );
+  return (
+    <div className="mt-[10.8px] flex items-center gap-[10.8px]">
+      {pickHref ? (
+        <Link href={pickHref} aria-label={name} className="flex min-h-11 min-w-0 flex-1 items-center gap-[9px]">
+          {who}
+        </Link>
+      ) : (
+        <span className="flex min-h-11 min-w-0 flex-1 items-center gap-[9px]">{who}</span>
+      )}
+      <Link
+        href={giftHref}
+        className="hand flex h-[37.8px] shrink-0 items-center justify-center gap-[5.4px] rounded-full border pl-[14.4px] pr-[10.8px] text-[18.9px] leading-none transition-transform active:translate-y-px"
+        style={{ borderColor: EDGE, background: MANGO, boxShadow: "0 2.7px 0 #E09A12", color: INK }}
+      >
+        <span className="whitespace-nowrap">{giftLabel}</span>
+        <svg aria-hidden="true" viewBox="0 0 24 24" width={u(17)} height={u(17)} fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+          <path d="M5 12h14M13 6l6 6-6 6" />
+        </svg>
+      </Link>
+    </div>
   );
 }
 

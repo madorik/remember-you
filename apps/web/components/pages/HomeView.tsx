@@ -1,4 +1,4 @@
-import { aboutPrompt, addDays, canAnswerOwn, daysOn, formatDayFull, formatDotted, formatMonthDay, formatSpec, holidayKey, nextHoliday, NONE, NONE_LABEL, questionsLeft, sameYmd, solarToLunar, upcomingEvents, weekday, weekdayNames, yearEnd, type UpcomingEvent, type YMD } from "@readme/core";
+import { aboutPrompt, addDays, canAnswerOwn, daysOn, formatDayFull, formatDotted, formatMonthDay, formatSpec, holidayKey, mostRecentlyViewed, nextHoliday, NONE, NONE_LABEL, questionsLeft, sameYmd, solarToLunar, upcomingEvents, weekday, weekdayNames, yearEnd, type UpcomingEvent, type YMD } from "@readme/core";
 import Link from "@/components/AppLink";
 import { Avatar } from "@/components/Avatar";
 import { Wordmark } from "@/components/chrome";
@@ -8,7 +8,7 @@ import { HomeQuestion } from "@/components/HomeQuestion";
 import { Mascot } from "@/components/Mascot";
 import { NotificationBell, type BellItem } from "@/components/NotificationBell";
 import { ProfileMenu } from "@/components/ProfileMenu";
-import { DateHead, DStamp, HeroButton, HeroFrame, HeroPolaroid, RememberedBox, WeekCard, type WeekDay } from "@/components/HomeParts";
+import { DateHead, DStamp, HeroButton, HeroFrame, HeroPickRow, HeroPolaroid, RememberedBox, WeekCard, type WeekDay } from "@/components/HomeParts";
 import { Chev } from "@/components/planner";
 import { ReplyAlertsPrompt } from "@/components/native";
 import { ReviewMoment } from "@/components/ReviewAsk";
@@ -102,15 +102,11 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
   const xmas = xmasAt && (!nearest || xmasAt.daysUntil < nearest.daysUntil) ? xmasAt : null;
   const next = xmas ? null : nearest;
   const personOf = (contactId: string) => people.find((p) => p.contactId === contactId) ?? null;
-  // 연말 카드의 흐름: 선물 고르기 화면(사람 화면의 '선물 고르기'가 가는 곳, 크리스마스용 ?xmas=1)으로 바로 간다.
-  // 답이 온 사람이 있으면 그 사람, 사람이 하나뿐이면 그 사람, 여럿이면 사람들에서 한 명을 고르게(고르면 그 사람의 선물 고르기로), 아직 없으면 사람 추가 → 물어보기로
+  // 연말 카드의 흐름: 단추 앞에 사람 한 명(얼굴·이름)을 보이고, 단추는 그 사람의 선물 고르기 화면(사람 화면의 '선물 고르기'가 가는 곳, 크리스마스용 ?xmas=1)으로 간다.
+  // 그 사람은 답이 온 사람이 있으면 그 사람, 아니면 가장 최근에 사람 화면을 연 사람. 얼굴·이름을 누르면(사람이 여럿일 때) 사람들에서 다른 한 명을 고른다. 아직 사람이 없으면 사람 추가 → 물어보기로
   const answeredIds = [...new Set(answers.map((a) => a.contactId))].filter((id) => personOf(id));
   const answeredFirst = answeredIds[0] ? personOf(answeredIds[0]) : null;
-  const xmasGiftHref = answeredFirst
-    ? `/people/${answeredFirst.contactId}/reminder?xmas=1`
-    : people.length === 1
-      ? `/people/${people[0]!.contactId}/reminder?xmas=1`
-      : "/people?pick=1&me=0&to=gift&xmas=1";
+  const xmasPerson = answeredFirst ?? mostRecentlyViewed(people);
   const bellItems: BellItem[] = answers.map((a) => {
     const who = personOf(a.contactId);
     const name = who ? displayName(who) : a.label;
@@ -264,7 +260,17 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
           </span>
         }
       >
-        {people.length ? <HeroButton href={xmasGiftHref} label={t("home.yearEndGift")} /> : <HeroButton href="/people/new?xmas=1" label={t("home.yearEndAdd")} />}
+        {xmasPerson ? (
+          <HeroPickRow
+            avatar={xmasPerson.avatar}
+            name={displayName(xmasPerson)}
+            pickHref={people.length > 1 ? "/people?pick=1&me=0&to=gift&xmas=1" : null}
+            giftHref={`/people/${xmasPerson.contactId}/reminder?xmas=1`}
+            giftLabel={t("home.yearEndGift")}
+          />
+        ) : (
+          <HeroButton href="/people/new?xmas=1" label={t("home.yearEndAdd")} />
+        )}
       </HeroFrame>
     );
   } else if (holiday) {
