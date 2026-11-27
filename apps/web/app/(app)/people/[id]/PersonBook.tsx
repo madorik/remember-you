@@ -4,7 +4,7 @@ import { formatDayFull, weekdayShort, type EffectLine, type Locale, type YMD } f
 import { useCallback, useId, useState } from "react";
 import { removeNote, restoreNote } from "@/app/actions/capture";
 import AppLink from "@/components/AppLink";
-import { BinderPage } from "@/components/Binder";
+import { BinderPage, RULE, RULE_AT } from "@/components/Binder";
 import { Icon } from "@/components/marks";
 import { SectionIcon } from "@/components/SectionIcon";
 import { Sheet } from "@/components/Sheet";
@@ -49,10 +49,13 @@ function monthLabel(d: YMD, today: YMD, locale: Locale): string {
   return locale === "ko" ? `${d.y}년 ${m}` : `${m} ${d.y}`;
 }
 
-/** 달 이름표: 양 끝이 톱니로 뜯긴 망고빛 마스킹테이프 */
+/** 메모장 속지 위쪽 여백(줄 칸이 시작하는 곳) */
+const TOP = 12.6;
+
+/** 달 이름표: 양 끝이 톱니로 뜯긴 망고빛 마스킹테이프. 줄 한 칸(RULE) 높이를 차지해 밑의 메모가 줄에 맞게 이어진다 */
 function MonthTape({ label }: { label: string }) {
   return (
-    <div className="ml-[1.8px] flex items-center gap-[7.2px]" style={{ height: 32.4 }}>
+    <div className="ml-[1.8px] flex items-center gap-[7.2px]" style={{ height: RULE }}>
       <span
         className="hand inline-flex h-[21.6px] -rotate-2 items-center bg-[rgb(255_217_120/0.75)] px-[10.8px] text-[15.3px] leading-none"
         style={{ clipPath: "polygon(0 0, 100% 0, 95% 25%, 100% 50%, 95% 75%, 100% 100%, 0 100%, 5% 75%, 0 50%, 5% 25%)" }}
@@ -65,7 +68,8 @@ function MonthTape({ label }: { label: string }) {
 
 /**
  * 사람 화면의 바인더: 프로필 카드 밑에 ‘메모장’ · ‘기억해 둔 것’ 두 칸막이가 솟은 속지 한 장.
- * 메모장은 점 모눈 위 세로 점선 타임라인(최근 메모부터 달별로, 누르면 시트에서 전부 보고 지운다).
+ * 메모장은 라인 노트 줄 위 세로 점선 타임라인(최근 메모부터 달별로, 누르면 시트에서 전부 보고 지운다).
+ * 줄 간격은 RULE이고 메모 글줄 높이도 RULE이다. 달 이름표는 한 칸, 메모는 위아래 반 칸씩 띄우고 글줄 칸 단위라(날짜·점은 첫 글줄 칸에 맞춘다) 글이 모두 줄 위에 앉는다.
  * 메모장 칸이 열려 있는 동안 오른쪽 아래에 둥근 연필 단추가 떠 있고(메모 쓰기 화면의 마이크와 같은 모양·자리), 누르면 이 사람이 붙은 채로 메모 쓰기가 열린다.
  * 기억해 둔 것은 흰 속지에 기록 목록(remembered, 서버가 그린 RememberedList)이고 칸막이 줄 오른쪽 끝 연필이 고치는 화면으로 간다.
  * 속지는 메모가 적어도 화면 아래(하단 메뉴 바로 위)까지 늘어나고(flex-1, 화면 틀 <main>이 세로 flex), 메모가 많으면 내용만큼 길어진다.
@@ -174,15 +178,15 @@ export function PersonBook({
           </AppLink>
         ) : null}
 
-        <BinderPage dots={tab === "memo"} left={tab === "memo" ? 40 : 42} className="flex flex-1 flex-col" pageClassName="flex min-h-[270px] flex-1 flex-col">
+        <BinderPage margin={tab === "memo"} lines={tab === "memo" ? TOP + RULE / 2 + RULE_AT : undefined} left={tab === "memo" ? 40 : 42} className="flex flex-1 flex-col" pageClassName="flex min-h-[270px] flex-1 flex-col">
           <div role="tabpanel" id={panelId} aria-labelledby={`${uid}-${tab}`}>
             {tab === "memo" ? (
-              <div className="pt-[12.6px]">
+              <div style={{ paddingTop: TOP }}>
                 <div className="relative pb-[16.2px]">
                   {/* 세로 점선 타임라인: 첫 달 이름표 가운데에서 시작해 메모가 있을 때만 그린다 */}
-                  {groups.length ? <span aria-hidden="true" className="absolute bottom-[18px] top-[16.2px] border-l-[1.35px] border-dashed border-ink/30" style={{ left: 44.1 }} /> : null}
+                  {groups.length ? <span aria-hidden="true" className="absolute bottom-[18px] border-l-[1.35px] border-dashed border-ink/30" style={{ left: 44.1, top: RULE / 2 }} /> : null}
                   {failed ? (
-                    <p role="alert" className="py-1 text-[12.6px] text-red">
+                    <p role="alert" className="flex items-center text-[12.6px] text-red" style={{ height: RULE }}>
                       {labels.error}
                     </p>
                   ) : null}
@@ -190,13 +194,18 @@ export function PersonBook({
                     <div key={g.key}>
                       <MonthTape label={g.label} />
                       {g.items.map((n) => (
-                        <button key={n.id} type="button" onClick={() => setOpen(n)} aria-haspopup="dialog" className="relative grid w-full grid-cols-[34.2px_1fr] gap-x-[21.6px] py-[9px] text-left">
-                          <span className="flex flex-col items-center gap-[1.8px]">
-                            <span className="hand text-[23.4px] leading-[23.4px]">{n.date.d}</span>
-                            <span className="text-[9.9px] leading-none text-muted">{weekdayShort(n.date, locale)}</span>
+                        <button key={n.id} type="button" onClick={() => setOpen(n)} aria-haspopup="dialog" className="relative grid w-full grid-cols-[34.2px_1fr] gap-x-[21.6px] text-left" style={{ paddingBlock: RULE / 2 }}>
+                          {/* 날짜: 날은 첫 글줄 칸에, 요일은 그 밑(둘째 줄 쪽 빈 곳)에 걸쳐 놓는다(칸 높이는 글줄만 정한다) */}
+                          <span className="flex flex-col items-center" style={{ height: RULE }}>
+                            <span className="hand shrink-0 text-[23.4px]" style={{ lineHeight: `${RULE}px` }}>
+                              {n.date.d}
+                            </span>
+                            <span className="shrink-0 text-[9.9px] leading-none text-muted">{weekdayShort(n.date, locale)}</span>
                           </span>
-                          <span aria-hidden="true" className="absolute left-[39.6px] top-[16.2px] box-border h-[9.9px] w-[9.9px] rounded-full border border-ink bg-sky" />
-                          <span className="hand-written line-clamp-6 whitespace-pre-line text-[18.5px] leading-[1.45]">{n.body}</span>
+                          <span aria-hidden="true" className="absolute left-[39.6px] box-border h-[9.9px] w-[9.9px] rounded-full border border-ink bg-sky" style={{ top: RULE / 2 + (RULE - 9.9) / 2 }} />
+                          <span className="hand-written line-clamp-6 whitespace-pre-line text-[18.5px]" style={{ lineHeight: `${RULE}px` }}>
+                            {n.body}
+                          </span>
                         </button>
                       ))}
                     </div>

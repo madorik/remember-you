@@ -8,7 +8,7 @@ import { transcribeMemoImages, type PhotoTextError } from "@/app/actions/memo-ph
 import { skipOnboarding } from "@/app/actions/onboarding";
 import AppLink from "@/components/AppLink";
 import { Avatar } from "@/components/Avatar";
-import { BinderPage } from "@/components/Binder";
+import { BinderPage, RULE, RULE_AT, ruledLines } from "@/components/Binder";
 import { Icon } from "@/components/marks";
 import { Mascot } from "@/components/Mascot";
 import { markSaved } from "@/components/ReviewAsk";
@@ -910,7 +910,7 @@ export function MemoPad({
             <path d="M20 4v5M20 31v5M4 20h5M31 20h5M8.7 8.7l3.5 3.5M27.8 27.8l3.5 3.5M8.7 31.3l3.5-3.5M27.8 12.2l3.5-3.5" stroke={INK} strokeWidth="1.6" strokeLinecap="round" />
           </svg>
         )}
-        <BinderPage className="flex flex-1 flex-col" pageClassName="flex flex-1 flex-col">
+        <BinderPage margin className="flex flex-1 flex-col" pageClassName="flex flex-1 flex-col">
           {/* 날짜 머리 */}
           <div className="flex items-end justify-between border-b-[1.35px] border-dashed border-ink/30" style={{ padding: `${u(20)}px 0 ${u(12)}px` }}>
             <div className="flex items-end gap-[7.2px]">
@@ -1045,12 +1045,20 @@ export function MemoPad({
             </div>
           ) : null}
 
-          {/* 본문: 점 모눈 위에 손글씨로. 듣는 동안은 받아 적는 말(아직 바뀔 수 있는 부분은 연하게 + 망고 밑줄)이 보이는 글로 */}
-          <div className="relative flex-1 cursor-text pb-[28px]" onClick={() => box.current?.focus()}>
+          {/* 본문: 라인 노트 줄 위에 손글씨로(줄이 본문 칸에서 시작해 글줄 높이 RULE마다 되풀이되니 글이 줄 위에 앉고, 글이 늘면 줄도 같이 늘어난다. 속지 양 끝까지 닿게 안쪽 여백만큼 밖으로 펼친다).
+              듣는 동안은 받아 적는 말(아직 바뀔 수 있는 부분은 연하게 + 망고 밑줄)이 보이는 글로 */}
+          <div
+            className="relative flex-1 cursor-text pb-[28px]"
+            style={{ marginLeft: -u(40), marginRight: -u(16), paddingLeft: u(40), paddingRight: u(16), ...ruledLines(RULE_AT) }}
+            onClick={() => box.current?.focus()}
+          >
             {reading ? (
-              <div role="status" className="hand mb-[7px] inline-flex items-center gap-[7px] rounded-full border border-edge bg-white text-[17.1px] leading-none" style={{ height: u(32), padding: `0 ${u(14)}px 0 ${u(11)}px` }}>
-                <Spinner />
-                {labels.photoReading}
+              // 글줄 한 칸(RULE) 높이를 차지해 밑의 글이 줄 위에 그대로 앉는다
+              <div className="flex items-start" style={{ height: RULE }}>
+                <div role="status" className="hand inline-flex items-center gap-[7px] rounded-full border border-edge bg-white text-[17.1px] leading-none" style={{ height: u(32), padding: `0 ${u(14)}px 0 ${u(11)}px` }}>
+                  <Spinner />
+                  {labels.photoReading}
+                </div>
               </div>
             ) : null}
             {listening || settling ? (
