@@ -24,6 +24,28 @@ export function memoLabels(t: T, locale: Locale, today: YMD): MemoLabels {
     mic: t("voice.title"),
     stopListening: t("memo.stopListening"),
     sharedClipped: t("memo.sharedClipped"),
+    menu: { menu: t("import.open"), fromNotes: t("memo.fromNotes"), fromPhoto: t("memo.fromPhoto") },
+    photoReading: t("memo.photoReading"),
+    photoErrors: {
+      sensitive: t("import.sensitive"),
+      not_memo: t("import.notMemo"),
+      unreadable: t("import.unreadable"),
+      bad_image: t("import.badImage"),
+      limit: t("import.limit"),
+      failed: t("import.failed"),
+      ai_off: t("import.aiOff"),
+    },
+    photoProblems: {
+      type: t("import.img.type"),
+      big: t("import.img.big"),
+      unreadable: t("import.img.unreadable"),
+      small: t("import.img.small"),
+      ratio: t("import.img.ratio"),
+      blank: t("import.img.blank"),
+      heavy: t("import.img.heavy"),
+      many: t("import.img.many"),
+    },
+    photoSkipped: t("import.skipped", { n: "{n}" }),
     month: locale === "ko" ? `${today.m}월` : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][today.m - 1]!,
   };
 }

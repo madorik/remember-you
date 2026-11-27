@@ -1,9 +1,10 @@
 "use client";
 
-import { weekday, weekdayLong, weekdayNames, type AvatarConfig, type Locale, type YMD } from "@readme/core";
+import { IMAGE_MAX_COUNT, weekday, weekdayLong, weekdayNames, type AvatarConfig, type Locale, type YMD } from "@readme/core";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { saveFirstMemo, saveMemo } from "@/app/actions/capture";
+import { transcribeMemoImages, type PhotoTextError } from "@/app/actions/memo-photo";
 import { skipOnboarding } from "@/app/actions/onboarding";
 import AppLink from "@/components/AppLink";
 import { Avatar } from "@/components/Avatar";
@@ -11,6 +12,8 @@ import { BinderPage } from "@/components/Binder";
 import { Icon } from "@/components/marks";
 import { Mascot } from "@/components/Mascot";
 import { markSaved } from "@/components/ReviewAsk";
+import { prepareImage, type PrepProblem } from "@/lib/image-prep";
+import { appendBlock } from "@/lib/memo-append";
 import { markOrganizing } from "@/lib/organizing";
 import { NEW_NAME_MAX, tidyName } from "@/lib/capture-target";
 import { startListenGuard, type ListenGuard, type StopReason } from "@/lib/listen-guard";
@@ -18,6 +21,7 @@ import { insertMention, mentionAt, mentionLabel, mentionWord, tagKey, tagsForSav
 import { matchesPerson } from "@/lib/search";
 import { nativeSpeech, startDictation, webCtor, type Dictation, type WebRecognition } from "@/lib/speech";
 import { u } from "@/lib/ui-scale";
+import { ImportMenu, type ImportMenuLabels } from "./ImportMenu";
 
 /** 이름 칩에 쓰는 사람 한 명 */
 export interface MemoPerson {
@@ -58,6 +62,16 @@ export interface MemoLabels {
   /** 공유로 받은 글이 1000자를 넘어 앞부분만 담았다 */
   sharedClipped: string;
   month: string;
+  /** '메모 가져오기' 메뉴(메모 앱에서 · 사진에서) */
+  menu: ImportMenuLabels;
+  /** 사진에서 글을 읽어 오는 동안 */
+  photoReading: string;
+  /** 사진에서 글을 못 읽어 온 이유 */
+  photoErrors: Record<PhotoTextError, string>;
+  /** 고른 사진을 서버에 보내기 전에 걸린 이유 */
+  photoProblems: Record<PrepProblem | "many", string>;
+  /** "읽지 못한 사진 {n}장은 건너뛰었어요" */
+  photoSkipped: string;
 }
 
 /** 온보딩(첫 메모)으로 열렸다: 하단 메뉴 없이 머리 줄(첫 메모 · 건너뛰기 · 저장)과 캐릭터가 붙고, 저장하면 온보딩이 끝난다 */
@@ -109,6 +123,16 @@ interface Heard {
   interim: string;
 }
 const NOTHING: Heard = { final: "", interim: "" };
+
+/** 사진에서 글을 읽는 동안 돌아가는 작은 고리(움직임 줄이기면 멈춘 채) */
+function Spinner() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width={u(17)} height={u(17)} fill="none" strokeWidth="2.6" strokeLinecap="round" className="shrink-0 motion-safe:animate-spin">
+      <circle cx="12" cy="12" r="8.5" stroke={INK} strokeOpacity=".16" />
+      <path d="M12 3.5a8.5 8.5 0 0 1 8.5 8.5" stroke="#E09A12" />
+    </svg>
+  );
+}
 
 const IMPORT_ICON = (
   <>
@@ -364,7 +388,12 @@ export function MemoPad({
   const [toast, setToast] = useState<{ id: number; text: string; error: boolean } | null>(null);
   const [saving, startSave] = useTransition();
   const [skipping, startSkip] = useTransition();
+  // 사진에서 글을 읽어 오는 중
+  const [reading, setReading] = useState(false);
   const box = useRef<HTMLTextAreaElement>(null);
+  const photoInput = useRef<HTMLInputElement>(null);
+  // 사진을 읽는 사이에도 글을 고칠 수 있어서, 다 읽으면 그때의 본문 뒤에 붙인다
+  const textRef = useRef("");
   const nameBox = useRef<HTMLInputElement>(null);
   const atList = useRef<HTMLDivElement>(null);
   // 본문 @목록에서 고른 뒤 커서를 둘 자리(글이 바뀐 화면이 그려진 직후 한 번 놓는다)
@@ -417,6 +446,10 @@ export function MemoPad({
   const starting = !!onboarding && !chosen.length;
 
   useEffect(() => {
+    textRef.current = text;
+  });
+
+  useEffect(() => {
     alive.current = true;
     return () => {
       alive.current = false;
@@ -456,10 +489,10 @@ export function MemoPad({
       /* 저장소를 못 쓰면 빈 채로 연다 */
     }
     if (got.trim()) {
-      const joined = text.trim() ? `${text.replace(/\s+$/, "")}\n\n${got.trimEnd()}` : got;
+      const next = appendBlock(text, got, MAX);
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setText(joined.slice(0, MAX));
-      if (joined.length > MAX) say(labels.sharedClipped);
+      setText(next.text);
+      if (next.clipped) say(labels.sharedClipped);
     }
     const q = new URLSearchParams(window.location.search);
     q.delete("shared");
@@ -467,6 +500,45 @@ export function MemoPad({
     // say·labels·text는 shared=1이 나타난 그때의 값을 한 번 쓴다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sharedNow, router]);
+
+  // ── 사진에서: 고른 사진(1~3장)을 줄여 서버로 보내 글만 읽어 오고, 본문 뒤에 붙인다(사람 고르기·저장은 그대로 사람이 한다) ──
+  const readPhotos = async (files: FileList | null) => {
+    const list = Array.from(files ?? []);
+    if (photoInput.current) photoInput.current.value = "";
+    if (!list.length || reading) return;
+    setReading(true);
+    const picked = list.slice(0, IMAGE_MAX_COUNT);
+    let problem: PrepProblem | "many" | null = list.length > IMAGE_MAX_COUNT ? "many" : null;
+    const blobs: Blob[] = [];
+    for (const file of picked) {
+      const r = await prepareImage(file);
+      if (r.ok) blobs.push(r.blob);
+      else problem = r.problem;
+    }
+    if (!alive.current) return;
+    if (!blobs.length) {
+      setReading(false);
+      return say(labels.photoProblems[problem ?? "unreadable"], true);
+    }
+    let res: Awaited<ReturnType<typeof transcribeMemoImages>>;
+    try {
+      // 줄인 사진을 파일로(글자로 바꾸지 않는다: 서버 동작 본문 크기 한도를 피한다)
+      const form = new FormData();
+      blobs.forEach((b, n) => form.append("image", b, `photo-${n + 1}.jpg`));
+      res = await transcribeMemoImages(form);
+    } catch {
+      res = { text: "", error: "failed", skipped: 0 };
+    }
+    if (!alive.current) return;
+    setReading(false);
+    if (res.error || !res.text.trim()) return say(labels.photoErrors[res.error ?? "unreadable"], true);
+    const next = appendBlock(textRef.current, res.text, MAX);
+    setText(next.text);
+    const skipped = res.skipped + (picked.length - blobs.length);
+    if (next.clipped) say(labels.sharedClipped);
+    else if (skipped > 0) say(labels.photoSkipped.replace("{n}", String(skipped)));
+    else if (problem === "many") say(labels.photoProblems.many);
+  };
 
   // 본문 칸은 글이 늘어나는 만큼 키운다
   useLayoutEffect(() => {
@@ -769,16 +841,30 @@ export function MemoPad({
           </AppLink>
           {hasText ? (
             <div className="flex items-center gap-1">
-              <AppLink href="/import" aria-label={labels.importNotes} className="relative flex h-11 w-11 items-center justify-center before:absolute before:-inset-[2.2px]">
+              <ImportMenu
+                locale={locale}
+                labels={labels.menu}
+                disabled={busy || saving || reading}
+                onPhoto={() => photoInput.current?.click()}
+                triggerLabel={labels.importNotes}
+                className="relative flex h-11 w-11 items-center justify-center rounded-full before:absolute before:-inset-[2.2px]"
+              >
                 <Svg size={21}>{IMPORT_ICON}</Svg>
-              </AppLink>
+              </ImportMenu>
               <SaveButton onClick={save} disabled={saving} label={labels.save} />
             </div>
           ) : (
-            <AppLink href="/import" className="inline-flex items-center gap-[4.5px] whitespace-nowrap rounded-full border border-edge bg-white text-[12.15px]" style={{ height: u(34), padding: `0 ${u(13)}px 0 ${u(10)}px` }}>
+            <ImportMenu
+              locale={locale}
+              labels={labels.menu}
+              disabled={busy || saving || reading}
+              onPhoto={() => photoInput.current?.click()}
+              className="inline-flex items-center gap-[4.5px] whitespace-nowrap rounded-full border border-edge bg-white text-[12.15px]"
+              style={{ height: u(34), padding: `0 ${u(13)}px 0 ${u(10)}px` }}
+            >
               <Svg size={17}>{IMPORT_ICON}</Svg>
               {labels.importNotes}
-            </AppLink>
+            </ImportMenu>
           )}
         </div>
       )}
@@ -947,6 +1033,12 @@ export function MemoPad({
 
           {/* 본문: 점 모눈 위에 손글씨로. 듣는 동안은 받아 적는 말(아직 바뀔 수 있는 부분은 연하게 + 망고 밑줄)이 보이는 글로 */}
           <div className="relative flex-1 cursor-text pb-[28px]" onClick={() => box.current?.focus()}>
+            {reading ? (
+              <div role="status" className="hand mb-[7px] inline-flex items-center gap-[7px] rounded-full border border-edge bg-white text-[17.1px] leading-none" style={{ height: u(32), padding: `0 ${u(14)}px 0 ${u(11)}px` }}>
+                <Spinner />
+                {labels.photoReading}
+              </div>
+            ) : null}
             {listening || settling ? (
               <div className="hand-written whitespace-pre-wrap text-[20.7px] leading-[30.6px]">
                 {settled}
@@ -1032,6 +1124,9 @@ export function MemoPad({
           {listening ? <ListenPill measure={!nativeSpeech()} /> : null}
         </div>
       ) : null}
+
+      {/* '사진에서'가 여는 사진 고르기(카메라를 따로 켜지 않는다). 메뉴가 닫혀도 남아 있어야 고른 사진이 들어온다 */}
+      <input ref={photoInput} type="file" accept="image/*" multiple className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => void readPhotos(e.target.files)} />
 
       {toast ? <Toast key={toast.id} text={toast.text} error={toast.error} /> : null}
     </div>

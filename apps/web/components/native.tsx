@@ -3,6 +3,7 @@
 import type { Locale } from "@readme/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { APPLE_NOTES, APPLE_NOTES_URL, installedNotesApps, type NotesApp } from "@/lib/notes-apps";
 import { Wordmark } from "./chrome";
 import { Icon } from "./marks";
 
@@ -65,22 +66,76 @@ const SHARED_MEMO_KEY = "rm_shared_memo";
 interface ShareInboxPlugin {
   take(): Promise<{ text: string | null }>;
   addListener(event: "shared", listener: () => void): Promise<{ remove: () => Promise<void> }>;
+  /** (안드로이드, 메모 앱 열기를 넣은 빌드부터) 설치된 메모 앱: ShareInboxPlugin.NOTES_APPS 중 깔린 것 */
+  notesApps(): Promise<{ apps: { id: string }[] }>;
+  /** (안드로이드, 같은 빌드부터) 그 메모 앱을 연다 */
+  openApp(options: { id: string }): Promise<{ opened: boolean }>;
 }
 
-let shareInbox: Promise<ShareInboxPlugin | null> | null = null;
+let shareInbox: Promise<{ plugin: ShareInboxPlugin } | null> | null = null;
 
-/** 공유 받은 편지함 플러그인(공유 받기를 넣기 전에 만든 앱 빌드에는 없어서 null). 한 번만 등록한다 */
-function loadShareInbox(): Promise<ShareInboxPlugin | null> {
+/**
+ * 공유 받은 편지함 플러그인(공유 받기를 넣기 전에 만든 앱 빌드에는 없어서 null). 한 번만 등록한다.
+ * 플러그인(registerPlugin)은 어떤 이름을 물어도 함수를 돌려주는 프록시라 then까지 함수로 보이는데, 그대로 프로미스가 돌려주면
+ * (async 함수의 return·await) 프로미스가 then을 불러 보고 끝나지 않는다. 그래서 한 겹 감싸서 돌려준다
+ */
+function loadShareInbox(): Promise<{ plugin: ShareInboxPlugin } | null> {
   shareInbox ??= (async () => {
     try {
       const { Capacitor, registerPlugin } = await import("@capacitor/core");
       if (!Capacitor.isPluginAvailable("ShareInbox")) return null;
-      return registerPlugin<ShareInboxPlugin>("ShareInbox");
+      return { plugin: registerPlugin<ShareInboxPlugin>("ShareInbox") };
     } catch {
       return null;
     }
   })();
   return shareInbox;
+}
+
+/**
+ * 앱 안쪽 플러그인이 이 메서드를 갖고 있나. 플러그인 프록시는 없는 메서드도 함수처럼 보이게 해서(불러야 UNIMPLEMENTED로 거절된다)
+ * 오래된 앱 빌드를 가리려면 앱이 알려 준 PluginHeaders를 본다
+ */
+function pluginHasMethod(plugin: string, method: string): boolean {
+  const w = window as unknown as { Capacitor?: { PluginHeaders?: { name: string; methods?: { name: string }[] }[] } };
+  return !!w.Capacitor?.PluginHeaders?.find((h) => h.name === plugin)?.methods?.some((m) => m.name === method);
+}
+
+/**
+ * 메모 쓰기 화면 '메모 앱에서'가 열 수 있는 이 휴대폰의 메모 앱들. 웹 브라우저·메모 앱 열기를 넣기 전 앱 빌드는 빈 목록.
+ * iOS는 기본 메모 앱 하나(새 앱 코드 없이 웹뷰의 mobilenotes:// 이동을 Capacitor가 UIApplication.open에 넘긴다), 안드로이드는 설치된 앱만
+ */
+export async function loadNotesApps(): Promise<NotesApp[]> {
+  if (!isNativeApp()) return [];
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    const platform = Capacitor.getPlatform();
+    if (platform === "ios") return [APPLE_NOTES];
+    if (platform !== "android") return [];
+    const inbox = await loadShareInbox();
+    if (!inbox || !pluginHasMethod("ShareInbox", "notesApps") || !pluginHasMethod("ShareInbox", "openApp")) return [];
+    const r = await inbox.plugin.notesApps();
+    return installedNotesApps((r?.apps ?? []).map((a) => a?.id));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * 그 메모 앱을 연다. 돌아오는 길은 따로 없다: 사람이 그 앱에서 글을 골라 "공유 → 기억해유"를 누르면 위 받은 편지함이 메모 쓰는 화면으로 가져온다
+ */
+export async function openNotesApp(app: NotesApp): Promise<boolean> {
+  try {
+    if (app.id === APPLE_NOTES.id) {
+      window.location.href = APPLE_NOTES_URL;
+      return true;
+    }
+    const inbox = await loadShareInbox();
+    if (!inbox) return false;
+    return !!(await inbox.plugin.openApp({ id: app.id }))?.opened;
+  } catch {
+    return false;
+  }
 }
 
 // ── 푸시 알림 ─────────────────────────────────────────────────────
@@ -299,15 +354,20 @@ export function NativeBridge({
         } catch {
           /* 저장소를 못 쓰면 빈 채로 연다 */
         }
-        routerRef.current.push("/voice?shared=1");
+        // 메모 쓰는 화면이 이미 열려 있으면(메모 앱에서 가져오러 나갔다 돌아온 경우) 그 주소의 ?to=… 같은 값을 지켜 shared=1만 더한다:
+        // 쓰던 글·고른 사람이 그대로고 받은 글이 뒤에 붙는다
+        const q = new URLSearchParams(window.location.pathname === "/voice" ? window.location.search : "");
+        q.set("shared", "1");
+        routerRef.current.push(`/voice?${q}`);
       } catch {
         /* 꺼내지 못하면 넘어간다 */
       }
     };
     void (async () => {
       try {
-        const plugin = await loadShareInbox();
-        if (!plugin || gone) return;
+        const inbox = await loadShareInbox();
+        if (!inbox || gone) return;
+        const plugin = inbox.plugin;
         const { App } = await import("@capacitor/app");
         const added = await Promise.all([
           plugin.addListener("shared", () => void take(plugin)),

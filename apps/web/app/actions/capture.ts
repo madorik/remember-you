@@ -1,7 +1,7 @@
 "use server";
 
 import { track } from "@/lib/track";
-import { IMAGE_MAX_BYTES, IMAGE_MAX_COUNT, captureField, checkJpegBytes, cleanMemo, clip, describeCapture, isSection, mergeCapture, mergeImport, NOTE_EFFECTS_MAX, parseEffects, recordEffect, revertEffects, sanitizeSection, splitMemo, translate, whyUnchanged, type CaptureOp, type CardData, type NoteEffect, type PartialCard, type Section } from "@readme/core";
+import { captureField, cleanMemo, clip, describeCapture, isSection, mergeCapture, mergeImport, NOTE_EFFECTS_MAX, parseEffects, recordEffect, revertEffects, sanitizeSection, splitMemo, translate, whyUnchanged, type CaptureOp, type CardData, type NoteEffect, type PartialCard, type Section } from "@readme/core";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { aiConfigured, classifyCapture, classifyImport, classifyImportImage, type CaptureItem, type ImageKind, type ImageReading, type ImportScope } from "@/lib/ai";
@@ -13,6 +13,7 @@ import { refundAi, reserveAi } from "@/lib/ai-quota";
 import type { Q } from "@/lib/db";
 import { displayName, listNotes, listPeopleLite, openNote, readCard, readContactCard, requireSession, sealNote, writeContactSection, writeSection, type Note, type Person, type Session } from "@/lib/data";
 import { LIMITS } from "@/lib/data-core";
+import { jpegDataUrls } from "@/lib/image-form";
 import { isUuid } from "@/lib/uuid";
 import { resolveMentions } from "@/lib/mention";
 
@@ -754,18 +755,8 @@ export async function draftImport(raw: string, scopeRaw: string): Promise<Import
  */
 export async function draftImportImages(form: FormData): Promise<ImportDraft> {
   const s = await requireSession();
-  const bad: ImportDraft = { lines: [], error: "bad_image", name: "", skipped: 0 };
-  if (!(form instanceof FormData)) return bad;
-  const entries = form.getAll("image");
-  if (entries.length < 1 || entries.length > IMAGE_MAX_COUNT) return bad;
-  const photos: string[] = [];
-  for (const e of entries) {
-    // 문자열이거나 파일이 아니면, 너무 크면(읽어 들이기 전에) 거절
-    if (typeof e === "string" || typeof (e as Blob).arrayBuffer !== "function" || (e as Blob).size > IMAGE_MAX_BYTES) return bad;
-    const bytes = new Uint8Array(await (e as Blob).arrayBuffer());
-    if (!checkJpegBytes(bytes).ok) return bad;
-    photos.push(`data:image/jpeg;base64,${Buffer.from(bytes).toString("base64")}`);
-  }
+  const photos = await jpegDataUrls(form);
+  if (!photos) return { lines: [], error: "bad_image", name: "", skipped: 0 };
   return runImport(s, String(form.get("scope") ?? "any"), { kind: "images", photos });
 }
 

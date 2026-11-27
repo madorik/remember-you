@@ -630,7 +630,7 @@ test("메모장: 사람 화면의 칸막이(메모장 · 기억해 둔 것)와 �
   await pen.click();
   await expect(page).toHaveURL(new RegExp(`/voice\\?to=${id}`));
   await expect(page.getByRole("button", { name: "엄마 빼기" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "메모 가져오기" })).toHaveAttribute("href", "/import");
+  await expect(page.getByRole("button", { name: "메모 가져오기" })).toHaveAttribute("aria-haspopup", "menu");
   const field = page.getByRole("textbox", { name: "엄마에 대해 기억해 둘 것" });
   await field.fill("목도리 줬음. 잘 하고 다님");
   await expect(page.getByRole("button", { name: "저장", exact: true })).toBeVisible();
@@ -673,7 +673,7 @@ test("메모 쓰기: 누구 이야기인지 고르지 않으면 저장하지 않
   await expect(page).toHaveURL(/\/home/);
   await page.goto("/voice");
   const field = page.getByRole("textbox", { name: "기억해 둘 것" });
-  await expect(page.getByRole("link", { name: "메모 가져오기" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "메모 가져오기" })).toBeVisible();
   await field.fill("부모님 결혼기념일 저녁 예약해 드리기");
 
   // 아무도 안 골랐다: 알림만 뜨고 저장하지 않는다(추천 사람 칩은 그대로 보인다)
@@ -1973,7 +1973,9 @@ test("메모 가져오기: 메모 쓰기·사람 추가·편집에서 들어가�
 
   // 세 곳의 들어가는 길: 메모 쓰기 화면, 사람 추가, 그 사람 편집
   await page.goto("/voice");
-  await expect(page.getByRole("link", { name: "메모 가져오기" })).toHaveAttribute("href", "/import");
+  // 메모 쓰기는 메뉴(메모 앱에서·사진에서)가 열린다. 이전 읽기 화면(/import)은 사람 추가·편집에서 그대로 들어간다
+  await expect(page.getByRole("button", { name: "메모 가져오기" })).toHaveAttribute("aria-haspopup", "menu");
+  await expect(page.getByRole("link", { name: "메모 가져오기" })).toHaveCount(0);
   await page.goto("/people/new");
   await expect(page.getByRole("link", { name: "메모 가져오기" })).toHaveAttribute("href", "/import?new=1");
   await page.goto(`/people/${mom.id}/edit`);

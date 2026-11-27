@@ -3,11 +3,13 @@ package kr.readme.app;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import com.getcapacitor.Bridge;
+import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -27,6 +29,8 @@ import java.util.concurrent.TimeUnit;
  * 웹(NativeBridge)이 take()로 가져가 메모 쓰는 화면(/voice?shared=1)에 채운다.
  * - take() → { text: string | null }: 받아 둔 글(앞뒤 공백 뺀 것, 최대 20,000자)을 돌려주고 비운다
  * - "shared" 이벤트: 앱이 켜진 채로 새 공유가 들어왔을 때
+ * - notesApps() → { apps: [{ id }] }: 메모 쓰기 화면의 '메모 앱에서'가 열 수 있는, 이 휴대폰에 깔린 메모 앱(아래 NOTES_APPS 중)
+ * - openApp({ id }) → { opened: boolean }: 그 메모 앱을 연다(사람이 거기서 글을 골라 "공유 → 기억해유"를 누르면 위 길로 돌아온다)
  * 메모 내용은 개인 정보라 주소에 싣거나 로그에 남기지 않는다(메모리에만 잠깐 둔다).
  */
 @CapacitorPlugin(name = "ShareInbox")
@@ -36,6 +40,19 @@ public class ShareInboxPlugin extends Plugin {
     static final int MAX_CHARS = 20000;
     /** 텍스트 파일로 공유된 경우 읽을 최대 바이트 */
     static final int MAX_FILE_BYTES = 64 * 1024;
+
+    /**
+     * '메모 앱에서'가 열어 줄 메모 앱의 패키지 이름(웹 lib/notes-apps.ts의 ANDROID_NOTES_APPS와, AndroidManifest의 &lt;queries&gt;와 같게 둔다.
+     * 안드로이드 11부터는 &lt;queries&gt;에 적은 앱만 깔렸는지 볼 수 있다). 삼성 노트·Keep 메모·네이버 메모·ColorNote·OneNote·Evernote
+     */
+    static final String[] NOTES_APPS = {
+        "com.samsung.android.app.notes",
+        "com.google.android.keep",
+        "com.nhn.android.navermemo",
+        "com.socialnmobile.dictapp.notepad.color.note",
+        "com.microsoft.office.onenote",
+        "com.evernote",
+    };
 
     private static final Object LOCK = new Object();
     private static String pending;
@@ -57,6 +74,48 @@ public class ShareInboxPlugin extends Plugin {
         }
         JSObject ret = new JSObject();
         ret.put("text", text == null ? JSObject.NULL : text);
+        call.resolve(ret);
+    }
+
+    /** 깔려 있어 열 수 있는 메모 앱들(목록 순서대로) */
+    @PluginMethod
+    public void notesApps(PluginCall call) {
+        PackageManager pm = getContext().getPackageManager();
+        JSArray apps = new JSArray();
+        for (String id : NOTES_APPS) {
+            if (pm.getLaunchIntentForPackage(id) == null) continue;
+            JSObject app = new JSObject();
+            app.put("id", id);
+            apps.put(app);
+        }
+        JSObject ret = new JSObject();
+        ret.put("apps", apps);
+        call.resolve(ret);
+    }
+
+    /** 메모 앱 하나를 연다. 목록에 없는 패키지는 열지 않는다 */
+    @PluginMethod
+    public void openApp(PluginCall call) {
+        String id = call.getString("id");
+        boolean known = false;
+        for (String app : NOTES_APPS) {
+            if (app.equals(id)) known = true;
+        }
+        boolean opened = false;
+        if (known) {
+            Intent intent = getContext().getPackageManager().getLaunchIntentForPackage(id);
+            if (intent != null) {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                try {
+                    getContext().startActivity(intent);
+                    opened = true;
+                } catch (Exception ignored) {
+                    // 열지 못하면 opened=false로 알린다
+                }
+            }
+        }
+        JSObject ret = new JSObject();
+        ret.put("opened", opened);
         call.resolve(ret);
     }
 

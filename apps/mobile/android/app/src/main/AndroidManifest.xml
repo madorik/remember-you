@@ -79,5 +79,12 @@
         <intent>
             <action android:name="android.speech.RecognitionService" />
         </intent>
+        <!-- 메모 쓰기 화면 '메모 앱에서': 깔린 메모 앱을 보고 연다(ShareInboxPlugin.NOTES_APPS와 같게). 안드로이드 11부터는 여기 적은 앱만 보인다 -->
+        <package android:name="com.samsung.android.app.notes" />
+        <package android:name="com.google.android.keep" />
+        <package android:name="com.nhn.android.navermemo" />
+        <package android:name="com.socialnmobile.dictapp.notepad.color.note" />
+        <package android:name="com.microsoft.office.onenote" />
+        <package android:name="com.evernote" />
     </queries>
 </manifest>
