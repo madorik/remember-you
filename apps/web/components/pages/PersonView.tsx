@@ -1,12 +1,11 @@
-import { formatMonthDay, formatSpec, nextOccurrence, parseYmd, solarToLunar } from "@readme/core";
+import { formatMonthDay, formatSpec, nextOccurrence, solarToLunar } from "@readme/core";
 import Link from "@/components/AppLink";
 import { AskOnButton } from "@/app/(app)/people/[id]/AskOnButton";
 import { FavoriteStar } from "@/app/(app)/people/[id]/FavoriteStar";
 import { NameEditor } from "@/app/(app)/people/[id]/NameEditor";
-import { NotesButton } from "@/app/(app)/people/[id]/NotesButton";
 import { PersonMenu } from "@/app/(app)/people/[id]/PersonMenu";
 import { ViewBeacon } from "@/app/(app)/people/[id]/ViewBeacon";
-import { QuickNote } from "@/app/(app)/people/[id]/QuickNote";
+import { PersonBook } from "@/app/(app)/people/[id]/PersonBook";
 import { ResendLink } from "@/components/ResendLink";
 import { TagEditor } from "@/app/(app)/people/[id]/TagEditor";
 import { cancelInvite } from "@/app/actions/request";
@@ -28,7 +27,7 @@ function dayLeft(daysUntil: number, t: T) {
   return daysUntil === 0 ? t("start.today") : `D-${daysUntil}`;
 }
 
-export function PersonView({ locale, back, today, person: p, name, notes, folders, answered, waiting, ai }: PersonData) {
+export function PersonView({ locale, back, today, person: p, name, notes, tab, folders, answered, waiting, ai }: PersonData) {
   const t = makeT(locale);
   // 적어 둔 항목만(중요한 순서). 생일·기념일도 이 목록의 첫 칸
   const filled = filledSections({ card: p.card, today, locale, t });
@@ -86,7 +85,7 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
         </div>
       ) : null}
 
-      {/* 프로필 카드(시안 Q-Person): 폴라로이드 얼굴(누르면 얼굴·부르는 말 꾸미기) · 이름(형광펜) 줄 끝에 캐릭터 · 생일 줄(양력 · 음력 · D-day) · 가장 최근 나만 보는 메모 한 줄 + '+more'(메모 시트).
+      {/* 프로필 카드(시안 Q-Person): 폴라로이드 얼굴(누르면 얼굴·부르는 말 꾸미기) · 이름(형광펜) 줄 끝에 캐릭터 · 생일 줄(양력 · 음력 · D-day).
           폴더는 칩으로 두지 않고 ··· 메뉴의 '폴더'에서 */}
       <section aria-label={displayName} className="card relative mx-4 mt-3 flex items-center gap-4 py-3.5 pl-4 pr-3.5">
         <TornTape color="pink" w={66.6} h={19.8} rotate={7} className="-top-3 right-[23.4px]" />
@@ -136,22 +135,6 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
               ) : null}
             </span>
           ) : null}
-          {/* 가장 최근 나만 보는 메모 한 줄 + '+more'(없으면 '+ 메모') */}
-          <NotesButton
-            contactId={p.contactId}
-            notes={notes.map((n) => ({ id: n.id, body: n.body, when: n.label || formatMonthDay(parseYmd(n.createdAt.slice(0, 10)) ?? today, locale) }))}
-            labels={{
-              more: t("person.memoMore"),
-              moreText: t("person.memoMoreShort"),
-              addShort: t("person.memoAdd"),
-              title: t("person.notes"),
-              add: t("person.addNote"),
-              placeholder: t("person.noteBodyPlaceholder"),
-              body: t("person.noteBody"),
-              del: t("common.delete"),
-              close: t("common.close"),
-            }}
-          />
         </div>
       </section>
 
@@ -172,53 +155,51 @@ export function PersonView({ locale, back, today, person: p, name, notes, folder
         </div>
       ) : null}
 
-      {ai ? (
-        <QuickNote
-          contactId={p.contactId}
-          labels={{
-            placeholder: t("person.quickPlaceholder", { name }),
-            save: t("voice.save"),
-            same: t("voice.same"),
-            gone: t("voice.gone"),
-            changed: t("voice.changed"),
-            removed: t("voice.removed"),
-            undo: t("voice.undo"),
-            undone: t("voice.undone"),
-            failed: t("voice.failed"),
-            limit: t("voice.limit"),
-            nothing: t("person.quickNothing"),
-            created: t("voice.createdPerson", { name: displayName }),
-            aiOff: t("voice.aiOff"),
-            holdTitle: t("quick.holdTitle"),
-            holdApply: t("quick.holdApply"),
-            holdCancel: t("common.cancel"),
-          }}
-        />
-      ) : null}
-
-      {/* 기억해 둔 것: 나 화면의 '나에 대한 기록'과 같은 목록(RememberedList) */}
-      <RememberedList
-        title={t("person.mineList")}
-        filled={filled}
-        editHref={`/people/${p.contactId}/edit`}
-        sectionHref={(section) => `/people/${p.contactId}/edit?open=${section}`}
-        editLabel={t("me.edit")}
-        t={t}
-        // 아직 아무것도 없을 때: 직접 적거나, 그 사람에게 물어보거나(물어보기 화면이 이 사람으로 열린다)
-        empty={
-          <div className="grid grid-cols-2 gap-2.5">
-            <Link href={editDates} className="btn-outline">
-              <Icon name="plus" size={17} strokeWidth={2.2} />
-              {t("person.write")}
-            </Link>
-            <Link href={`/request?to=${p.contactId}`} className="btn-primary">
-              <svg aria-hidden="true" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                <rect x="3" y="6" width="18" height="13" rx="2" fill="#F9CBD5" />
-                <path d="M3.8 7l8.2 6.2L20.2 7" />
-              </svg>
-              {t("person.askMore")}
-            </Link>
-          </div>
+      {/* 바인더(시안 D-Person): 메모장 칸(오늘 이야기 적기 + 달별 메모 타임라인) · 기억해 둔 것 칸(나 화면의 '나에 대한 기록'과 같은 목록, RememberedList) */}
+      <PersonBook
+        contactId={p.contactId}
+        name={displayName}
+        locale={locale}
+        today={today}
+        notes={notes.map((n) => ({ id: n.id, body: n.body, date: n.date }))}
+        initialTab={tab}
+        canWrite={ai}
+        labels={{
+          memo: t("memo.tab"),
+          remembered: t("person.mineList"),
+          today: t("memo.today"),
+          write: t("memo.writeAbout", { name }),
+          close: t("common.close"),
+          del: t("common.delete"),
+          edit: t("common.edit"),
+          error: t("common.error"),
+        }}
+        remembered={
+          <RememberedList
+            plain
+            title={t("person.mineList")}
+            filled={filled}
+            editHref={`/people/${p.contactId}/edit`}
+            sectionHref={(section) => `/people/${p.contactId}/edit?open=${section}`}
+            editLabel={t("me.edit")}
+            t={t}
+            // 아직 아무것도 없을 때: 직접 적거나, 그 사람에게 물어보거나(물어보기 화면이 이 사람으로 열린다)
+            empty={
+              <div className="grid grid-cols-2 gap-2.5">
+                <Link href={editDates} className="btn-outline">
+                  <Icon name="plus" size={17} strokeWidth={2.2} />
+                  {t("person.write")}
+                </Link>
+                <Link href={`/request?to=${p.contactId}`} className="btn-primary">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    <rect x="3" y="6" width="18" height="13" rx="2" fill="#F9CBD5" />
+                    <path d="M3.8 7l8.2 6.2L20.2 7" />
+                  </svg>
+                  {t("person.askMore")}
+                </Link>
+              </div>
+            }
+          />
         }
       />
 

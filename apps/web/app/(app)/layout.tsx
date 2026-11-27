@@ -15,7 +15,7 @@ import { holidayLocalReminders, localReminders } from "@/lib/reminders";
 
 // 로그인 + 온보딩까지 마친 사람만. 앱이면 생일 알림 예약·앱 잠금을 붙인다
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  // 아래 메뉴 가운데 구슬 속 캐릭터가 모든 화면에 있으니 스프라이트를 미리 받아 둔다
+  // 캐릭터 스프라이트(사람 화면·빈 화면 등 곳곳에 나온다)를 미리 받아 둔다
   preload(SPRITE_URL, { as: "image", type: "image/webp" });
   const s = await requireSession();
   const { locale } = s.profile;

@@ -1,4 +1,5 @@
 import "server-only";
+import { todayIn } from "@readme/core";
 import { notFound } from "next/navigation";
 import { aiConfigured } from "@/lib/ai";
 import { displayName, folderViews, listFolders, listNotes, listPeople, requireSession, todayFor, unreadAnswers } from "@/lib/data";
@@ -33,7 +34,8 @@ export async function loadPerson({ params, searchParams: sp }: PageInput): Promi
     today,
     person: { contactId: p.contactId, personId: p.personId, name: p.name, nickname: p.nickname, avatar: p.avatar, card: p.card, favorite: p.favorite, askOff: p.askOff, folderIds: p.folderIds, answered: p.answered },
     name,
-    notes,
+    notes: notes.map((n) => ({ ...n, date: todayIn(s.profile.timeZone, new Date(n.createdAt)) })),
+    tab: sp.tab === "remembered" ? "remembered" : "memo",
     folders: folderViews(folders, people, t),
     answered: answered.length > 0,
     waiting,

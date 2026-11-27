@@ -2,7 +2,7 @@ import "server-only";
 import { SECTIONS, defaultAskTopics, sanitizeQuestionIds, type Section } from "@readme/core";
 import { notFound } from "next/navigation";
 import { aiConfigured } from "@/lib/ai";
-import { displayName, listOpenInvites, listPeople, requireSession } from "@/lib/data";
+import { displayName, listOpenInvites, listPeople, requireSession, todayFor } from "@/lib/data";
 import { makeT } from "@/lib/t";
 import { personHint } from "@/lib/summary";
 import { tourTotal } from "@/lib/tour";
@@ -81,5 +81,5 @@ export async function loadVoice({ searchParams }: PageInput): Promise<VoiceData>
     .map((p) => ({ id: p.contactId, name: p.name, tag: p.nickname && p.nickname !== p.name ? p.nickname : "", avatar: p.avatar, hint: personHint(p.card, s.profile.locale, t) }));
   // 사람 화면의 구슬에서 왔으면(?to=) 그 사람에게 고정(내 사람이 아니면 무시)
   const fixed = searchParams.to ? (people.find((p) => p.id === searchParams.to) ?? null) : null;
-  return { locale: s.profile.locale, people, fixed, tour: searchParams.tour ? { n: 1, total: tourTotal() } : null };
+  return { locale: s.profile.locale, today: todayFor(s.profile), people, fixed, shared: searchParams.shared === "1", tour: searchParams.tour ? { n: 1, total: tourTotal() } : null };
 }

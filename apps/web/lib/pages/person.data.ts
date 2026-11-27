@@ -25,8 +25,10 @@ export interface PersonData {
   };
   /** 부를 이름(내가 정한 부르는 말, 없으면 그 사람 이름) */
   name: string;
-  /** 나만 보는 메모(최근 것부터) */
-  notes: { id: string; label: string; body: string; createdAt: string }[];
+  /** 나만 보는 메모(최근 것부터). date: 적은 날(내 시간대) */
+  notes: { id: string; label: string; body: string; createdAt: string; date: YMD }[];
+  /** 처음 열리는 바인더 칸(?tab=remembered면 기억해 둔 것, 아니면 메모장) */
+  tab: "memo" | "remembered";
   folders: FolderView[];
   /** 아직 안 본 답이 있다(화면을 열면 읽은 것으로) */
   answered: boolean;

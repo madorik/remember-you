@@ -96,6 +96,34 @@ export async function startDictation(plugin: NativeSpeech, o: DictationOptions):
   };
 }
 
+// ── 음성 인식 찾기 ─────────────────────────────────────────────
+// 브라우저는 Web Speech API, 앱(Capacitor)은 SpeechRecognition 플러그인이 있으면 그것. 둘 다 없으면 글로 적는다(휴대폰 키보드의 받아쓰기 마이크로도 말할 수 있다).
+// 화면 컴포넌트(VoiceCapture·MemoPad)가 같이 쓴다. 브라우저에서만 부른다(서버에서는 null)
+
+export type WebRecognition = {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  start: () => void;
+  stop: () => void;
+  onstart: (() => void) | null;
+  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal?: boolean }> }) => void) | null;
+  onerror: ((e: { error: string }) => void) | null;
+  onend: (() => void) | null;
+};
+
+export function webCtor(): (new () => WebRecognition) | null {
+  if (typeof window === "undefined") return null;
+  const w = window as unknown as { SpeechRecognition?: new () => WebRecognition; webkitSpeechRecognition?: new () => WebRecognition };
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+}
+
+export function nativeSpeech(): NativeSpeech | null {
+  if (typeof window === "undefined") return null;
+  const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean; Plugins?: { SpeechRecognition?: NativeSpeech } } }).Capacitor;
+  return cap?.isNativePlatform?.() && cap.Plugins?.SpeechRecognition ? cap.Plugins.SpeechRecognition : null;
+}
+
 // ── 받아 적는 글을 타자 치듯 보이기 ─────────────────────────────
 
 /** 두 글의 같은 앞부분 길이 */

@@ -106,8 +106,12 @@ export interface RequestData {
 
 export interface VoiceData {
   locale: Locale;
+  /** 메모장 머리의 오늘 날짜(내 시간대) */
+  today: YMD;
   people: { id: string; name: string; tag: string; avatar: AvatarConfig | null; hint: string }[];
   /** 사람 화면에서 구슬로 들어왔을 때(?to=) 적을 사람. 말하는 것·적는 것 모두 이 사람의 기록으로 들어간다 */
   fixed: { id: string; name: string; tag: string; avatar: AvatarConfig | null; hint: string } | null;
+  /** 앱의 '공유 받기'로 열렸다(?shared=1): 메모 쓰기 화면이 받은 글을 본문에 채운다 */
+  shared: boolean;
   tour: TourInfo | null;
 }

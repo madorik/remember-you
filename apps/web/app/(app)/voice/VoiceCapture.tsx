@@ -21,36 +21,10 @@ import { insertMention, mentionAt, mentionLabel, resolveMentions, type MentionPe
 import { matchesPerson } from "@/lib/search";
 import { setOrbListening, setOrbLevel } from "@/lib/orb";
 import { startListenGuard, type ListenGuard, type StopReason } from "@/lib/listen-guard";
-import { commonPrefix, nextTyped, startDictation, type Dictation, type NativeSpeech } from "@/lib/speech";
+import { commonPrefix, nativeSpeech, nextTyped, startDictation, webCtor, type Dictation, type WebRecognition } from "@/lib/speech";
 
 /** @로 부를 수 있는 사람(즐겨찾기가 먼저) */
 export type MentionOption = MentionPerson & { avatar: AvatarConfig | null; /** 이름이 같은 사람을 가려 볼 때 곁에 붙이는 기록 요약 */ hint?: string };
-
-// 음성 인식: 브라우저는 Web Speech API, 앱(Capacitor)은 SpeechRecognition 플러그인이 있으면 그것.
-// 둘 다 없으면 글로 적는다(휴대폰 키보드의 받아쓰기 마이크로도 말할 수 있다).
-type WebRecognition = {
-  lang: string;
-  interimResults: boolean;
-  continuous: boolean;
-  start: () => void;
-  stop: () => void;
-  onstart: (() => void) | null;
-  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
-  onerror: ((e: { error: string }) => void) | null;
-  onend: (() => void) | null;
-};
-
-function webCtor(): (new () => WebRecognition) | null {
-  if (typeof window === "undefined") return null;
-  const w = window as unknown as { SpeechRecognition?: new () => WebRecognition; webkitSpeechRecognition?: new () => WebRecognition };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-}
-
-function nativeSpeech(): NativeSpeech | null {
-  if (typeof window === "undefined") return null;
-  const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean; Plugins?: { SpeechRecognition?: NativeSpeech } } }).Capacitor;
-  return cap?.isNativePlatform?.() && cap.Plugins?.SpeechRecognition ? cap.Plugins.SpeechRecognition : null;
-}
 
 /**
  * 가운데 물방울. 깨끗하고 투명한 물이 동그라미 안에서 출렁이는 느낌:

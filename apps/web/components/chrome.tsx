@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { BRAND, type Locale } from "@readme/core";
 import type { T } from "@/lib/i18n";
-import { CharOrbLink } from "./CharOrb";
+import { u } from "@/lib/ui-scale";
+import { MemoIcon } from "./MemoIcon";
 import { Icon } from "./marks";
 
 /** 위쪽 줄: 뒤로(또는 닫기) · 가운데 글 · 오른쪽 자리 */
@@ -42,7 +43,7 @@ export function Wordmark({ size = 26, locale = "ko" }: { size?: number; locale?:
   );
 }
 
-/** 탭 아이콘(시안 모양): 챙길 날(달력 + 하트) · 사람들 · 나(메모지) · 설정은 marks의 톱니 */
+/** 탭 아이콘(시안 모양): 챙길 날(달력 + 하트) · 사람들 · 나(웃는 얼굴) · 설정은 marks의 톱니 */
 const TAB_ICONS = {
   home: (
     <>
@@ -59,19 +60,20 @@ const TAB_ICONS = {
       <path d="M16.5 13.2c2.6.1 4.4 1.6 5 4.3" />
     </>
   ),
-  // 나: 메모지(오른쪽 아래 귀퉁이가 접힌 쪽지 + 두 줄)
+  // 나: 웃는 얼굴(가운데 단추가 메모지라 겹치지 않게)
   me: (
     <>
-      <path d="M4.5 4.5h15v10l-5 5h-10z" />
-      <path d="M19.5 14.5h-5v5" />
-      <path d="M8 9h8M8 12.5h5" />
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="9.3" cy="11" r=".6" fill="currentColor" />
+      <circle cx="14.7" cy="11" r=".6" fill="currentColor" />
+      <path d="M9.5 14.5q2.5 2 5 0" />
     </>
   ),
 } as const;
 
 /** 아래쪽 탭 막대: 종이색 막대에 가는 윗선, 지금 탭은 망고 알약. fab: 막대 바로 위 오른쪽에 떠 있는 버튼(사람들 화면의 직접 적기 등) */
-/** voice: 가운데 마이크(말로 적기). AI 키가 있을 때만 화면이 aiConfigured()로 켠다(이 파일은 클라이언트에서도 불려서 서버 전용 모듈을 못 들인다).
- *  voiceTo: 사람 화면이면 그 사람의 contactId — 구슬이 그 사람에게 적는 말로 적기(/voice?to=)로 간다 */
+/** voice: 가운데 메모 단추(메모 쓰기, /voice). AI 키가 있을 때만 화면이 aiConfigured()로 켠다(이 파일은 클라이언트에서도 불려서 서버 전용 모듈을 못 들인다).
+ *  voiceTo: 사람 화면이면 그 사람의 contactId — 메모 단추가 그 사람에게 적는 메모 쓰기(/voice?to=)로 간다 */
 export function TabBar({ active, t, fab, voice = false, voiceTo = null }: { active: "home" | "people" | "me" | "privacy" | null; t: T; fab?: React.ReactNode; voice?: boolean; voiceTo?: string | null }) {
   const tabs = [
     { key: "home", href: "/home", label: t("nav.home") },
@@ -116,8 +118,16 @@ export function TabBar({ active, t, fab, voice = false, voiceTo = null }: { acti
         {tabs.slice(0, 2).map(tab)}
         {voice ? (
           <div className="flex items-center justify-center">
-            {/* 가운데 구슬 속 캐릭터(막대 한가운데): 누르면 말로 또는 글로 기억해 두기. 누르면 통 튀고, 말로 적는 동안엔 활발해진다(components/CharOrb.tsx) */}
-            <CharOrbLink href={voiceTo ? `/voice?to=${voiceTo}` : "/voice"} label={t("voice.title")} size={62} />
+            {/* 가운데 메모 단추(막대 한가운데): 누르면 메모 쓰기. 눌리는 느낌만 살짝 */}
+            <Link
+              href={voiceTo ? `/voice?to=${voiceTo}` : "/voice"}
+              prefetch={false}
+              aria-label={t("nav.memo")}
+              className="flex items-center justify-center rounded-full border border-edge bg-sky-soft transition-transform active:scale-95"
+              style={{ width: u(62), height: u(62) }}
+            >
+              <MemoIcon />
+            </Link>
           </div>
         ) : null}
         {tabs.slice(2).map(tab)}
