@@ -137,13 +137,13 @@ export function RememberedBox({ label, text }: { label: string; text: string }) 
   );
 }
 
-/** 카드 맨 아래 꽉 찬 망고 단추(글자 + 화살표) */
-export function HeroButton({ href, label, first = true, small = false }: { href: string; label: string; first?: boolean; small?: boolean }) {
+/** 카드 맨 아래 꽉 찬 망고 단추(글자 + 화살표). padLeft는 왼쪽에 겹쳐 놓는 것(폴라로이드)이 가리는 만큼 글자를 오른쪽으로 미는 안쪽 여백, flush는 위 간격 없음(감싸는 쪽이 간격을 정할 때) */
+export function HeroButton({ href, label, first = true, small = false, padLeft = 0, flush = false }: { href: string; label: string; first?: boolean; small?: boolean; padLeft?: number; flush?: boolean }) {
   return (
     <Link
       href={href}
-      className={`hand flex h-[44px] items-center justify-center gap-[7.2px] rounded-[14.4px] border leading-none transition-transform active:translate-y-px ${first ? "mt-[10.8px]" : "mt-[7.2px]"} ${small ? "text-[18.9px]" : "text-[21.6px]"}`}
-      style={{ borderColor: EDGE, background: MANGO, boxShadow: "0 2.7px 0 #E09A12", color: INK }}
+      className={`hand flex h-[44px] items-center justify-center gap-[7.2px] rounded-[14.4px] border leading-none transition-transform active:translate-y-px ${flush ? "" : first ? "mt-[10.8px]" : "mt-[7.2px]"} ${small ? "text-[18.9px]" : "text-[21.6px]"}`}
+      style={{ borderColor: EDGE, background: MANGO, boxShadow: "0 2.7px 0 #E09A12", color: INK, paddingLeft: padLeft || undefined }}
     >
       <span className="min-w-0 truncate">{label}</span>
       <svg aria-hidden="true" viewBox="0 0 24 24" width={u(20)} height={u(20)} fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
@@ -154,31 +154,36 @@ export function HeroButton({ href, label, first = true, small = false }: { href:
 }
 
 /**
- * 연말 카드 아래: 단추 위에 [작은 폴라로이드 얼굴 + 이름] 한 줄, 그 밑에 원래 길이(카드 폭) 그대로의 망고 단추.
- * 단추는 그 사람의 선물 고르기로. 얼굴·이름은 pickHref가 있으면(사람이 여럿) 다른 사람을 고르러 가는 링크, 없으면 그냥 글
+ * 연말 카드 아래: 카드 폭 그대로의 망고 단추 왼쪽 끝에 [작은 폴라로이드(얼굴 + 이름 캡션)]를 겹쳐 얹는다.
+ * 폴라로이드는 단추보다 키가 커서 위아래로 살짝 삐져나오고(그만큼 위·아래 간격을 둔다), 단추 글자는 폴라로이드가 가리는 만큼 오른쪽으로 민다.
+ * 단추는 그 사람의 선물 고르기로. 폴라로이드는 pickHref가 있으면(사람이 여럿) 다른 사람을 고르러 가는 링크, 없으면 그냥 그림(눌러도 아래 단추가 눌린다)
  */
+const PICK_W = 58;
+const PICK_LEFT = -8;
 export function HeroPickRow({ avatar, name, pickHref, giftHref, giftLabel }: { avatar: AvatarConfig | null; name: string; pickHref: string | null; giftHref: string; giftLabel: string }) {
+  const place = "absolute top-1/2 z-10 flex flex-col items-center border bg-white px-[3.6px] pb-[3.6px] pt-[3.6px]";
+  const placeStyle: React.CSSProperties = { left: PICK_LEFT, width: PICK_W, borderColor: EDGE, boxShadow: "0 5.4px 9px -6px rgba(31,35,64,.5)", transform: "translateY(-50%) rotate(-6deg)" };
   const who = (
     <>
-      <span className="flex shrink-0 items-center justify-center border bg-white p-[2.7px]" style={{ borderColor: EDGE, boxShadow: "0 3.6px 7.2px -5.4px rgba(31,35,64,.5)", transform: "rotate(-4deg)" }}>
-        <span className="flex items-center justify-center" style={{ width: u(34), height: u(34), background: "#FFF4D6" }}>
-          <Avatar config={avatar} size={30} label={name} decorative />
-        </span>
+      <span className="flex h-[40px] w-full items-center justify-center" style={{ background: "#FFF4D6" }}>
+        <Avatar config={avatar} size={40} label={name} decorative />
       </span>
-      <span className="hand-written min-w-0 truncate text-[19.8px] leading-none">{name}</span>
+      <span className="hand-written mt-[3px] block w-full min-w-0 truncate text-center text-[14.4px] leading-[1.15]">{name}</span>
     </>
   );
   return (
-    <>
+    <div className="relative mb-[7px] mt-[25px]">
+      <HeroButton href={giftHref} label={giftLabel} flush padLeft={PICK_W + PICK_LEFT + 2} />
       {pickHref ? (
-        <Link href={pickHref} aria-label={name} className="mt-[9px] flex min-h-11 min-w-0 items-center gap-[9px] self-start">
+        <Link href={pickHref} aria-label={name} className={place} style={placeStyle}>
           {who}
         </Link>
       ) : (
-        <span className="mt-[9px] flex min-h-11 min-w-0 items-center gap-[9px]">{who}</span>
+        <span className={`${place} pointer-events-none`} style={placeStyle}>
+          {who}
+        </span>
       )}
-      <HeroButton href={giftHref} label={giftLabel} first={false} />
-    </>
+    </div>
   );
 }
 
