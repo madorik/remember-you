@@ -723,6 +723,12 @@ export const ko = {
   "privacy.shareApp": "앱 공유하기",
   "privacy.shareAppQr": "앱 다운로드 QR 코드",
   "privacy.shareAppText": "소중한 사람들의 컨닝페이퍼, 기억해U 같이 써요",
+  // 앱 받기 화면(/app): 웹은 로그인·가입만이라 로그인한 웹 방문자에게 보이는 화면
+  "webGate.title": "기억해유는 앱에서 만나요",
+  "webGate.appStore": "App Store에서 받기",
+  "webGate.googlePlay": "Google Play에서 받기",
+  "webGate.scan": "휴대폰 카메라로 QR 코드를 찍어 앱을 받으세요",
+  "webGate.deleteGuide": "계정 삭제 안내",
 
   "me.title": "나에 대한 기록",
   "me.face": "프로필 수정",
@@ -1567,6 +1573,11 @@ export const en: Messages = {
   "privacy.shareApp": "Share the app",
   "privacy.shareAppQr": "App download QR code",
   "privacy.shareAppText": "Remember You, a cheat sheet for the people you love. Try it with me",
+  "webGate.title": "Remember You lives in the app",
+  "webGate.appStore": "Get it on the App Store",
+  "webGate.googlePlay": "Get it on Google Play",
+  "webGate.scan": "Scan the QR code with your phone camera to get the app",
+  "webGate.deleteGuide": "How to delete your account",
 
   "me.title": "About me",
   "me.face": "Edit profile",

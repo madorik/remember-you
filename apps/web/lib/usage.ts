@@ -36,6 +36,8 @@ export const SERVER_EVENTS = [
   "account_delete",
   "account_link",
   "app_get",
+  // 웹은 로그인·가입만: 웹 브라우저로 로그인한 사람에게 앱 받기 화면(/app)을 보여 줌(source: ios·desktop·android)
+  "web_gate",
 ] as const;
 
 export type ClientEvent = (typeof CLIENT_EVENTS)[number];
@@ -73,6 +75,7 @@ export const FEATURE_LABEL: Record<string, string> = {
   card_open: "가족 카드 열림",
   gift_done: "선물 완료",
   app_get: "앱 받기 누름",
+  web_gate: "웹 → 앱 받기 안내 봄",
   review_ask: "스토어 리뷰 창 띄움",
 };
 
@@ -98,6 +101,7 @@ export const PAGE_LABEL: Record<string, string> = {
   "/plan/gift": "같이 고르기 · 선물",
   "/plan/menu": "같이 고르기 · 메뉴",
   "/onboarding": "온보딩 · 첫 메모",
+  "/app": "앱 받기 안내(웹)",
   "/r/:token": "물어보기에 답하기",
   "/g/:token": "가족 카드",
   "/gifts": "선물 가이드",

@@ -13,6 +13,7 @@ import { ogMetadata } from "@/lib/og";
 import { displayName } from "@/lib/person";
 import { readRecordShare, shareTokenOf } from "@/lib/record-share";
 import { shareParts } from "@/lib/share-record";
+import { webGateFor } from "@/lib/web-gate-core";
 
 // 링크 미리보기(카카오톡·문자): 누가·무슨 정보인지는 담지 않는다("정보가 도착했어요"만)
 export async function generateMetadata() {
@@ -28,7 +29,8 @@ export default async function ReceiveSharePage({ params }: { params: Promise<{ t
   const locale = await requestLocale(session?.profile.locale);
   const t = makeT(locale);
   const view = await readRecordShare(token);
-  const inApp = /ReadmeApp/.test((await headers()).get("user-agent") ?? "");
+  const ua = (await headers()).get("user-agent") ?? "";
+  const inApp = /ReadmeApp/.test(ua);
 
   const message = (text: string, extra?: React.ReactNode) => (
     <main className="screen">
@@ -68,6 +70,9 @@ export default async function ReceiveSharePage({ params }: { params: Promise<{ t
       </div>,
     );
   }
+
+  // 웹은 로그인·가입만: 받은 기록을 내 사람들에 저장하는 화면은 앱에서(웹 브라우저는 앱 받기 화면으로)
+  if (webGateFor(ua)) redirect("/app");
 
   const shell = (children: React.ReactNode) => (
     <main className="screen !pb-0 overflow-x-clip" data-tabs="">

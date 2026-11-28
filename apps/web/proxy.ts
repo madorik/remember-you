@@ -1,5 +1,6 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
+import { webGateFor } from "@/lib/web-gate-core";
 
 // 로그인해야 보이는 화면은 세션 쿠키가 없으면 시작 화면으로 보낸다(진짜 확인은 각 화면의 getSession이 한다).
 // 로그인 없이 열리는 곳: 시작·로그인·물어보기에 답하기(/r)·가족에게 보낸 선물 카드(/g)·링크로 받은 기록(/s, 화면이 로그인을 직접 확인한다)·선물 가이드(/gifts)·우리 통계(/admin, 관리자 키로 화면에서 막는다)
@@ -33,7 +34,8 @@ export function proxy(request: NextRequest) {
     // 로그인한 채로 앱을 열면 시작 화면을 그리지(세션 확인 DB 왕복) 않고 바로 홈으로. 온보딩 전이면 홈이 온보딩으로 보낸다.
     // 쿠키가 낡았으면 홈이 /?next=…로 돌려보내고, ?next가 있으면 여기서 다시 튕기지 않으니 돌고 돌지 않는다
     const home = request.nextUrl.clone();
-    home.pathname = "/home";
+    // 웹은 로그인·가입만이라 막는 브라우저는 앱 받기 화면으로(앱 안은 그대로 홈). 거기서도 쿠키가 낡았으면 /?next=…로 돌려보내 돌고 돌지 않는다
+    home.pathname = webGateFor(request.headers.get("user-agent")) ? "/app" : "/home";
     home.search = "";
     return NextResponse.redirect(home);
   }
