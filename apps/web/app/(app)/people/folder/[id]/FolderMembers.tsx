@@ -6,6 +6,7 @@ import { useOptimistic, useRef, useState, useTransition } from "react";
 import { addToFolder, removeFromFolder } from "@/app/actions/people";
 import { Icon } from "@/components/marks";
 import { RowBody, type PersonRow } from "@/components/PersonRow";
+import { ROW_MENU_CLASS, usePersonRowMenu } from "@/components/PersonRowMenu";
 import { useUndoToast } from "@/components/UndoToast";
 
 interface Labels {
@@ -21,7 +22,8 @@ type Op = { type: "remove"; id: string } | { type: "restore"; row: PersonRow; at
 
 /**
  * 폴더 안 사람 목록: 줄을 누르면 그 사람 화면, 줄 오른쪽 끝 '−'를 누르면 이 폴더에서만 뺀다(사람은 그대로).
- * 빼면 바로 목록에서 사라지고(서버에도 바로 반영) 5초 동안 '되돌리기'를 누르면 제자리에 돌아온다. 끝 줄은 사람 넣기
+ * 빼면 바로 목록에서 사라지고(서버에도 바로 반영) 5초 동안 '되돌리기'를 누르면 제자리에 돌아온다. 끝 줄은 사람 넣기.
+ * 줄을 꾹 누르면(마우스 오른쪽 단추·Shift+F10도) '지우기' 메뉴가 떠서, 확인을 거쳐 그 사람을 사람들에서 아예 지운다
  */
 export function FolderMembers({
   folderId,
@@ -45,6 +47,7 @@ export function FolderMembers({
   const [, start] = useTransition();
   const [failed, setFailed] = useState(false);
   const undo = useUndoToast(locale);
+  const rowMenu = usePersonRowMenu({ locale, optimistic: (id) => apply({ type: "remove", id }) });
   // 빼기와 되돌리기가 서로 앞서지 않게 하나씩 차례로 보낸다
   const queue = useRef<Promise<unknown>>(Promise.resolve());
   const send = (job: () => Promise<{ ok: boolean }>) => {
@@ -78,7 +81,7 @@ export function FolderMembers({
     <>
       <ul className="flex flex-col">
         {shown.map((r) => (
-          <li key={r.contactId} className="flex items-center border-t border-dashed border-ink/30 first-of-type:border-t-0">
+          <li key={r.contactId} {...rowMenu.rowProps({ contactId: r.contactId, name: r.name })} className={`${ROW_MENU_CLASS} flex items-center border-t border-dashed border-ink/30 first-of-type:border-t-0`}>
             <Link href={`/people/${r.contactId}?back=${encodeURIComponent(here)}`} className="flex min-h-[50.4px] min-w-0 flex-1 items-center gap-2.5">
               <RowBody row={r} />
             </Link>
@@ -110,6 +113,7 @@ export function FolderMembers({
         </p>
       ) : null}
       {undo.toast}
+      {rowMenu.node}
     </>
   );
 }

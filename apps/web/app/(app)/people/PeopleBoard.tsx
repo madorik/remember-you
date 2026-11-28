@@ -10,6 +10,7 @@ import { FolderSheet } from "@/components/FolderSheet";
 import { Mascot } from "@/components/Mascot";
 import { DrawnCheck, Icon } from "@/components/marks";
 import { RowBody, type PersonRow } from "@/components/PersonRow";
+import { ROW_MENU_CLASS, usePersonRowMenu } from "@/components/PersonRowMenu";
 import { Sheet } from "@/components/Sheet";
 import { TornTape } from "@/components/TornTape";
 import type { FolderSheetLabels, FolderView } from "@/lib/folders";
@@ -228,8 +229,14 @@ export function PeopleBoard({
   const [local, setLocal] = useState<{ rows: PersonRow[]; added: Record<string, string[]> }>({ rows, added: {} });
   const added = local.rows === rows ? local.added : {};
   const [, startDrop] = useTransition();
+  // 사람 줄을 꾹 누르면(마우스 오른쪽 단추·키보드 Shift+F10도) 뜨는 '지우기' 메뉴(선택 모드의 줄에는 없다)
+  const rowMenu = usePersonRowMenu({ locale });
   const drag = useDragToFolder({
     enabled: !picking && !searching,
+    onHold: (contactId, row, x) => {
+      const r = rows.find((p) => p.contactId === contactId);
+      if (r) rowMenu.openHold({ contactId, name: r.name }, row, x);
+    },
     onDrop: (contactId, folderId) => {
       setLocal((l) => {
         const cur = l.rows === rows ? l.added : {};
@@ -335,19 +342,23 @@ export function PeopleBoard({
   );
   const filled = folders.filter((f) => f.memberIds.some((id) => byId.has(id)));
 
-  // 사람 한 줄(눌러 사람 화면, 꾹 눌러 끌면 폴더 칸에 넣는다)
-  const dragRow = (r: PersonRow) => (
-    <li
-      key={r.contactId}
-      onPointerDown={(e) => drag.onPointerDown(e, r.contactId, r.name, "list")}
-      onContextMenu={(e) => e.preventDefault()}
-      className={`select-none border-t border-dashed border-ink/30 first:border-t-0 [-webkit-touch-callout:none] ${lazyRow} ${drag.dragging?.id === r.contactId ? "opacity-40" : ""}`}
-    >
-      <Link href={`/people/${r.contactId}`} draggable={false} className="flex min-h-[50.4px] items-center gap-2.5">
-        <RowBody row={r} avatarLabel={labels.avatarOf.replace("{name}", r.name)} />
-      </Link>
-    </li>
-  );
+  // 사람 한 줄(눌러 사람 화면, 꾹 눌러 끌면 폴더 칸에 넣고, 끌지 않고 가만히 꾹 누르면 지우기 메뉴)
+  const dragRow = (r: PersonRow) => {
+    const menu = rowMenu.rowProps({ contactId: r.contactId, name: r.name }, { press: false, ignore: () => !!drag.dragging });
+    return (
+      <li
+        key={r.contactId}
+        onPointerDown={(e) => drag.onPointerDown(e, r.contactId, r.name, "list")}
+        onContextMenu={menu.onContextMenu}
+        onKeyDown={menu.onKeyDown}
+        className={`${ROW_MENU_CLASS} border-t border-dashed border-ink/30 first:border-t-0 ${lazyRow} ${drag.dragging?.id === r.contactId ? "opacity-40" : ""}`}
+      >
+        <Link href={`/people/${r.contactId}`} draggable={false} className="flex min-h-[50.4px] items-center gap-2.5">
+          <RowBody row={r} avatarLabel={labels.avatarOf.replace("{name}", r.name)} />
+        </Link>
+      </li>
+    );
+  };
   // 즐겨찾기: 어느 폴더에 있든 한곳에 모아 바로 본다. 제목을 누르면 접힌다
   const favSection = favRows.length ? (
     <section aria-label={labels.favorites} className="relative">
@@ -570,7 +581,7 @@ export function PeopleBoard({
         found.length ? (
           <ul className="card mx-4 mt-3.5 flex flex-col px-3.5">
             {found.map((r) => (
-              <li key={r.contactId} className={`border-t border-dashed border-ink/30 first:border-t-0 ${lazyRow}`}>
+              <li key={r.contactId} {...rowMenu.rowProps({ contactId: r.contactId, name: r.name })} className={`${ROW_MENU_CLASS} border-t border-dashed border-ink/30 first:border-t-0 ${lazyRow}`}>
                 <Link href={`/people/${r.contactId}`} className="flex min-h-[50.4px] items-center gap-2.5">
                   <RowBody row={r} avatarLabel={labels.avatarOf.replace("{name}", r.name)} />
                 </Link>
@@ -684,6 +695,7 @@ export function PeopleBoard({
         </div>
       ) : null}
       {making ? <FolderSheet labels={sheet} onClose={() => setMaking(false)} /> : null}
+      {rowMenu.node}
       {removeOpen ? (
         <Sheet
           id="people-remove-title"
