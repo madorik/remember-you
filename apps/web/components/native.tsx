@@ -3,6 +3,7 @@
 import type { Locale } from "@readme/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { classifyClipboard, type ClipboardProbe, type ClipboardRead } from "@/lib/clipboard-paste";
 import { APPLE_NOTES, APPLE_NOTES_URL, installedNotesApps, type NotesApp } from "@/lib/notes-apps";
 import { Wordmark } from "./chrome";
 import { Icon } from "./marks";
@@ -68,11 +69,17 @@ interface ShareInboxPlugin {
   addListener(event: "shared", listener: () => void): Promise<{ remove: () => Promise<void> }>;
   /** (안드로이드, 메모 앱 열기를 넣은 빌드부터) 설치된 메모 앱: ShareInboxPlugin.NOTES_APPS 중 깔린 것 */
   notesApps(): Promise<{ apps: { id: string }[] }>;
+  /** (클립보드 읽기를 넣은 빌드부터) 클립보드에 글이 있나·바뀔 때마다 달라지는 값. 내용은 읽지 않는다(안드로이드 ClipboardManager 설명, iOS hasStrings·changeCount) */
+  hasClipboardText(): Promise<{ has: boolean; stamp?: number }>;
+  /** (같은 빌드부터) 클립보드의 글. 사람이 '복사한 글 붙여 넣기'를 누른 때만 부른다 */
+  readClipboard(): Promise<{ text: string | null }>;
   /** (안드로이드, 같은 빌드부터) 그 메모 앱을 연다 */
   openApp(options: { id: string }): Promise<{ opened: boolean }>;
 }
 
 let shareInbox: Promise<{ plugin: ShareInboxPlugin } | null> | null = null;
+/** 등록이 끝난 플러그인(눌린 그 자리에서 곧바로 불러야 하는 클립보드 읽기가 기다림 없이 쓴다) */
+let shareInboxNow: ShareInboxPlugin | null = null;
 
 /**
  * 공유 받은 편지함 플러그인(공유 받기를 넣기 전에 만든 앱 빌드에는 없어서 null). 한 번만 등록한다.
@@ -84,7 +91,8 @@ function loadShareInbox(): Promise<{ plugin: ShareInboxPlugin } | null> {
     try {
       const { Capacitor, registerPlugin } = await import("@capacitor/core");
       if (!Capacitor.isPluginAvailable("ShareInbox")) return null;
-      return { plugin: registerPlugin<ShareInboxPlugin>("ShareInbox") };
+      shareInboxNow = registerPlugin<ShareInboxPlugin>("ShareInbox");
+      return { plugin: shareInboxNow };
     } catch {
       return null;
     }
@@ -122,7 +130,8 @@ export async function loadNotesApps(): Promise<NotesApp[]> {
 }
 
 /**
- * 그 메모 앱을 연다. 돌아오는 길은 따로 없다: 사람이 그 앱에서 글을 골라 "공유 → 기억해유"를 누르면 위 받은 편지함이 메모 쓰는 화면으로 가져온다
+ * 그 메모 앱을 연다. 돌아오는 길은 따로 없다: 사람이 그 앱에서 글을 골라 "공유 → 기억해유"를 누르면 위 받은 편지함이 메모 쓰는 화면으로 가져오고,
+ * 글을 복사하고 직접 돌아오면 메모 쓰는 화면의 '복사한 글 붙여 넣기'(아래 clipboard 함수들)가 받는다
  */
 export async function openNotesApp(app: NotesApp): Promise<boolean> {
   try {
@@ -136,6 +145,81 @@ export async function openNotesApp(app: NotesApp): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+// ── 복사한 글 붙여 넣기 ───────────────────────────────────────────
+// 메모 앱에서 글을 복사하고 돌아와 '복사한 글 붙여 넣기'를 누르면 클립보드의 글이 본문 뒤에 붙는다(메모 쓰기 화면 PastePill). 글은 본문 칸에만 들어간다
+
+/** 클립보드에 글이 있나 읽지 않고 본다. 볼 방법이 없으면(웹 브라우저·클립보드 확인을 넣기 전 앱 빌드) null */
+export async function clipboardHasText(): Promise<ClipboardProbe | null> {
+  if (!isNativeApp()) return null;
+  try {
+    const inbox = await loadShareInbox();
+    if (!inbox || !pluginHasMethod("ShareInbox", "hasClipboardText")) return null;
+    const r = await inbox.plugin.hasClipboardText();
+    return { has: !!r?.has, stamp: typeof r?.stamp === "number" ? r.stamp : 0 };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 이 기기에서 '복사한 글 붙여 넣기'가 클립보드를 읽을 수 있나. 안드로이드 앱의 웹뷰는 navigator.clipboard.readText를 늘 막아서(NotAllowedError, 에뮬레이터 확인)
+ * 앱 안쪽 읽기(readClipboard)를 넣은 빌드에서만 된다. 그 전 안드로이드 빌드에서는 눌러 봐야 실패할 알약을 아예 보이지 않는다.
+ * 웹 브라우저·iOS 웹뷰는 누른 직후의 readText로 읽는다
+ */
+export function canReadClipboard(): boolean {
+  if (!isNativeApp()) return true;
+  if (pluginHasMethod("ShareInbox", "readClipboard")) return true;
+  const w = window as unknown as { Capacitor?: { getPlatform?: () => string } };
+  return w.Capacitor?.getPlatform?.() !== "android";
+}
+
+/**
+ * 클립보드의 글을 읽는다. 사람이 단추를 누른 그 자리에서 부른다:
+ * 웹 브라우저·iOS 웹뷰의 navigator.clipboard.readText는 누른 직후에만 읽히니, 읽기 전에 기다리는 일(await)을 끼우지 않는다.
+ * 앱 안쪽 플러그인이 클립보드 읽기를 갖고 있으면(새 앱 빌드) 그것으로, 아니면 웹의 readText로(예전 앱 빌드·웹 브라우저)
+ */
+export function readClipboardText(): Promise<ClipboardRead> {
+  const failed: ClipboardRead = { status: "failed" };
+  const plugin = shareInboxNow;
+  try {
+    if (plugin && isNativeApp() && pluginHasMethod("ShareInbox", "readClipboard")) {
+      return plugin.readClipboard().then((r) => classifyClipboard(r?.text), () => failed);
+    }
+    if (!navigator.clipboard?.readText) return Promise.resolve(failed);
+    return navigator.clipboard.readText().then(classifyClipboard, () => failed);
+  } catch {
+    return Promise.resolve(failed);
+  }
+}
+
+/**
+ * 이 화면을 떠났다(앱을 내리거나 다른 앱으로 갔다, 탭을 바꿨다)·돌아왔다를 알린다. 웹은 visibilitychange, 앱은 Capacitor의 appStateChange도 같이(둘 다 올 수 있다).
+ * 돌려주는 함수를 부르면 걷는다
+ */
+export function watchAppReturn(h: { onLeave: () => void; onReturn: () => void }): () => void {
+  const onVisibility = () => (document.visibilityState === "hidden" ? h.onLeave() : h.onReturn());
+  document.addEventListener("visibilitychange", onVisibility);
+  let gone = false;
+  let remove: (() => void) | undefined;
+  if (isNativeApp()) {
+    void (async () => {
+      try {
+        const { App } = await import("@capacitor/app");
+        const l = await App.addListener("appStateChange", ({ isActive }) => (isActive ? h.onReturn() : h.onLeave()));
+        if (gone) void l.remove();
+        else remove = () => void l.remove();
+      } catch {
+        /* 앱 상태를 못 보면 웹 이벤트만 쓴다 */
+      }
+    })();
+  }
+  return () => {
+    gone = true;
+    document.removeEventListener("visibilitychange", onVisibility);
+    remove?.();
+  };
 }
 
 // ── 푸시 알림 ─────────────────────────────────────────────────────

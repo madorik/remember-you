@@ -1,5 +1,8 @@
 package kr.readme.app;
 
+import android.content.ClipData;
+import android.content.ClipDescription;
+import android.content.ClipboardManager;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
@@ -31,6 +34,8 @@ import java.util.concurrent.TimeUnit;
  * - "shared" 이벤트: 앱이 켜진 채로 새 공유가 들어왔을 때
  * - notesApps() → { apps: [{ id }] }: 메모 쓰기 화면의 '메모 앱에서'가 열 수 있는, 이 휴대폰에 깔린 메모 앱(아래 NOTES_APPS 중)
  * - openApp({ id }) → { opened: boolean }: 그 메모 앱을 연다(사람이 거기서 글을 골라 "공유 → 기억해유"를 누르면 위 길로 돌아온다)
+ * - hasClipboardText() → { has: boolean, stamp: number }: 클립보드에 글이 있나(내용은 읽지 않는다). stamp는 그 클립이 담긴 때(ms, API 26부터. 아니면 0): 새로 복사한 글인지 가리는 데 쓴다
+ * - readClipboard() → { text: string | null }: 클립보드의 글(앞뒤 공백 뺀 것, 최대 20,000자). 사람이 '복사한 글 붙여 넣기'를 누른 때만 부른다
  * 메모 내용은 개인 정보라 주소에 싣거나 로그에 남기지 않는다(메모리에만 잠깐 둔다).
  */
 @CapacitorPlugin(name = "ShareInbox")
@@ -90,6 +95,51 @@ public class ShareInboxPlugin extends Plugin {
         }
         JSObject ret = new JSObject();
         ret.put("apps", apps);
+        call.resolve(ret);
+    }
+
+    /**
+     * 클립보드에 글이 있나. 내용은 읽지 않는다(getPrimaryClip을 부르지 않으니 안드로이드 13의 "클립보드에서 붙여 넣음" 안내도 뜨지 않는다).
+     * 안드로이드 10부터는 앞에 나와 있는 앱만 클립보드 정보를 볼 수 있어서, 앱이 막 앞으로 나온 때는 없다고 나올 수 있다(웹이 잠깐 뒤에 다시 본다)
+     */
+    @PluginMethod
+    public void hasClipboardText(PluginCall call) {
+        boolean has = false;
+        long stamp = 0;
+        try {
+            ClipboardManager cm = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+            if (cm != null && cm.hasPrimaryClip()) {
+                ClipDescription description = cm.getPrimaryClipDescription();
+                if (description != null && description.hasMimeType("text/*")) {
+                    has = true;
+                    if (Build.VERSION.SDK_INT >= 26) stamp = description.getTimestamp();
+                }
+            }
+        } catch (Exception ignored) {
+            // 볼 수 없으면 없는 것으로 알린다
+        }
+        JSObject ret = new JSObject();
+        ret.put("has", has);
+        ret.put("stamp", stamp);
+        call.resolve(ret);
+    }
+
+    /** 클립보드의 글(첫 항목). 글이 없거나 읽을 수 없으면 null. 내용은 로그에 남기지 않는다 */
+    @PluginMethod
+    public void readClipboard(PluginCall call) {
+        String text = null;
+        try {
+            ClipboardManager cm = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+            ClipData clip = cm == null ? null : cm.getPrimaryClip();
+            if (clip != null && clip.getItemCount() > 0) {
+                CharSequence got = clip.getItemAt(0).coerceToText(getContext());
+                text = clean(got == null ? null : got.toString());
+            }
+        } catch (Exception ignored) {
+            // 읽을 수 없으면 글이 없는 것으로 알린다
+        }
+        JSObject ret = new JSObject();
+        ret.put("text", text == null ? JSObject.NULL : text);
         call.resolve(ret);
     }
 

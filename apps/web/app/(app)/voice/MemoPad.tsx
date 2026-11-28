@@ -11,6 +11,7 @@ import { Avatar } from "@/components/Avatar";
 import { BinderPage, RULE, RULE_AT, ruledLines } from "@/components/Binder";
 import { Icon } from "@/components/marks";
 import { Mascot } from "@/components/Mascot";
+import { readClipboardText } from "@/components/native";
 import { markSaved } from "@/components/ReviewAsk";
 import { prepareImage, type PrepProblem } from "@/lib/image-prep";
 import { appendBlock } from "@/lib/memo-append";
@@ -23,6 +24,7 @@ import { matchesPerson } from "@/lib/search";
 import { nativeSpeech, startDictation, webCtor, type Dictation, type WebRecognition } from "@/lib/speech";
 import { u } from "@/lib/ui-scale";
 import { ImportMenu, type ImportMenuLabels } from "./ImportMenu";
+import { PastePill, usePasteOffer } from "./PastePill";
 
 /** 이름 칩에 쓰는 사람 한 명 */
 export interface MemoPerson {
@@ -65,6 +67,12 @@ export interface MemoLabels {
   month: string;
   /** '메모 가져오기' 메뉴(메모 앱에서 · 사진에서) */
   menu: ImportMenuLabels;
+  /** 메모 앱에서 복사하고 돌아오면 본문 첫 줄에 뜨는 알약 */
+  paste: string;
+  /** 알약을 눌렀는데 복사한 글이 없다 */
+  pasteEmpty: string;
+  /** 클립보드를 읽지 못했다(길게 눌러 붙여 넣기를 안내) */
+  pasteFailed: string;
   /** 사진에서 글을 읽어 오는 동안 */
   photoReading: string;
   /** 사진에서 글을 못 읽어 온 이유 */
@@ -363,6 +371,8 @@ export function MemoPad({
   labels: MemoLabels;
 }) {
   const router = useRouter();
+  // 메모 앱에서 복사하고 돌아오면 뜨는 '복사한 글 붙여 넣기' 알약
+  const paste = usePasteOffer();
   const canListen = useSyncExternalStore(
     () => () => {},
     () => !!webCtor() || !!nativeSpeech(),
@@ -519,6 +529,8 @@ export function MemoPad({
     if (got.trim()) {
       const next = appendBlock(textRef.current, got, MAX);
       setText(next.text);
+      // 글이 공유로 들어왔으니 붙여 넣기 알약은 걷는다
+      paste.dismiss();
       if (next.clipped) say(labels.sharedClipped);
     }
     const q = new URLSearchParams(window.location.search);
@@ -570,10 +582,30 @@ export function MemoPad({
     if (res.error || !res.text.trim()) return say(labels.photoErrors[res.error ?? "unreadable"], true);
     const next = appendBlock(textRef.current, res.text, MAX);
     setText(next.text);
+    paste.dismiss();
     const skipped = res.skipped + (picked.length - blobs.length);
     if (next.clipped) say(labels.sharedClipped);
     else if (skipped > 0) say(labels.photoSkipped.replace("{n}", String(skipped)));
     else if (problem === "many") say(labels.photoProblems.many);
+  };
+
+  // ── 복사한 글 붙여 넣기: 알약을 누른 그 자리에서 클립보드를 읽어(웹뷰는 누른 직후여야 읽힌다) 공유로 받은 글과 같은 길로 본문 뒤에 붙인다(빈 줄 하나, 합쳐 1000자까지). 글은 본문 칸에만 들어간다 ──
+  const pasteCopied = () => {
+    paste.dismiss();
+    void readClipboardText().then((r) => {
+      if (!alive.current) return;
+      if (r.status === "ok") {
+        const next = appendBlock(textRef.current, r.text, MAX);
+        setText(next.text);
+        if (next.clipped) say(labels.sharedClipped);
+      } else if (r.status === "empty") {
+        say(labels.pasteEmpty);
+      } else {
+        // 읽을 수 없는 곳이면(권한·지원 없음) 본문을 길게 눌러 붙이게 커서를 둔다
+        say(labels.pasteFailed, true);
+        box.current?.focus();
+      }
+    });
   };
 
   // 본문 칸은 글이 늘어나는 만큼 키운다
@@ -636,6 +668,7 @@ export function MemoPad({
   const listen = async () => {
     if (settling || saving) return;
     if (listening) return halt();
+    paste.dismiss();
     setMicError(false);
     hear(NOTHING);
     const lang = locale === "ko" ? "ko-KR" : "en-US";
@@ -886,6 +919,7 @@ export function MemoPad({
                 disabled={busy || saving || reading}
                 autoOpen={importNow}
                 onPhoto={() => photoInput.current?.click()}
+                onOpenNotes={paste.hop}
                 triggerLabel={labels.importNotes}
                 className="relative flex h-11 w-11 items-center justify-center rounded-full before:absolute before:-inset-[2.2px]"
               >
@@ -900,6 +934,7 @@ export function MemoPad({
               disabled={busy || saving || reading}
               autoOpen={importNow}
               onPhoto={() => photoInput.current?.click()}
+              onOpenNotes={paste.hop}
               className="inline-flex items-center gap-[4.5px] whitespace-nowrap rounded-full border border-edge bg-white text-[12.15px]"
               style={{ height: u(34), padding: `0 ${u(13)}px 0 ${u(10)}px` }}
             >
@@ -1079,6 +1114,8 @@ export function MemoPad({
             style={{ marginLeft: -u(40), marginRight: -u(16), paddingLeft: u(40), paddingRight: u(16), ...ruledLines(RULE_AT) }}
             onClick={() => box.current?.focus()}
           >
+            {/* 메모 앱에서 복사하고 돌아왔을 때 */}
+            {paste.shown && !busy && !reading ? <PastePill label={labels.paste} onPaste={pasteCopied} /> : null}
             {reading ? (
               // 글줄 한 칸(RULE) 높이를 차지해 밑의 글이 줄 위에 그대로 앉는다
               <div className="flex items-start" style={{ height: RULE }}>
@@ -1101,6 +1138,7 @@ export function MemoPad({
                 ref={box}
                 value={text}
                 onChange={(e) => {
+                  paste.dismiss();
                   voiced.current = voiced.current && e.target.value.length > 0;
                   setText(e.target.value);
                   setCaret(e.target.selectionStart);

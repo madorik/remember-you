@@ -5,6 +5,8 @@ import Capacitor
 /// 웹(NativeBridge)이 window.Capacitor.Plugins.ShareInbox 로 쓴다. 안드로이드의 ShareInboxPlugin.java와 이름·모양을 맞춘다.
 /// - take() → { text: string | null }: 앱 그룹에 담긴 글(앞뒤 공백 뺀 것, 최대 20,000자)을 돌려주고 비운다. 하루가 지난 글은 버린다
 /// - "shared" 이벤트: 앱이 kr.readme.app://share 로 열렸을 때, 그리고 앱이 다시 활성화될 때 받아 둔 글이 있으면
+/// - hasClipboardText() → { has: boolean, stamp: number }: 클립보드에 글이 있나(hasStrings: 내용은 읽지 않아 붙여 넣기 허락 창이 뜨지 않는다). stamp는 changeCount(클립보드가 바뀔 때마다 오른다)
+/// - readClipboard() → { text: string | null }: 클립보드의 글(앞뒤 공백 뺀 것, 최대 20,000자). 사람이 '복사한 글 붙여 넣기'를 누른 때만 부른다(iOS가 붙여 넣기 허락을 물을 수 있다)
 /// 글 내용은 주소나 로그에 싣지 않는다.
 @objc(ShareInboxPlugin)
 public class ShareInboxPlugin: CAPPlugin, CAPBridgedPlugin {
@@ -12,6 +14,8 @@ public class ShareInboxPlugin: CAPPlugin, CAPBridgedPlugin {
     public let jsName = "ShareInbox"
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "take", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "hasClipboardText", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "readClipboard", returnType: CAPPluginReturnPromise),
     ]
 
     // 공유 확장(ShareExtension/ShareViewController.swift)과 같은 값
@@ -33,6 +37,22 @@ public class ShareInboxPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func take(_ call: CAPPluginCall) {
         call.resolve(["text": Self.takePending() ?? NSNull()])
+    }
+
+    /// 클립보드에 글이 있나(읽지 않고 본다)
+    @objc func hasClipboardText(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            let board = UIPasteboard.general
+            call.resolve(["has": board.hasStrings, "stamp": board.changeCount])
+        }
+    }
+
+    /// 클립보드의 글. 글이 없으면 nil. 내용은 로그에 남기지 않는다
+    @objc func readClipboard(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            let raw = UIPasteboard.general.hasStrings ? UIPasteboard.general.string : nil
+            call.resolve(["text": raw.flatMap { Self.clean($0) } ?? NSNull()])
+        }
     }
 
     /// kr.readme.app://share 로 열렸다(공유 확장이 앱을 열 때)

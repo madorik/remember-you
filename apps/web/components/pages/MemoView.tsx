@@ -25,6 +25,9 @@ export function memoLabels(t: T, locale: Locale, today: YMD): MemoLabels {
     stopListening: t("memo.stopListening"),
     sharedClipped: t("memo.sharedClipped"),
     menu: { menu: t("import.open"), fromNotes: t("memo.fromNotes"), fromPhoto: t("memo.fromPhoto") },
+    paste: t("memo.paste"),
+    pasteEmpty: t("memo.pasteEmpty"),
+    pasteFailed: t("memo.pasteFailed"),
     photoReading: t("memo.photoReading"),
     photoErrors: {
       sensitive: t("import.sensitive"),

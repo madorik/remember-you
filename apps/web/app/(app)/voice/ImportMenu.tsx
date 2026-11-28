@@ -48,7 +48,8 @@ const itemStyle = { height: u(46), padding: `0 ${u(14)}px` } as const;
 
 /**
  * 메모 쓰기 화면의 '메모 가져오기': 누르면 단추 밑에 작은 메뉴가 열린다(흰 카드·1px 테두리·손글씨).
- * - 메모 앱에서: 앱 안에서만(웹에는 없다). 휴대폰의 메모 앱을 열어 글을 고른 뒤 "공유 → 기억해유"를 누르면 받은 글이 이 화면 본문 뒤에 붙는다.
+ * - 메모 앱에서: 앱 안에서만(웹에는 없다). 휴대폰의 메모 앱을 열어 글을 고른 뒤 "공유 → 기억해유"를 누르면 받은 글이 이 화면 본문 뒤에 붙고,
+ *   글을 복사하고 돌아오면 본문 첫 줄에 '복사한 글 붙여 넣기'가 뜬다(PastePill).
  *   설치된 메모 앱이 하나면 바로 열고, 여럿이면 같은 메뉴 안에서 고른다. 열 앱이 없거나 앱 빌드가 아직 못 열면 항목을 보이지 않는다
  * - 사진에서: 메모 화면·손글씨 사진을 골라 글로 읽어 온다(고르는 창을 여는 것까지가 이 메뉴, 읽기는 MemoPad)
  * 바깥을 누르거나 Esc로 닫고, 위·아래 화살표로 옮긴다. 이전 '/import' 화면은 사람 추가·편집에서 그대로 들어간다
@@ -59,6 +60,7 @@ export function ImportMenu({
   disabled,
   autoOpen = false,
   onPhoto,
+  onOpenNotes,
   className,
   style,
   triggerLabel,
@@ -70,6 +72,8 @@ export function ImportMenu({
   /** true가 되는 때마다 메뉴를 연다(사람 화면 ··· 메뉴의 '메모 가져오기'로 들어온 ?import=1) */
   autoOpen?: boolean;
   onPhoto: () => void;
+  /** 메모 앱을 열러 나가는 때(누른 그 순간. 돌아와서 '복사한 글 붙여 넣기'를 보이는 데 쓴다) */
+  onOpenNotes?: () => void;
   className: string;
   style?: React.CSSProperties;
   /** 글 없이 아이콘뿐인 단추의 이름(글이 들어 있는 단추는 비운다) */
@@ -142,7 +146,10 @@ export function ImportMenu({
     const choice = notesChoice(notes.length);
     if (choice === "pick") return setPicking(true);
     close();
-    if (choice === "open") void openNotesApp(notes[0]!);
+    if (choice === "open") {
+      onOpenNotes?.();
+      void openNotesApp(notes[0]!);
+    }
   };
 
   return (
@@ -176,6 +183,7 @@ export function ImportMenu({
                   role="menuitem"
                   onClick={() => {
                     close();
+                    onOpenNotes?.();
                     void openNotesApp(app);
                   }}
                   className={ITEM}
