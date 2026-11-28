@@ -4,7 +4,7 @@ import { CEO, OPERATOR, SUPPORT_EMAIL } from "@/lib/legal-info";
 export const PRIVACY_TITLE = { ko: "개인정보 처리방침", en: "Privacy Policy" } as const;
 
 // 「개인정보 보호법」 제30조 항목을 실제로 처리하는 대로 적는다(2026-11-14 코드 기준).
-// 위탁: Vercel(호스팅), Supabase(DB, 서울), Google·Apple(로그인), OpenAI(말로 적기·메모 가져오기·선물 추천), Google(푸시 FCM, 2026-11-17부터), Google·Apple·Mozilla·Microsoft(웹 브라우저 푸시, 2026-11-21부터). 쿠팡에는 찾을 말만 보낸다. 위탁이 바뀌면 여기와 시행일(lib/legal-info.ts)을 같이 고친다.
+// 위탁: Vercel(호스팅), Supabase(DB, 서울), Google·Apple(로그인), OpenAI(메모 정리·사진 글 읽기·메모 가져오기·선물 추천), Google(푸시 FCM, 2026-11-17부터), Google·Apple·Mozilla·Microsoft(웹 브라우저 푸시, 2026-11-21부터). 쿠팡에는 찾을 말만 보낸다. 위탁이 바뀌면 여기와 시행일(lib/legal-info.ts)을 같이 고친다.
 /** 본문만. 링크는 웹 주소로 둔다 */
 export function PrivacyBody({ locale }: { locale: Locale }) {
   const mail = <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>;
@@ -103,7 +103,7 @@ export function PrivacyBody({ locale }: { locale: Locale }) {
             </tr>
             <tr>
               <td>OpenAI, L.L.C.</td>
-              <td>Sorting a sentence you say or type in Say it, and reading a memo you paste or dictate, or photos of notes you upload, in Import notes, into people and sections, and picking gift ideas from your records and notes about a person, only when you use them</td>
+              <td>Organizing a saved memo into what you remember and upcoming dates, reading the text in photos of notes you add to a memo, reading a memo you paste or dictate, or photos of notes you upload, in Import notes, into people and sections, and picking gift ideas from your records and notes about a person, only when you use them</td>
               <td>USA (sent over the network each time)</td>
             </tr>
             <tr>
@@ -125,8 +125,8 @@ export function PrivacyBody({ locale }: { locale: Locale }) {
         </table>
         <p>
           Information is stored with these providers until you delete your account. If you don&rsquo;t want overseas transfer, you can choose not to sign up or delete your account; the service can&rsquo;t
-          run without it. In the app and on the web, voice input uses your device&rsquo;s or browser&rsquo;s speech recognition (Apple, Google, etc.); we never receive the audio. In Say it, the recognized sentence and the names of your people are
-          sent to OpenAI only to sort the sentence; we don&rsquo;t keep the sentence itself, only the values saved to your records. In Import notes (up to 6,000 characters of text or 3 photos, 5 times a day), the memo text you paste or dictate, or the photos of notes you upload, and the names of your people are sent to OpenAI only to read them. Photos are shrunk on your device and stripped of location and camera data before sending; we keep neither the photos nor the memo text, only the values you choose to add. The reading is told to ignore phone numbers, addresses and other identifiers and photos of IDs, cards or payment screens, and photos that aren&rsquo;t notes, chats or documents are rejected. For gift ideas, what you call the person, their folders, the
+          run without it. In the app and on the web, voice input uses your device&rsquo;s or browser&rsquo;s speech recognition (Apple, Google, etc.); we never receive the audio. When you save a memo, its text is kept encrypted in the tagged person&rsquo;s notebook (deleting the memo deletes it), and the text and the names of your people are
+          sent to OpenAI only to organize it into what you remember and upcoming dates. When you add photos of notes to a memo (up to 3 photos), or use Import notes (up to 6,000 characters of text or 3 photos; 5 times a day for both together), the memo text you paste or dictate, or the photos you upload, and the names of your people are sent to OpenAI only to read them. Photos are shrunk on your device and stripped of location and camera data before sending, and we don&rsquo;t keep the photos. Text read from photos is kept only if you save it as a memo; in Import notes we don&rsquo;t keep the memo text, only the values you choose to add. The reading is told to ignore phone numbers, addresses and other identifiers and photos of IDs, cards or payment screens, and photos that aren&rsquo;t notes, chats or documents are rejected. For gift ideas, what you call the person, their folders, the
           upcoming date and age, your records about them (tastes, sizes, allergies and things to avoid, gift ideas) and your private notes about them are sent to OpenAI only to pick
           gifts. Only search words (like &ldquo;camping mug&rdquo;) are sent to Coupang; opening a gift takes you to Coupang, which follows its
           own privacy policy. Sending a link through KakaoTalk or another app passes only the link to that app.
@@ -184,7 +184,7 @@ export function PrivacyBody({ locale }: { locale: Locale }) {
           <b>나에 대한 기록</b>: 부를 이름, 아바타, 좋아하는·싫어하는 음식, <b>알레르기·못 먹는 음식(건강 정보)</b>, 옷·신발 사이즈, 받고 싶은 선물과 좋아하는 브랜드, 좋아하는 것들(무늬·스타일·연예인·캐릭터·응원팀·영화·드라마·TV·음악·계절·디저트·여행지·동물·책), 반려동물(이름·종류·품종·좋아하는 간식), 술 취향, 생년월일(양력·음력, 태어난 해는 선택)과 기념일
         </li>
         <li>
-          <b>내 사람들</b>: 내가 더한 사람, 내가 붙인 호칭과 그룹, 그 사람에 대해 적어 둔 내용(취향, 알레르기, 사이즈, 선물, 기념일), 물어봐서 받은 답, 나만 보는 메모
+          <b>내 사람들</b>: 내가 더한 사람, 내가 붙인 호칭과 그룹, 그 사람에 대해 기억해 둔 것(취향, 알레르기, 사이즈, 선물, 기념일), 물어봐서 받은 답, 나만 볼 수 있는 메모장
         </li>
         <li>
           <b>물어보기에 답한 경우</b>: 보낸 답은 물어본 사람이 나에 대해 적어 둔 기록에 저장됩니다. 알레르기 답은 그 화면에서 동의한 경우에만 보냅니다. 로그인하고 답하면 물어본 사람에게 내 이름과
@@ -257,7 +257,7 @@ export function PrivacyBody({ locale }: { locale: Locale }) {
           </tr>
           <tr>
             <td>OpenAI, L.L.C.</td>
-            <td>말로 적기에서 말하거나 적은 문장, 메모 가져오기에서 붙여 넣거나 말한 메모 또는 올린 메모 사진을 사람·항목으로 나누기, 선물 추천에서 그 사람 기록·메모로 선물 고르기(쓸 때만)</td>
+            <td>메모 쓰기에서 저장한 메모를 기억해 둔 것·챙길 날로 정리하기, 메모에 넣는 사진의 글 읽기, 메모 가져오기에서 붙여 넣거나 말한 메모 또는 올린 메모 사진을 사람·항목으로 나누기, 선물 추천에서 그 사람 기록·메모로 선물 고르기(쓸 때만)</td>
             <td>미국(쓸 때마다 네트워크로 전송)</td>
           </tr>
           <tr>
@@ -279,8 +279,8 @@ export function PrivacyBody({ locale }: { locale: Locale }) {
       </table>
       <p>
         보유 기간은 회원 탈퇴 때까지입니다. 국외 이전을 원하지 않으면 가입하지 않거나 계정을 삭제할 수 있으며, 이 경우 서비스를 쓸 수 없습니다. 앱·웹의 말로 입력하기는 기기·브라우저의 음성
-        인식(Apple·Google 등)을 쓰며 운영자는 음성을 받지 않습니다. 말로 적기에서는 글로 바뀐 문장과 내 사람들의 이름을 문장을 나누는 데만 OpenAI에 보내고, 운영자는 문장 자체는 보관하지 않고 기록에 넣은 값만
-        저장합니다. 메모 가져오기(한 번에 글 6천 자 또는 사진 3장까지, 하루 5번)에서는 붙여 넣거나 말한 메모 글, 또는 올린 메모 사진과 내 사람들의 이름을 메모를 읽는 데만 OpenAI에 보냅니다. 사진은 기기에서 크기를 줄이고 위치·촬영 정보를 지운 뒤 보내며 운영자는 사진과 메모 원문을 보관하지 않고 내가 고른 값만 저장합니다. 전화번호·주소 같은 식별 정보, 신분증·카드·결제 화면 사진은 읽지 않도록 하고 메모나 대화·문서가 아닌 사진은 받지 않습니다. 선물 추천에서는 부르는 말, 든 폴더, 다가오는 날과 나이, 그 사람에 대한 기록(취향·사이즈·알레르기 같은 피할 것·해주고 싶은 선물)과 그 사람 메모를 선물을
+        인식(Apple·Google 등)을 쓰며 운영자는 음성을 받지 않습니다. 메모 쓰기에서 저장한 메모 글은 태그한 사람의 메모장에 암호화해서 보관하고(메모를 지우면 함께 지워집니다), 저장할 때 그 글과 내 사람들의 이름을 기억해 둔 것과 챙길 날로
+        정리하는 데만 OpenAI에 보냅니다. 메모에 사진 넣기(한 번에 사진 3장까지)와 메모 가져오기(한 번에 글 6천 자 또는 사진 3장까지, 둘을 합쳐 하루 5번)에서는 붙여 넣거나 말한 메모 글, 또는 올린 메모 사진과 내 사람들의 이름을 메모를 읽는 데만 OpenAI에 보냅니다. 사진은 기기에서 크기를 줄이고 위치·촬영 정보를 지운 뒤 보내며 운영자는 사진을 보관하지 않습니다. 사진에서 읽은 글은 내가 메모로 저장한 경우에만 보관하고, 메모 가져오기에서는 메모 원문을 보관하지 않고 내가 고른 값만 저장합니다. 전화번호·주소 같은 식별 정보, 신분증·카드·결제 화면 사진은 읽지 않도록 하고 메모나 대화·문서가 아닌 사진은 받지 않습니다. 선물 추천에서는 부르는 말, 든 폴더, 다가오는 날과 나이, 그 사람에 대한 기록(취향·사이즈·알레르기 같은 피할 것·해주고 싶은 선물)과 그 사람 메모를 선물을
         고르는 데만 OpenAI에 보냅니다. 쿠팡에는 찾을 말(예: 캠핑 머그컵)만 보내며, 선물을 누르면 쿠팡으로 이동해 쿠팡의 개인정보처리방침을 따릅니다.
         카카오톡 등 다른 앱으로 보내기는 링크만 그 앱에 넘깁니다.
       </p>

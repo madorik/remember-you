@@ -33,10 +33,10 @@ export default async function DeleteAccount({ searchParams }: { searchParams: Pr
             <b>About me</b>: open an item to clear it, or remove wishlist items and dates one by one.
           </li>
           <li>
-            <b>People</b>: open a person, tap <b>Notes</b>, then tap × next to a note to delete it.
+            <b>People</b>: open a person, tap a note in <b>Notebook</b>, then tap <b>Delete</b> (you can also remove what that note added to what you remember).
           </li>
           <li>
-            On the same screen, tap the <b>pencil</b> next to their name and tap <b>Remove from people</b> at the bottom to delete that person with your record, notes and question links about them.
+            On the same screen, tap <b>···</b> at the top right and tap <b>Delete</b> to delete that person with their notebook, what you remember and question links.
           </li>
           <li>
             <b>Settings</b>: tap <b>Cancel</b> next to a question link nobody has answered yet.
@@ -81,10 +81,10 @@ export default async function DeleteAccount({ searchParams }: { searchParams: Pr
           <b>나에 대한 기록</b>: 항목을 열어 내용을 비우거나, 위시리스트와 기념일을 하나씩 지웁니다.
         </li>
         <li>
-          <b>사람들</b>: 사람을 열고 <b>메모</b>를 눌러 메모 옆 ×를 누르면 그 메모가 지워집니다.
+          <b>사람들</b>: 사람을 열고 <b>메모장</b>에서 메모를 눌러 <b>지우기</b>를 누르면 그 메모가 지워집니다(그 메모로 기억해 둔 것에 더해진 내용도 같이 지울 수 있습니다).
         </li>
         <li>
-          같은 화면에서 이름 옆 <b>연필</b>을 눌러 맨 아래 <b>사람들에서 지우기</b>를 누르면 그 사람과 그 사람에 대한 기록·메모·물어보기 링크가 모두 지워집니다.
+          같은 화면 오른쪽 위 <b>···</b>를 눌러 <b>지우기</b>를 누르면 그 사람과 그 사람의 메모장·기억해 둔 것·물어보기 링크가 모두 지워집니다.
         </li>
         <li>
           <b>설정</b>: 아직 아무도 답하지 않은 물어보기 링크 옆 <b>취소</b>를 누르면 링크가 더는 열리지 않습니다.
@@ -96,7 +96,7 @@ export default async function DeleteAccount({ searchParams }: { searchParams: Pr
       <ul>
         <li>계정과 로그인 정보</li>
         <li>나에 대한 기록(취향, 알레르기, 사이즈, 선물, 기념일)와 아바타</li>
-        <li>내 사람들과 그 사람들에 대한 기록, 나만 보는 메모, 물어보기 링크, 알림, 설정</li>
+        <li>내 사람들과 그 사람들의 기억해 둔 것, 메모장, 물어보기 링크, 알림, 설정</li>
       </ul>
       <p>바로 지워지며 되돌릴 수 없습니다. 데이터베이스 백업에서도 7일 안에 사라집니다.</p>
 

@@ -6,7 +6,7 @@ import type { Locale } from "@readme/core";
 export const OPERATOR = { ko: "와타랩스", en: "WataLabs" } as const;
 export const CEO = { ko: "정민균", en: "Mingyun Jeong" } as const;
 export const SUPPORT_EMAIL = "watalabs.help@gmail.com";
-export const LEGAL_EFFECTIVE_ON = "2026-11-21";
+export const LEGAL_EFFECTIVE_ON = "2026-11-28";
 
 export function formatEffective(locale: Locale): string {
   const [y, m, d] = LEGAL_EFFECTIVE_ON.split("-").map(Number);
