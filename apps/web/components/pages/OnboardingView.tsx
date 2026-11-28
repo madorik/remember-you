@@ -20,6 +20,7 @@ export function OnboardingView({ locale, today, people, next }: OnboardingData) 
           askWho: t("onb.askWho"),
           saveEnd: t("onb.saveEnd"),
           example: t("onb.example"),
+          next: t("common.next"),
           quick: [t("onb.quick.mom"), t("onb.quick.dad"), t("onb.quick.wife"), t("onb.quick.husband")],
         },
       }}

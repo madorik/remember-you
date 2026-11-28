@@ -80,9 +80,10 @@ async function readSection<T>(author: string, contactId: string, section: Sectio
 
 /**
  * 이 사용자의 AI 하루 한도를 다 쓴 것으로 만든다: 메모를 고치면 서버가 응답 뒤에 AI로 다시 정리하는데(organizeNote), 시험이 진짜 AI(OpenAI)를 부르거나 그 결과에 기대지 않게
- * (한도에 막히면 AI를 부르지 않고 정리만 건너뛴다). AI가 한 일은 DB에 직접 심어 흉내 낸다
+ * (한도에 막히면 AI를 부르지 않고 정리만 건너뛴다). AI가 한 일은 DB에 직접 심어 흉내 낸다.
+ * 60번이면 데모 계정 한도(5)도 일반 한도(40)도 넘는다(많이 넣으면 서비스 전체 한도(3000)까지 쌓여 다른 시험이 막힌다)
  */
-const blockAi = (author: string) => withDb((db) => db.query("insert into ai_calls (user_id, kind) select $1, 'capture' from generate_series(1, 1000)", [author]));
+const blockAi = (author: string) => withDb((db) => db.query("insert into ai_calls (user_id, kind) select $1, 'capture' from generate_series(1, 60)", [author]));
 
 const noteCount = (contactId: string) => withDb(async (db) => Number((await db.query("select count(*) as n from notes where contact_id = $1::uuid", [contactId])).rows[0]?.n ?? 0));
 

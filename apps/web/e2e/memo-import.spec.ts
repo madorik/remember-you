@@ -1,5 +1,6 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { mkdirSync } from "node:fs";
+import { fakeOrganize } from "./helpers";
 
 // 메모 쓰기 화면의 '메모 가져오기' 메뉴(app/(app)/voice/ImportMenu.tsx):
 // - 웹에는 '사진에서'만, 앱(안드로이드 설치된 메모 앱·iOS 기본 메모)에서는 '메모 앱에서'도. 앱은 진짜 기기 대신 네이티브 다리를 흉내 낸다(addInitScript로만, 운영 코드에 시험용 분기 없음)
@@ -17,6 +18,8 @@ async function demo(browser: Browser, setup?: (page: Page) => Promise<void>) {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await setup?.(page);
+  // 저장 뒤 정리는 진짜 AI 없이(더할 게 없었다)
+  await fakeOrganize(page);
   await page.goto("/");
   await page.getByRole("button", { name: "데모로 둘러보기" }).click();
   await expect(page).toHaveURL(/\/home/);
@@ -64,10 +67,10 @@ async function fakeTranscribe(page: Page) {
   await page.route("**/voice**", async (route) => {
     const req = route.request();
     const type = req.headers()["content-type"] ?? "";
-    if (req.method() !== "POST" || !req.headers()["next-action"] || !type.startsWith("multipart/form-data")) return route.continue();
+    if (req.method() !== "POST" || !req.headers()["next-action"] || !type.startsWith("multipart/form-data")) return route.fallback();
     const body = req.postDataBuffer();
     // 사진 읽기: image 파일이 든 본문. 저장 같은 다른 서버 동작은 그대로 보낸다
-    if (!body || !/name="[^"]*image"; filename=/.test(body.toString("latin1"))) return route.continue();
+    if (!body || !/name="[^"]*image"; filename=/.test(body.toString("latin1"))) return route.fallback();
     uploads.push(multipartFiles(body, type));
     if (next.delayMs) await new Promise((r) => setTimeout(r, next.delayMs));
     return route.fulfill({
@@ -218,7 +221,8 @@ test("메모 가져오기 메뉴(웹): 사진에서만 보이고, 사진을 고�
   await expect(field).toHaveValue("마라탕 좋아함\n신발 240");
   await page.getByRole("button", { name: "엄마", exact: true }).click();
   await page.getByRole("button", { name: "저장", exact: true }).click();
-  await expect(page).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
+  await page.getByRole("dialog", { name: "엄마 메모장에 저장했어요" }).getByRole("button", { name: "엄마 보기" }).click();
+  await expect(page).toHaveURL(/\/people\/[0-9a-f-]{36}\?tab=memo$/);
   await expect(page.getByText("마라탕 좋아함")).toBeVisible();
 });
 
@@ -305,7 +309,8 @@ test("메모 앱에서 공유로 돌아오면 쓰던 글·고른 사람이 그�
 
   // 그대로 저장하면 엄마 메모장에 한 덩이로 남는다
   await page.getByRole("button", { name: "저장", exact: true }).click();
-  await expect(page).toHaveURL(new RegExp(`/people/${id}$`));
+  await page.getByRole("dialog", { name: "엄마 메모장에 저장했어요" }).getByRole("button", { name: "엄마 보기" }).click();
+  await expect(page).toHaveURL(new RegExp(`/people/${id}\\?tab=memo$`));
   await expect(page.getByText("삼성 노트에서 가져온 글")).toBeVisible();
 });
 

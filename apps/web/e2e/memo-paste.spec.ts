@@ -1,6 +1,6 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { mkdirSync } from "node:fs";
-import { signIn } from "./helpers";
+import { fakeOrganize, signIn } from "./helpers";
 
 // 메모 쓰기·온보딩 첫 메모의 '복사한 글 붙여 넣기' 알약(app/(app)/voice/PastePill.tsx):
 // 메모 앱에서 글을 복사하고 돌아오면 본문 첫 줄에 알약이 뜨고, 누르면 클립보드 글이 본문 뒤에 붙는다.
@@ -121,6 +121,8 @@ async function demo(browser: Browser, setup: (page: Page) => Promise<void>) {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await setup(page);
+  // 저장 뒤 정리는 진짜 AI 없이(더할 게 없었다)
+  await fakeOrganize(page);
   await page.goto("/");
   await page.getByRole("button", { name: "데모로 둘러보기" }).click();
   await expect(page).toHaveURL(/\/home/);
@@ -170,7 +172,8 @@ test("복사한 글 붙여 넣기(iOS 앱·예전 빌드): 메모 앱을 열고 
 
   // 그대로 저장하면 엄마 메모장에 한 덩이로 남는다
   await page.getByRole("button", { name: "저장", exact: true }).click();
-  await expect(page).toHaveURL(new RegExp(`/people/${id}$`));
+  await page.getByRole("dialog", { name: "엄마 메모장에 저장했어요" }).getByRole("button", { name: "엄마 보기" }).click();
+  await expect(page).toHaveURL(new RegExp(`/people/${id}\\?tab=memo$`));
   await expect(page.getByText("삼성 노트에서 복사한 글")).toBeVisible();
 });
 
@@ -280,6 +283,7 @@ test("복사한 글 붙여 넣기(온보딩 첫 메모): 앱 안쪽이 새로 �
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await fakeNative(page, { platform: "android", clipboard: true, clip: { has: false, stamp: 0, text: null } });
+  await fakeOrganize(page);
   await page.goto("/");
   await signIn(page);
   await expect(page).toHaveURL(/\/onboarding$/);
@@ -298,6 +302,7 @@ test("복사한 글 붙여 넣기(온보딩 첫 메모): 앱 안쪽이 새로 �
   await page.getByRole("button", { name: "엄마", exact: true }).click();
   await expect(body(page)).toHaveValue("엄마는 장미꽃을 좋아해");
   await page.getByRole("button", { name: "저장", exact: true }).click();
-  await expect(page).toHaveURL(/\/people\/[0-9a-f-]{36}(\?welcome=1)?$/);
+  await page.getByRole("dialog", { name: "엄마 메모장에 저장했어요" }).getByRole("button", { name: "엄마 보기" }).click();
+  await expect(page).toHaveURL(/\/people\/[0-9a-f-]{36}\?(welcome=1&)?tab=memo$/);
   await expect(page.getByText("엄마는 장미꽃을 좋아해")).toBeVisible();
 });

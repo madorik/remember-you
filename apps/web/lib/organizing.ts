@@ -1,5 +1,6 @@
-// 메모를 저장하면 AI가 그 글을 사람의 항목으로 정리하는 일은 응답을 보낸 뒤(after)에 돈다. 그래서 저장하고 곧바로 연 사람 화면은 정리 전의 모습이고,
-// 정리가 끝나도 그 화면은 저절로 바뀌지 않는다("기억해 둔 것"이 새로 고쳐야만 보였다). 저장할 때 표시를 남겨 두면 그 사람 화면이 정리가 끝날 즈음 스스로 다시 받아 온다.
+// 메모 저장은 이제 화면이 정리(organizeSaved)를 끝까지 기다리고 카드로 과정을 보이므로(app/(app)/voice/SaveCard.tsx) 이 표시를 남기지 않는다.
+// 이 표시가 남는 곳은 메모 글을 고치는 길(updateNote → 응답 뒤(after)에 organizeNote)뿐이다: 그 화면은 정리가 끝나도 저절로 바뀌지 않아("기억해 둔 것"이 새로 고쳐야만 보였다),
+// 고칠 때 표시를 남겨 두면 그 사람 화면이 정리가 끝날 즈음 스스로 다시 받아 오고 새로 더해진 것을 알린다.
 // 표시는 브라우저 탭 저장소(sessionStorage)에 두고, 쓸 수 없으면 그냥 건너뛴다(새로 고치면 보인다)
 
 import { translate, type EffectLine, type Locale } from "@readme/core";
@@ -28,7 +29,7 @@ interface Mark {
 /** 다시 받아 오기 표시를 알리는 창 이벤트: 이미 열려 있는 사람 화면(OrganizeRefresh)이 표시를 다시 읽고 새로 받기를 시작한다 */
 export const ORGANIZING_EVENT = "rm-organizing";
 
-/** 저장 직후: 이 사람들 화면을 곧 다시 받아 오게 표시한다. 메모 고치기 뒤에는 edit도 남긴다. 이미 열려 있는 화면이 바로 알아채게 이벤트도 보낸다 */
+/** 메모를 고친 직후: 이 사람 화면을 곧 다시 받아 오게 표시한다(고친 메모 edit도 남긴다). 이미 열려 있는 화면이 바로 알아채게 이벤트도 보낸다 */
 export function markOrganizing(ids: string[], now = Date.now(), edit?: EditMark): void {
   try {
     sessionStorage.setItem(ORGANIZING_KEY, JSON.stringify({ ids, at: now, ...(edit ? { edit } : {}) } satisfies Mark));

@@ -88,6 +88,16 @@ export const mentionWord = (s: string): string => s.replace(/[.,!?;:()[\]{}"'“
 /** 사람 한 명을 부르는 말들(태그·이름, 겹치는 건 한 번) */
 const labelsOf = (p: Pick<MentionPerson, "name" | "tag">): string[] => [...new Set([p.tag, p.name].map((l) => (l ?? "").replace(/\s+/g, " ").trim()).filter(Boolean))];
 
+/**
+ * 이름 칸에 친 말과 부름(태그·이름)이 똑같은 내 사람들의 id(띄어쓰기·대소문자 무시, 조사는 보지 않는다).
+ * 한 명이면 그 사람이고, 둘 이상이면 같은 부름이 겹쳐 못 정한 것(없는 사람으로 둔갑시키지 않는다)
+ */
+export function exactPeople(word: string, people: readonly MentionPerson[]): string[] {
+  const w = norm(word);
+  if (!w) return [];
+  return people.filter((p) => labelsOf(p).some((l) => norm(l) === w)).map((p) => p.id);
+}
+
 /** 글에서 @로 짚은 이름 하나를 사람으로: 한 명이면 그 사람, 같은 부름이 둘 이상이면 못 정함(ambiguous), 내 사람에 없으면 null */
 type Hit = { kind: "one"; id: string } | { kind: "ambiguous" } | null;
 

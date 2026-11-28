@@ -4,6 +4,7 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { Client } from "pg";
 import { aad, sealWith } from "../lib/crypto-core";
+import { fakeOrganize } from "./helpers";
 
 // 사람들 '최근 본 사람' 줄 · 폴더 안 사람 빼기(×) 누르는 자리 · 메모 쓰기 칩 누르는 자리와 초안 이어 쓰기 · 물어보기 처음 고르는 항목(안 적은 것 먼저).
 // 데모 계정(샘플 사람: 엄마·아내·아빠는 가족 폴더, 단짝은 친구들 폴더)으로 돈다. SHOTS=폴더 를 주면 390×844 화면 사진을 남긴다.
@@ -162,6 +163,7 @@ test("폴더 안 사람 빼기(×): 누르는 자리가 44×44 이상이고 보�
 
 test("메모 쓰기: 사람 칩·+·이름 칸·칩 ×는 누르는 자리가 44px(보이는 칩은 그대로), 쓰던 글은 같은 탭에서 다시 열면 같은 곳(?to)에서만 되살아나고 저장하거나 글을 지우면 사라진다", async ({ page }) => {
   test.setTimeout(150_000);
+  await fakeOrganize(page); // 저장 뒤 정리는 진짜 AI 없이(더할 게 없었다)
   await demo(page);
   const who = await ids(page);
   await page.setViewportSize({ width: 390, height: 844 });
@@ -222,6 +224,7 @@ test("메모 쓰기: 사람 칩·+·이름 칸·칩 ×는 누르는 자리가 44
   await page.goto("/voice");
   await expect(page.getByRole("textbox", { name: "기억해 둘 것" })).toHaveValue("엄마는 수국을 좋아해");
   await page.getByRole("button", { name: "저장", exact: true }).click();
+  await page.getByRole("dialog", { name: "엄마 메모장에 저장했어요" }).getByRole("button", { name: "엄마 보기" }).click();
   await expect(page).toHaveURL(new RegExp(`/people/${who["엄마"]}`), { timeout: 30_000 });
   await page.goto("/voice");
   await expect(page.getByRole("textbox", { name: "기억해 둘 것" })).toHaveValue("");

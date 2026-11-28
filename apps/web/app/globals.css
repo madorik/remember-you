@@ -860,6 +860,17 @@ html.ry-seen .ry-boot {
   }
 }
 
+/* 메모를 저장하고 정리하는 동안 진행 카드의 캐릭터(app/(app)/voice/SaveCard.tsx): 책을 읽으며 살짝 흔들린다(움직임 줄이기면 motion-safe로 막는다) */
+@keyframes save-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1.5deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(1.5deg);
+  }
+}
+
 /* 기억해 두기를 누른 뒤 정리하는 동안(components/OrganizeScene.tsx): 적은 문장이 낱말 조각으로 나뉘어 아래 카드로 날아가 쌓이고, 연필이 줄을 쓴다.
    단계(data-step 0·1·2): 분류(조각이 날아간다) → 적기(연필이 나타난다) → 정리(카드가 가지런해지고 반짝). 움직임 줄이기를 켜면 모두 멈춘 그림 */
 .organize-chip {

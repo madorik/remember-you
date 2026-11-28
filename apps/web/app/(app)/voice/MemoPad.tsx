@@ -3,8 +3,9 @@
 import { IMAGE_MAX_COUNT, weekday, weekdayLong, weekdayNames, type AvatarConfig, type Locale, type YMD } from "@readme/core";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
-import { saveFirstMemo, saveMemo } from "@/app/actions/capture";
+import { organizeSaved, saveFirstMemo, saveMemo, type OrganizeSavedResult } from "@/app/actions/capture";
 import { transcribeMemoImages, type PhotoTextError } from "@/app/actions/memo-photo";
+import { revertNoteEffects } from "@/app/actions/notes";
 import { skipOnboarding } from "@/app/actions/onboarding";
 import AppLink from "@/components/AppLink";
 import { Avatar } from "@/components/Avatar";
@@ -16,15 +17,17 @@ import { markSaved } from "@/components/ReviewAsk";
 import { prepareImage, type PrepProblem } from "@/lib/image-prep";
 import { appendBlock } from "@/lib/memo-append";
 import { clearDraft, draftKey, readDraft, tabStore, writeDraft } from "@/lib/memo-draft";
-import { markOrganizing } from "@/lib/organizing";
 import { NEW_NAME_MAX, tidyName } from "@/lib/capture-target";
 import { startListenGuard, type ListenGuard, type StopReason } from "@/lib/listen-guard";
 import { insertMention, mentionAt, mentionLabel, mentionWord, tagKey, tagsForSave, type MentionTag } from "@/lib/mention";
+import { decideNameCommit, NAME_BLUR_MS } from "@/lib/name-commit";
+import { groupResults, personHref, type OrganizeState, type PersonResult, type SavedPerson } from "@/lib/save-result";
 import { matchesPerson } from "@/lib/search";
 import { nativeSpeech, startDictation, webCtor, type Dictation, type WebRecognition } from "@/lib/speech";
 import { u } from "@/lib/ui-scale";
 import { ImportMenu, type ImportMenuLabels } from "./ImportMenu";
 import { PastePill, usePasteOffer } from "./PastePill";
+import { SaveCard, type SaveCardLabels } from "./SaveCard";
 
 /** 이름 칩에 쓰는 사람 한 명 */
 export interface MemoPerson {
@@ -56,8 +59,10 @@ export interface MemoLabels {
   /** "{name} 빼기" */
   removeTag: string;
   pickWho: string;
-  /** "{names} 메모장에 적었어요" */
+  /** "{names} 메모장에 적었어요"(저장 카드의 첫 줄) */
   savedTo: string;
+  /** 저장 뒤 정리하는 과정을 보이는 카드의 문구(첫 줄은 savedTo) */
+  card: Omit<SaveCardLabels, "saved">;
   error: string;
   micError: string;
   mic: string;
@@ -96,6 +101,8 @@ export interface MemoOnboarding {
     saveEnd: string;
     /** 본문 칸 안내 글(예시 문장) */
     example: string;
+    /** 가려던 곳이 따로 있을 때 저장 카드의 큰 단추 */
+    next: string;
     /** 바로 고르는 이름들(고르면 그 이름의 새 사람) */
     quick: string[];
   };
@@ -132,6 +139,22 @@ interface Heard {
   interim: string;
 }
 const NOTHING: Heard = { final: "", interim: "" };
+
+/** 저장한 뒤 정리하는 과정을 보이는 카드의 상태(id는 카드가 새로 뜰 때마다 다르다: 늦게 온 결과가 다른 카드를 덮지 않게) */
+interface Flow {
+  id: number;
+  saved: SavedPerson[];
+  organizing: boolean;
+  state: OrganizeState;
+  results: PersonResult[];
+  reverted: boolean;
+  reverting: boolean;
+  /** 이번에 새로 더한 사람이 있다(계속 쓰기 전에 사람 목록을 다시 받는다) */
+  fresh: boolean;
+}
+
+/** 정리를 이만큼(ms) 기다려도 안 끝나면 카드에 '정리하지 못했어요'를 보인다(서버 일은 끝까지 간다) */
+const ORGANIZE_WAIT_MS = 20_000;
 
 /** 사진에서 글을 읽는 동안 돌아가는 작은 고리(움직임 줄이기면 멈춘 채) */
 function Spinner() {
@@ -210,6 +233,7 @@ function OptionList({
   current,
   newOption,
   onPick,
+  onPress,
   style,
   innerRef,
 }: {
@@ -219,6 +243,8 @@ function OptionList({
   current: number;
   newOption: string;
   onPick: (o: Option) => void;
+  /** 항목을 누르기 시작했다(손가락·마우스가 내려간 때): 이름 칸이 포커스를 잃어도 치다 만 글을 칩으로 만들지 않게 알린다 */
+  onPress?: () => void;
   style: React.CSSProperties;
   innerRef?: React.Ref<HTMLDivElement>;
 }) {
@@ -231,6 +257,7 @@ function OptionList({
           role="option"
           aria-selected={i === current}
           // 눌러도 이름 칸·본문이 포커스를 잃지 않게(잃으면 목록이 먼저 닫혀 누른 게 안 먹는다)
+          onPointerDown={onPress}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => onPick(o)}
           className={`flex cursor-pointer items-center gap-[8.1px] ${i === current ? "bg-sky-soft" : ""}`}
@@ -341,7 +368,7 @@ function SaveButton({ onClick, disabled, label }: { onClick: () => void; disable
 /** 위에서 잠깐 떴다 사라지는 알림 줄(하단 메뉴 위). 오류는 role=alert */
 function Toast({ text, error }: { text: string; error: boolean }) {
   return (
-    <div role={error ? "alert" : "status"} aria-live={error ? undefined : "polite"} className="pointer-events-none fixed inset-x-0 z-[70] flex justify-center px-4" style={{ bottom: "calc(max(var(--pb), var(--kb, 0px)) + 72px)" }}>
+    <div role={error ? "alert" : "status"} aria-live={error ? undefined : "polite"} className="pointer-events-none fixed inset-x-0 z-[90] flex justify-center px-4" style={{ bottom: "calc(max(var(--pb), var(--kb, 0px)) + 72px)" }}>
       <div className="pointer-events-auto flex min-h-12 w-full max-w-[378px] items-center rounded-2xl bg-ink px-4 text-[15.3px] text-white shadow-[0_8px_24px_rgba(31,35,64,0.28)]">{text}</div>
     </div>
   );
@@ -349,7 +376,8 @@ function Toast({ text, error }: { text: string; error: boolean }) {
 
 /**
  * 메모 쓰기(하단 가운데 메모 단추): 바인더 속지 한 장에 날짜 머리 · @ 사람 칩 · 손글씨 본문. 말로 적으면(오른쪽 아래 마이크) 받아 쓴 말이 그대로 본문에 들어간다.
- * 저장하면 고른 사람마다 메모로 남고(한 사람이면 그 사람 화면으로), AI가 뒤에서 그 사람의 항목으로 정리한다(saveMemo)
+ * 저장하면 고른 사람마다 메모로 남고(saveMemo), 이어서 AI가 그 사람의 기억해 둔 것으로 정리하는 과정을 카드로 보이며 끝까지 기다린다(organizeSaved, SaveCard).
+ * 카드에서 그 사람 화면으로 가거나(보기) 정리한 것을 되돌리거나 계속 쓴다
  */
 export function MemoPad({
   locale,
@@ -399,6 +427,9 @@ export function MemoPad({
   const [toast, setToast] = useState<{ id: number; text: string; error: boolean } | null>(null);
   const [saving, startSave] = useTransition();
   const [skipping, startSkip] = useTransition();
+  // 저장하고 정리하는 동안(그 뒤 결과까지) 메모 화면 위에 뜨는 진행 카드
+  const [flow, setFlow] = useState<Flow | null>(null);
+  const flowId = useRef(0);
   // 사진에서 글을 읽어 오는 중
   const [reading, setReading] = useState(false);
   const box = useRef<HTMLTextAreaElement>(null);
@@ -406,6 +437,13 @@ export function MemoPad({
   // 사진을 읽는 사이에도 글을 고칠 수 있어서, 다 읽으면 그때의 본문 뒤에 붙인다
   const textRef = useRef("");
   const nameBox = useRef<HTMLInputElement>(null);
+  // 이름 칸에 친 글·고른 칩의 가장 새 값(칸을 벗어난 뒤 잠깐 있다 정하거나 저장을 누를 때 읽는다)
+  const queryRef = useRef("");
+  const tagsRef = useRef<Tag[]>(fixed && !shared ? [{ kind: "person", id: fixed.id }] : []);
+  // 한글을 조합하는 중(조합이 끝나기 전의 포커스 아웃은 마지막 글자가 아직 안 들어온 때다)
+  const composing = useRef(false);
+  // 이름 목록의 항목을 누르는 중(그 사이의 포커스 아웃으로 치다 만 글을 칩으로 만들지 않게)
+  const optionPress = useRef(0);
   const atList = useRef<HTMLDivElement>(null);
   // 본문 @목록에서 고른 뒤 커서를 둘 자리(글이 바뀐 화면이 그려진 직후 한 번 놓는다)
   const nextCaret = useRef<number | null>(null);
@@ -458,6 +496,7 @@ export function MemoPad({
 
   useEffect(() => {
     textRef.current = text;
+    tagsRef.current = tags;
   });
 
   // ── 쓰던 글 이어 쓰기: 이 탭(sessionStorage)에만 남기고, 같은 곳(온보딩 / 같은 ?to)으로 다시 열면 되살린다. 저장하거나 글을 다 지우면 지운다 ──
@@ -752,18 +791,23 @@ export function MemoPad({
     // 듣는 중에 눌렀으면 지금까지 들은 말까지 붙여 바로 저장한다
     const body = shown.trim().slice(0, MAX);
     if (!body || saving || settling) return;
+    // 이름 칸에 친 글이 아직 칩이 안 됐으면(칸을 벗어나기 전에 저장을 눌렀다) 이 메모의 주인공으로 더한다
+    const pending = decideNameCommit(queryRef.current, people, tagsRef.current);
+    const chips = pending.kind === "tag" ? [...tagsRef.current, pending.tag] : tagsRef.current;
+    if (pending.kind === "tag") dropped.current.delete(tagKey(pending.tag));
     // 이야기의 주인공: 칩으로 고른 사람 + 본문에 적은 @이름(있는 사람이면 그 사람, 아니면 새 사람) + 아무도 안 골랐고 @도 없으면 본문에 적힌 내 사람의 이름. 본문은 적은 그대로 보낸다
     const picked = tagsForSave(
       body,
       people,
-      tags.filter((t) => t.kind === "new" || byId.has(t.id)),
+      chips.filter((t) => t.kind === "new" || byId.has(t.id)),
       dropped.current,
     );
     const ids = picked.flatMap((t) => (t.kind === "person" ? [t.id] : []));
     const newNames = picked.flatMap((t) => (t.kind === "new" ? [t.name] : []));
     // 아무도 못 정했으면 추천 사람 칩이나 이름 칸이 이미 보이는 상태라 알리기만 한다
     if (!ids.length && !newNames.length) return say(labels.pickWho, true);
-    setTags(picked);
+    putTags(picked);
+    if (pending.kind === "tag" || pending.kind === "dup") resetName(picked);
     if (listening) {
       halt();
       web.current = null;
@@ -775,33 +819,70 @@ export function MemoPad({
     }
     const via = voiced.current ? "voice" : "text";
     startSave(async () => {
-      if (onboarding) {
-        // 첫 메모: 저장하면 온보딩이 끝난다. 가려던 곳이 있으면 거기로, 아니면 방금 만든 사람 화면(환영 표시)으로
-        const r = await saveFirstMemo(body, ids, via, newNames, browserZone()).catch(() => null);
-        if (!r?.ok) return say(labels.error, true);
-        voiced.current = false;
-        clearDraft(tabStore(), draftId);
-        markOrganizing(r.ids);
-        return router.push(onboarding.next !== "/home" ? onboarding.next : `/people/${r.ids[0]}?welcome=1`);
-      }
-      const r = await saveMemo(body, ids, via, newNames).catch(() => null);
+      // 첫 메모는 저장하면 온보딩이 끝난다
+      const r = await (onboarding ? saveFirstMemo(body, ids, via, newNames, browserZone()) : saveMemo(body, ids, via, newNames)).catch(() => null);
       if (!r?.ok) return say(labels.error, true);
-      markSaved();
-      markOrganizing(r.ids);
+      if (!onboarding) markSaved();
       voiced.current = false;
       clearDraft(tabStore(), draftId);
-      if (r.ids.length === 1) return router.push(`/people/${r.ids[0]}`);
-      // 여러 사람이면 이 화면에 남아 누구 메모장에 적었는지 알리고, 다음 메모를 위해 비운다
-      const names = r.ids.map((id) => (byId.has(id) ? nameOf(byId.get(id)!) : (r.created.find((c) => c.id === id)?.name ?? ""))).filter(Boolean);
-      setText("");
-      setTags([]);
-      dropped.current.clear();
-      setPicking(false);
-      closeNaming();
-      say(labels.savedTo.replace("{names}", names.join(", ")));
-      // 방금 더한 사람이 다음 메모의 추천에 보이게
-      if (r.created.length) router.refresh();
+      // 메모는 저장됐다: 카드로 바꿔 AI가 기억해 둔 것으로 정리하는 과정을 보이고 끝날 때까지 기다린다(오래 걸리면 정리하지 못했다고 알린다)
+      const saved: SavedPerson[] = r.notes.map((n) => ({ id: n.contactId, noteId: n.noteId, name: byId.has(n.contactId) ? nameOf(byId.get(n.contactId)!) : (r.created.find((c) => c.id === n.contactId)?.name ?? "") }));
+      const id = ++flowId.current;
+      setFlow({ id, saved, organizing: true, state: "ok", results: groupResults(saved, []), reverted: false, reverting: false, fresh: r.created.length > 0 });
+      const call = organizeSaved(r.notes).catch(() => null);
+      const first = await Promise.race([call, new Promise<"timeout">((resolve) => window.setTimeout(() => resolve("timeout"), ORGANIZE_WAIT_MS))]);
+      if (!alive.current || flowId.current !== id) return;
+      showResult(id, saved, first);
+      // 기다리다 지쳤어도 서버 일은 끝까지 간다: 늦게라도 끝나면 카드를 그 결과로 바꾼다
+      if (first === "timeout") void call.then((late) => alive.current && showResult(id, saved, late, true));
     });
+  };
+
+  /** 정리 결과를 카드에 보인다(late: 기다리다 지친 카드를 늦게 온 결과로 바꾸는 때) */
+  const showResult = (id: number, saved: SavedPerson[], got: OrganizeSavedResult | "timeout" | null, late = false) => {
+    const state: OrganizeState = got === "timeout" ? "timeout" : (got?.state ?? "failed");
+    const results = groupResults(saved, got && got !== "timeout" ? got.people : []);
+    setFlow((f) => (f && f.id === id && (!late || f.state === "timeout") ? { ...f, organizing: false, state, results } : f));
+  };
+
+  /** 카드의 '{이름} 보기': 그 사람 화면으로(더한 것이 있으면 기억해 둔 것 칸, 없으면 메모장 칸). 정리가 끝난 뒤라 화면은 새 기록 그대로 그려진다 */
+  const openPerson = (personId: string, added: boolean) => {
+    // 온보딩에서 가려던 곳이 따로 있으면 거기로, 아니면 방금 만든 사람 화면(환영 표시)으로
+    if (onboarding && onboarding.next !== "/home") return router.push(onboarding.next);
+    router.push(personHref(personId, added, !!onboarding));
+  };
+
+  /** 카드의 '되돌리기': 이 정리가 더한 것만 메모마다 되돌린다(메모와 그 전 기록은 그대로) */
+  const undoOrganize = async () => {
+    const f = flow;
+    if (!f || f.organizing || f.reverting || f.reverted) return;
+    setFlow({ ...f, reverting: true });
+    let ok = true;
+    for (const r of f.results) {
+      if (!r.lines.length) continue;
+      const out = await revertNoteEffects(r.person.id, r.person.noteId).catch(() => null);
+      if (!out?.ok) ok = false;
+    }
+    if (!alive.current) return;
+    setFlow((cur) => (cur && cur.id === f.id ? { ...cur, reverting: false, reverted: ok } : cur));
+    if (!ok) say(labels.error, true);
+  };
+
+  /** 카드의 '계속 쓰기': 카드를 닫고 메모지를 비운다(한 사람에게 적었으면 그 사람은 그대로 붙여 둔다) */
+  const continueWriting = () => {
+    const f = flow;
+    if (!f || f.organizing || f.reverting) return;
+    setFlow(null);
+    setText("");
+    textRef.current = "";
+    const next: Tag[] = f.saved.length === 1 ? [{ kind: "person", id: f.saved[0]!.id }] : [];
+    dropped.current.clear();
+    putTags(next);
+    setPicking(false);
+    resetName(next);
+    // 방금 더한 사람이 다음 메모의 추천에 보이게
+    if (f.fresh) router.refresh();
+    window.setTimeout(() => box.current?.focus(), 0);
   };
 
   // 건너뛰기: 첫 메모 없이 온보딩을 마친다(가려던 곳이 있으면 거기로, 아니면 홈)
@@ -814,13 +895,19 @@ export function MemoPad({
   };
 
   // ── 사람 고르기 ──
-  /** 이름 칸을 닫고 비운다(온보딩에서 아무도 안 골랐으면 늘 열려 있다) */
-  const closeNaming = () => {
+  const putTags = (next: Tag[]) => {
+    tagsRef.current = next;
+    setTags(next);
+  };
+  /** 이름 칸을 비운다(온보딩에서 아무도 안 골랐으면 늘 열려 있다) */
+  const resetName = (left: Tag[] = tagsRef.current) => {
+    queryRef.current = "";
     setQuery("");
     setTyping(false);
     setActive(0);
-    setNaming(!!onboarding && !tags.length);
+    setNaming(!!onboarding && !left.length);
   };
+  const closeNaming = () => resetName();
   const openNaming = () => {
     setNaming(true);
     setPicking(true);
@@ -828,7 +915,9 @@ export function MemoPad({
   };
   const addTag = (tag: Tag) => {
     dropped.current.delete(tagKey(tag));
-    setTags((cur) => (cur.some((t) => tagKey(t) === tagKey(tag)) ? cur : [...cur, tag]));
+    const cur = tagsRef.current;
+    putTags(cur.some((t) => tagKey(t) === tagKey(tag)) ? cur : [...cur, tag]);
+    queryRef.current = "";
     setQuery("");
     setTyping(false);
     setActive(0);
@@ -836,14 +925,34 @@ export function MemoPad({
   };
   const dropTag = (key: string) => {
     dropped.current.add(key);
-    const left = tags.filter((t) => tagKey(t) !== key);
-    setTags(left);
+    const left = tagsRef.current.filter((t) => tagKey(t) !== key);
+    putTags(left);
     // 온보딩에서 다 빼면 처음 모습(이름 칸과 바로 고르는 이름)으로
     if (onboarding && !left.length) setNaming(true);
+  };
+  /**
+   * 이름 칸에 친 글을 칩으로 만든다(칸을 벗어났을 때): 이름·부름이 똑같은 내 사람이 한 명이면 그 사람, 없으면 새 사람. 이미 고른 이름이면 글만 비운다.
+   * 같은 부름이 둘 이상이거나 새 사람 한도라 못 정한 글은 그대로 둔다(목록에서 직접 고르게)
+   */
+  const commitName = () => {
+    const d = decideNameCommit(queryRef.current, people, tagsRef.current);
+    if (d.kind === "tag") addTag(d.tag);
+    else if (d.kind === "dup") resetName();
+  };
+  /** 이름 칸을 벗어난 뒤 잠깐 있다 정한다: 같은 때 누른 목록 항목이 먼저 자리 잡고, 한글 조합 끝의 마지막 글자가 들어온 다음에 본다. 창 자체를 벗어난 것(앱·탭 바꾸기)은 건너뛴다 */
+  const settleName = () => {
+    window.setTimeout(() => {
+      const el = nameBox.current;
+      if (!el || document.activeElement === el || composing.current) return;
+      if (Date.now() < optionPress.current || !document.hasFocus()) return;
+      queryRef.current = el.value;
+      commitName();
+    }, NAME_BLUR_MS);
   };
   const tagOf = (o: Option): Tag => (o.kind === "person" ? { kind: "person", id: o.p.id } : { kind: "new", name: o.name });
   const pick = (o: Option | undefined) => {
     if (!o) return;
+    optionPress.current = 0;
     addTag(tagOf(o));
   };
   // 본문 @목록에서 고르면 '@이름 '으로 바꿔 넣고(커서는 그 뒤) 그 사람을 칩에 더한다
@@ -1020,13 +1129,24 @@ export function MemoPad({
                     ref={nameBox}
                     value={query}
                     onChange={(e) => {
+                      queryRef.current = e.target.value;
                       setQuery(e.target.value);
                       setTyping(true);
                       setActive(0);
                     }}
                     onFocus={() => setTyping(true)}
-                    onBlur={() => {
+                    onCompositionStart={() => {
+                      composing.current = true;
+                    }}
+                    onCompositionEnd={() => {
+                      composing.current = false;
+                      // 조합이 끝나고 보니 이미 칸을 벗어나 있었다
+                      if (document.activeElement !== nameBox.current) settleName();
+                    }}
+                    onBlur={(e) => {
                       setTyping(false);
+                      // 친 글이 있으면 고르지 않았어도 칩으로 만든다(목록 항목을 누르느라 벗어난 것이면 건너뛴다: 누른 항목이 먼저 자리 잡는다)
+                      if (!(e.relatedTarget instanceof Node && document.getElementById(listId)?.contains(e.relatedTarget))) settleName();
                       if (onboarding) return;
                       // 비어 있는 채로 포커스를 잃으면 닫는다. 곧바로 닫으면 줄이 줄어들어 방금 누른 사람 칩의 자리가 옮겨 가 눌림이 빗나가니 잠깐 둔다
                       window.setTimeout(() => {
@@ -1083,6 +1203,9 @@ export function MemoPad({
               current={current}
               newOption={labels.newOption}
               onPick={pick}
+              onPress={() => {
+                optionPress.current = Date.now() + 700;
+              }}
               style={{ margin: `-${u(2)}px 0 ${u(10)}px ${u(22)}px`, width: u(248), padding: u(6), borderRadius: u(14), boxShadow: `0 ${u(14)}px ${u(22)}px -${u(16)}px rgb(31 35 64 / 0.55)` }}
             />
           ) : null}
@@ -1214,6 +1337,22 @@ export function MemoPad({
 
       {/* '사진에서'가 여는 사진 고르기(카메라를 따로 켜지 않는다). 메뉴가 닫혀도 남아 있어야 고른 사진이 들어온다 */}
       <input ref={photoInput} type="file" accept="image/*" multiple className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => void readPhotos(e.target.files)} />
+
+      {/* 저장한 뒤 정리하는 과정(저장했어요 → 정리하는 중 → 결과)을 보이는 카드 */}
+      {flow ? (
+        <SaveCard
+          results={flow.results}
+          organizing={flow.organizing}
+          state={flow.state}
+          reverted={flow.reverted}
+          reverting={flow.reverting}
+          labels={{ ...labels.card, saved: labels.savedTo.replace("{names}", flow.saved.map((p) => p.name).join(", ")), view: onboarding && onboarding.next !== "/home" ? onboarding.labels.next : labels.card.view }}
+          oneButton={!!onboarding && onboarding.next !== "/home"}
+          onOpen={openPerson}
+          onUndo={() => void undoOrganize()}
+          onContinue={onboarding ? undefined : continueWriting}
+        />
+      ) : null}
 
       {toast ? <Toast key={toast.id} text={toast.text} error={toast.error} /> : null}
     </div>

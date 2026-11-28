@@ -1,9 +1,8 @@
 "use server";
 
 import { track } from "@/lib/track";
-import { captureField, cleanMemo, clip, describeCapture, isSection, mergeCapture, mergeImport, mergeNoteEffects, parseEffects, recordEffect, revertEffects, sanitizeSection, splitMemo, translate, whyUnchanged, type CaptureOp, type CardData, type NoteEffect, type PartialCard, type Section } from "@readme/core";
+import { captureField, cleanMemo, clip, describeCapture, describeEffect, isSection, mergeCapture, mergeImport, mergeNoteEffects, parseEffects, recordEffect, revertEffects, sanitizeSection, splitMemo, translate, whyUnchanged, type CaptureOp, type CardData, type EffectLine, type NoteEffect, type PartialCard, type Section } from "@readme/core";
 import { revalidatePath } from "next/cache";
-import { after } from "next/server";
 import { aiConfigured, classifyCapture, classifyImport, classifyImportImage, type CaptureItem, type ImageKind, type ImageReading, type ImportScope } from "@/lib/ai";
 import { cleanCaptureItems, tidyImportItems, type CapturePerson } from "@/lib/capture-ai";
 import { findLeftovers } from "@/lib/capture-leftover";
@@ -16,6 +15,7 @@ import { LIMITS } from "@/lib/data-core";
 import { jpegDataUrls } from "@/lib/image-form";
 import { isUuid } from "@/lib/uuid";
 import { resolveMentions } from "@/lib/mention";
+import { isAdded } from "@/lib/save-result";
 
 /** 화면에 보일 한 줄: "아내 · 요즘 마시는 것 · 바닐라라떼" */
 export interface CaptureLine {
@@ -135,11 +135,12 @@ const ghost = (id: string) => id.startsWith("new:") || id.startsWith("pick:");
  * outcomes는 항목마다 어떻게 됐는지(칸·할 일·이유 코드, 값은 없다): 아무것도 못 적은 이유를 로그로 남기려고.
  * 합칠 게 없던 더하기·바꾸기 중 한도에 막혀 못 들어간 것은 '이미 알고 있어요'(same)로 보이지 않게 줄 없이 limit로 남긴다
  */
-async function apply(s: Session, people: Person[], rows: ResolvedCapture[], write: boolean, importing = false, noteOf?: ReadonlyMap<string, string>): Promise<{ lines: CaptureDraftLine[]; undo: UndoOp[]; outcomes: CaptureOutcome[] }> {
+async function apply(s: Session, people: Person[], rows: ResolvedCapture[], write: boolean, importing = false, noteOf?: ReadonlyMap<string, string>): Promise<{ lines: CaptureDraftLine[]; undo: UndoOp[]; outcomes: CaptureOutcome[]; effects: Map<string, NoteEffect[]> }> {
   const { locale } = s.profile;
   const lines: CaptureDraftLine[] = [];
   const undo: UndoOp[] = [];
   const outcomes: CaptureOutcome[] = []; // 항목마다 하나씩(들어온 차례대로)
+  const effects = new Map<string, NoteEffect[]>(); // 사람 contactId → 이 정리가 실제로 적은 일들(메모를 정리할 때만. 화면이 '더한 것'을 바로 보이는 데도 쓴다)
   const me = translate(locale, "voice.me");
   await s.tx(async (q) => {
     // 저장은 사람마다 한 번에 하나씩(같은 사람이 동시에 두 번 적어도 서로 덮어쓰지 않게), 저장하는 사람의 기록은 읽을 때 잠가서 그 사이 다른 저장이 못 끼어들게 한다
@@ -151,7 +152,6 @@ async function apply(s: Session, people: Person[], rows: ResolvedCapture[], writ
       const held = await q<{ id: string; contact_id: string; payload: unknown }>("select id, contact_id, payload from notes where id = any($1::uuid[]) for update", [[...noteOf.values()]]);
       for (const r of held) if (noteOf.get(r.contact_id) === r.id) live.set(r.contact_id, r);
     }
-    const effects = new Map<string, NoteEffect[]>(); // 사람 contactId → 이 정리가 실제로 적은 일들
     // 같은 말 안에서 같은 칸을 여러 번 고쳐도 차례로 합쳐지게 지금 값을 들고 다닌다. 사람의 기록은 처음 건드릴 때 읽는다(목록은 기록을 풀지 않은 것)
     const known = new Set(people.map((p) => p.contactId));
     const cards = new Map<string, PartialCard>([["me", { ...mine }]]);
@@ -310,7 +310,7 @@ async function apply(s: Session, people: Person[], rows: ResolvedCapture[], writ
       await q("update notes set payload = $2::jsonb where id = $1::uuid", [row.id, JSON.stringify(sealNote(s.user.id, who, note.body, mergeNoteEffects(note.effects, list)))]);
     }
   });
-  return { lines, undo, outcomes };
+  return { lines, undo, outcomes, effects };
 }
 
 /** 저장이 끝난 뒤 화면을 새로 그리게 하고 이용 기록을 남긴다 */
@@ -333,15 +333,17 @@ export interface MemoResult {
   ids: string[];
   /** 이번에 새로 더한 사람(contactId와 이름) */
   created: { id: string; name: string }[];
+  /** 사람마다 남긴 메모 id(ids와 같은 순서): 화면이 이어서 organizeSaved로 정리를 시킨다 */
+  notes: { contactId: string; noteId: string }[];
 }
 
 /**
  * 메모 저장 본체(메모 쓰기와 온보딩의 첫 메모가 같이 쓴다): 글을 고른 사람마다 메모로 남기고, 아직 없는 사람(newNames)은 사람 더하기와 같은 길로 만들어 그 사람 메모로 남긴다 — 한 트랜잭션.
- * 그 뒤 응답을 보낸 다음(after) AI가 그 글을 그 사람들의 항목으로 정리한다(organizeMemo).
+ * AI 정리는 여기서 하지 않는다: 메모만 빨리 저장해 돌려주고, 화면이 남긴 메모 id(notes)로 organizeSaved를 이어 불러 정리 과정을 카드로 보이며 기다린다.
  * extra는 같은 트랜잭션 안에서 메모가 하나라도 들어갔을 때만 한 번 더 부르는 일(온보딩 마침)
  */
 async function commitMemo(s: Session, rawText: string, rawIds: string[], via: "voice" | "text", rawNames: string[], extra?: (q: Q) => Promise<void>): Promise<MemoResult> {
-  const none: MemoResult = { ok: false, error: "nothing", ids: [], created: [] };
+  const none: MemoResult = { ok: false, error: "nothing", ids: [], created: [], notes: [] };
   const text = clip(String(rawText ?? "").trim(), 1000).trim();
   const wanted = [...new Set((Array.isArray(rawIds) ? rawIds : []).filter((id): id is string => typeof id === "string" && isUuid(id)))];
   // 새 사람 이름: 다듬고(길이 한도), 같은 이름은 한 명으로, 한 번에 NEW_PEOPLE_MAX명까지
@@ -392,21 +394,19 @@ async function commitMemo(s: Session, rawText: string, rawIds: string[], via: "v
       return done;
     });
   } catch {
-    return { ok: false, error: "failed", ids: [], created: [] };
+    return { ok: false, error: "failed", ids: [], created: [], notes: [] };
   }
-  if (!saved.length) return { ok: false, error: "failed", ids: [], created: [] };
+  if (!saved.length) return { ok: false, error: "failed", ids: [], created: [], notes: [] };
   track("note_add", { userId: s.user.id, source: via });
   for (let i = 0; i < created.length; i++) track("person_add", { userId: s.user.id, source: "memo" });
   revalidatePath("/people", "layout");
   if (created.length) revalidatePath("/home");
-  // 응답을 보낸 뒤에 정리한다(서버 액션 안의 after는 요청 정보·세션을 그대로 쓸 수 있다)
-  after(() => organizeMemo(s, text, saved, noteIds));
-  return { ok: true, error: null, ids: saved, created };
+  return { ok: true, error: null, ids: saved, created, notes: saved.map((contactId) => ({ contactId, noteId: noteIds.get(contactId)! })) };
 }
 
 /**
  * 메모 쓰기 화면의 저장: 적은 글을 고른 사람마다 메모로 바로 남기고(사람마다 한 건, 글은 그대로) 곧바로 돌려준다. 아직 없는 사람은 이름(newNames)으로 새로 더한다.
- * AI 정리(organizeMemo)는 응답 뒤: 메모는 이미 저장됐으니 AI가 꺼져 있거나 하루 한도에 닿거나 실패하면 정리만 안 된다. 이때 정리는 고른 사람에게 더하기·바꾸기만: 새 사람은 만들지 않고(고른 사람들뿐),
+ * AI 정리는 이어서 화면이 organizeSaved로 부른다(메모는 이미 저장됐으니 AI가 꺼져 있거나 하루 한도에 닿거나 실패하면 정리만 안 된다). 이때 정리는 고른 사람에게 더하기·바꾸기만: 새 사람은 만들지 않고(고른 사람들뿐),
  * 메모 칸(통째로 이미 저장했다)과 알레르기·못 먹는 것을 지우거나 바꾸는 줄(확인이 필요한 줄)은 건너뛴다
  */
 export async function saveMemo(rawText: string, rawIds: string[], via: "voice" | "text", newNames: string[] = []): Promise<MemoResult> {
@@ -429,32 +429,39 @@ export async function saveFirstMemo(rawText: string, rawIds: string[], via: "voi
 /** 정리가 어떻게 끝났나: ok 항목을 적었다 · known 말한 건 전부 이미 적혀 있었다 · ai_off AI가 꺼져 있다 · limit 하루 한도 · nothing 적을 게 없었다 · failed 실패 */
 type OrganizeResult = "ok" | "known" | "ai_off" | "limit" | "nothing" | "failed";
 
+/** 정리 한 번의 결과: 어떻게 끝났나 + 사람(contactId)마다 이 정리가 실제로 적은 일들(그 메모의 암호화된 내용에 남은 것과 같다) */
+interface Organized {
+  result: OrganizeResult;
+  effects: Map<string, NoteEffect[]>;
+}
+
 /**
  * 저장한 메모를 그 사람들의 항목으로 정리한다(실패는 삼킨다: 메모는 이미 저장됐다). 새 사람이 방금 만들어졌으니 사람 목록은 여기서 처음 읽는다.
- * 응답 뒤(after)에 돌아 화면에 아무 흔적이 없으니 실행마다 한 줄을 로그로 남긴다(Vercel 런타임 로그): 글·이름은 담지 않고 결과와 개수만.
+ * 저장 직후 화면이 기다리는 organizeSaved와 메모를 고친 뒤 응답 뒤(after)에 도는 organizeNote가 같이 쓴다. 화면에 흔적이 없는 때도 있어 실행마다 한 줄을 로그로 남긴다(Vercel 런타임 로그): 글·이름은 담지 않고 결과와 개수만.
  * people 정리할 사람 수 · items AI가 나눈 항목 수 · rows 그중 이 사람들에게 더할 항목 수(memo·다른 사람·확인이 필요한 줄은 뺀 것) · lines 실제로 적은 줄 · ms 걸린 시간
  * why 항목마다 "칸/할 일/이유"(taste.likes/add/same처럼 코드뿐, 값·이름·글은 없다): 항목은 있는데 lines가 0인 이유를 알아보려고.
  *   이유는 applied·same·limit·invalid_value·note_gone…(CaptureOutcome) 또는 행이 되지 못한 것: memo 메모 칸 · held 확인이 필요한 줄 · other 이 사람들이 아닌 대상 · no_target 누구인지 못 정함
  */
-async function organizeMemo(s: Session, text: string, ids: string[], noteOf: ReadonlyMap<string, string>): Promise<void> {
+async function organizeMemo(s: Session, text: string, ids: string[], noteOf: ReadonlyMap<string, string>): Promise<Organized> {
   const t0 = Date.now();
   let result: OrganizeResult = "nothing";
+  const effects = new Map<string, NoteEffect[]>();
   const stat = { people: 0, items: 0, rows: 0, lines: 0, why: "" };
   try {
     const all = await listPeopleLite(s);
     const picked = ids.map((id) => all.find((p) => p.contactId === id)).filter((p): p is Person => !!p);
     stat.people = picked.length;
-    if (!picked.length) return;
+    if (!picked.length) return { result, effects };
     // 응답을 보낸 뒤 AI가 끝나기 전에 메모를 모두 지웠으면 AI를 부르지도 않는다(하나라도 남았으면 apply가 남은 메모의 사람에게만 적는다)
     const alive = await s.tx((q) => q<{ id: string }>("select id from notes where id = any($1::uuid[])", [[...noteOf.values()]]));
-    if (!alive.length) return;
+    if (!alive.length) return { result, effects };
     const pickedIds = picked.map((p) => p.contactId);
     // 여러 사람이면 글 앞에 @이름을 붙여 누구 이야기인지 짚는다(한 사람이면 그 사람 화면에서 적은 것처럼)
     const said = pickedIds.length === 1 ? text : `${picked.map((p) => `@${displayName(p)}`).join(" ")} ${text}`;
     const c = await classify(said, pickedIds.length === 1 ? pickedIds[0] : undefined, picked.map((p) => ({ id: p.contactId, label: displayName(p) })), s);
     if ("error" in c) {
       result = c.error;
-      return;
+      return { result, effects };
     }
     stat.items = c.items.length;
     const resolved = resolveCapture(c.items, c.people.map(asCapture), { detect: true, certain: c.certain });
@@ -469,15 +476,18 @@ async function organizeMemo(s: Session, text: string, ids: string[], noteOf: Rea
       }),
     ];
     stat.why = dropped.join(", ");
-    if (!rows.length) return;
+    if (!rows.length) return { result, effects };
     const done = await apply(c.s, c.people, rows, true, false, noteOf);
+    for (const [who, list] of done.effects) effects.set(who, list);
     stat.why = [...done.outcomes.map((o) => why(o.f, o.op, o.why)), ...dropped].join(", ");
     stat.lines = done.lines.filter((l) => !l.same).length;
     if (done.lines.length) committed(c.s);
     result = stat.lines ? "ok" : done.lines.length ? "known" : "nothing";
+    return { result, effects };
   } catch (e) {
     result = "failed";
     console.error("[organize] failed", { message: e instanceof Error ? e.message : String(e) });
+    return { result, effects: new Map() };
   } finally {
     // JSON 한 줄로(객체를 그대로 찍으면 길어질 때 여러 줄로 갈라진다)
     console.info("[organize]", JSON.stringify({ result, ...stat, ms: Date.now() - t0 }));
@@ -505,6 +515,60 @@ export async function organizeNote(contactId: string, noteId: string): Promise<{
   if (!body.trim()) return { ok: false };
   await organizeMemo(s, body, [contactId], new Map([[contactId, noteId]]));
   return { ok: true };
+}
+
+/** organizeSaved가 한 번에 받는 메모 수 */
+const SAVED_MAX = 50;
+
+/** 저장 직후 정리의 결과(화면의 카드): 어떻게 끝났나 + 메모마다 이번에 더한 것의 줄(더한 게 없으면 빈 줄) */
+export interface OrganizeSavedResult {
+  state: OrganizeResult;
+  people: { contactId: string; noteId: string; lines: EffectLine[] }[];
+}
+
+/**
+ * 방금 저장한 메모들(saveMemo·saveFirstMemo가 돌려준 notes)을 그 사람들의 항목으로 정리하고 기다렸다가 결과를 돌려준다 — 저장 화면이 카드로 보이는 AI 정리 과정.
+ * 정리 방식·AI 하루 한도·안전 규칙은 organizeMemo 그대로다(메모를 고친 뒤의 정리와 같은 길). 글은 화면이 보낸 것이 아니라 DB에 있는 그 메모의 글을 읽어 쓰고(내가 쓴 메모만, 그 사람의 메모일 때만),
+ * 같은 글이 든 메모들은 한 번에 정리한다(저장 한 번이면 한 묶음). 실패·AI 꺼짐·한도는 state로 알리고 던지지 않는다(메모는 이미 저장됐다).
+ * lines는 이 정리가 실제로 더한 것(이미 있던 것·다시 말한 것은 뺀다)이고, 되돌리기는 메모마다 revertNoteEffects
+ */
+export async function organizeSaved(rawNotes: { contactId: string; noteId: string }[]): Promise<OrganizeSavedResult> {
+  const s = await requireSession();
+  const none: OrganizeSavedResult = { state: "failed", people: [] };
+  const wanted = new Map<string, string>(); // 메모 id → 그 사람 contactId
+  for (const n of (Array.isArray(rawNotes) ? rawNotes : []).slice(0, SAVED_MAX)) {
+    if (n && typeof n.contactId === "string" && typeof n.noteId === "string" && isUuid(n.contactId) && isUuid(n.noteId)) wanted.set(n.noteId, n.contactId);
+  }
+  if (!wanted.size) return none;
+  let rows: { contactId: string; noteId: string; body: string }[];
+  try {
+    rows = await s.tx(async (q) => {
+      const got = await q<{ id: string; contact_id: string; payload: unknown }>("select id, contact_id, payload from notes where id = any($1::uuid[]) and author_id = $2", [[...wanted.keys()], s.user.id]);
+      return got.flatMap((r) => {
+        if (wanted.get(r.id) !== r.contact_id) return [];
+        const body = openNote(r.payload, s.user.id, r.contact_id)?.body ?? "";
+        return body.trim() ? [{ contactId: r.contact_id, noteId: r.id, body }] : [];
+      });
+    });
+  } catch {
+    return none;
+  }
+  if (!rows.length) return none;
+  const groups = new Map<string, typeof rows>();
+  for (const r of rows) groups.set(r.body, [...(groups.get(r.body) ?? []), r]);
+  const states: OrganizeResult[] = [];
+  const people: OrganizeSavedResult["people"] = [];
+  for (const [body, group] of groups) {
+    const done = await organizeMemo(s, body, group.map((r) => r.contactId), new Map(group.map((r) => [r.contactId, r.noteId])));
+    states.push(done.result);
+    for (const r of group) {
+      const lines = (done.effects.get(r.contactId) ?? []).filter(isAdded).map((e) => describeEffect(e, s.profile.locale)).filter((l): l is EffectLine => !!l);
+      people.push({ contactId: r.contactId, noteId: r.noteId, lines });
+    }
+  }
+  // 묶음이 여럿이면(드문 일) 더한 게 있는 쪽을 먼저 알린다
+  const state = states.includes("ok") ? "ok" : states.includes("known") ? "known" : (states[0] ?? "failed");
+  return { state, people };
 }
 
 /**
