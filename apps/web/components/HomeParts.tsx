@@ -154,16 +154,16 @@ export function HeroButton({ href, label, first = true, small = false }: { href:
 }
 
 /**
- * 연말 카드 아래 오른쪽: [동그란 얼굴] + 밑줄 그은 글자 링크 '크리스마스 선물 고르기 →'(단추 모양 아님).
+ * 연말 카드 아래 한 줄을 꽉 채운다: [동그란 얼굴] + 남은 폭 전체의 밑줄 링크 '크리스마스 선물 고르러 가기 ……→'(단추 모양 아님).
  * 글자는 그 사람의 선물 고르기로. 얼굴은 pickHref가 있으면(사람이 여럿) 다른 사람을 고르러 가는 링크(이름은 읽어 주는 이름으로만), 없으면 그냥 그림
  */
-const PICK_D = 36;
+const PICK_D = 40;
 export function HeroPickRow({ avatar, name, pickHref, giftHref, giftLabel }: { avatar: AvatarConfig | null; name: string; pickHref: string | null; giftHref: string; giftLabel: string }) {
   const ring = "flex shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white";
   const ringStyle: React.CSSProperties = { width: PICK_D, height: PICK_D, background: "#FFF4D6", boxShadow: `0 0 0 1px ${EDGE}, 0 3.6px 7.2px -5.4px rgba(31,35,64,.5)` };
   const face = <Avatar config={avatar} size={PICK_D - 4} label={name} decorative />;
   return (
-    <div className="mt-[10.8px] flex items-center justify-end gap-[7.2px]">
+    <div className="mt-[10.8px] flex items-center gap-[9px]">
       {pickHref ? (
         <Link href={pickHref} aria-label={name} className={`${ring} relative before:absolute before:-inset-[4px]`} style={ringStyle}>
           {face}
@@ -173,11 +173,9 @@ export function HeroPickRow({ avatar, name, pickHref, giftHref, giftLabel }: { a
           {face}
         </span>
       )}
-      <Link href={giftHref} className="hand flex min-h-11 items-center gap-[4.5px] text-[20.7px] leading-none" style={{ color: INK }}>
-        <span className="underline decoration-[1.8px] underline-offset-[5.4px]" style={{ textDecorationColor: "#E09A12" }}>
-          {giftLabel}
-        </span>
-        <svg aria-hidden="true" viewBox="0 0 24 24" width={u(18)} height={u(18)} fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+      <Link href={giftHref} className="hand flex min-h-11 min-w-0 flex-1 items-center justify-between gap-[5.4px] border-b-[1.8px] pb-[3.6px] text-[21.6px] leading-none" style={{ color: INK, borderColor: "#E09A12" }}>
+        <span className="min-w-0 truncate">{giftLabel}</span>
+        <svg aria-hidden="true" viewBox="0 0 24 24" width={u(20)} height={u(20)} fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
           <path d="M5 12h14M13 6l6 6-6 6" />
         </svg>
       </Link>

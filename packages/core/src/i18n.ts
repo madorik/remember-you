@@ -284,7 +284,7 @@ export const ko = {
   "home.yearEndLine": "챙겨 주고 싶은 사람을\n기억해 둬요",
   "home.yearEndAsk": "받고 싶은 선물, 살짝 물어보기",
   "home.yearEndAdd": "챙기고 싶은 사람 추가하기",
-  "home.yearEndGift": "크리스마스 선물 고르기",
+  "home.yearEndGift": "크리스마스 선물 고르러 가기",
   "home.yearEndAnswered": "{name}님 외 {n}명이 답장을 보냈어요",
   "home.askDates": "생일·기념일 물어보기",
   "home.addPerson": "사람 추가하기",
