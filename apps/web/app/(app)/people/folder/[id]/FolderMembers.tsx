@@ -86,8 +86,8 @@ export function FolderMembers({
               type="button"
               aria-label={labels.remove.replace("{name}", r.name)}
               onClick={() => remove(r)}
-              // 보이는 동그라미는 26px, 누르는 자리는 44px
-              className="-mr-1.5 flex h-11 w-[27px] shrink-0 items-center justify-center text-ink active:bg-fill"
+              // 보이는 동그라미는 19.8px 그대로, 누르는 자리는 44×44(카드 안쪽 여백만큼 오른쪽으로 내밀어 동그라미 자리는 같고, 날짜와는 12px 떨어진다)
+              className="-mr-[12.6px] flex h-[44px] w-[44px] shrink-0 items-center justify-center text-ink active:bg-fill"
             >
               <span className="flex h-[19.8px] w-[19.8px] items-center justify-center rounded-full border border-edge">
                 <Icon name="close" size={11} strokeWidth={2.4} />

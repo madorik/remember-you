@@ -1,4 +1,4 @@
-import { isValidSpec, type DateSpec } from "./calendar";
+import { isOnceSpec, isValidSpec, type DateSpec } from "./calendar";
 import { clip } from "./text";
 import { ALCOHOL_KINDS, ALCOHOL_LEVELS, ALLERGENS, COLORS, DIETS, DISLIKES, METALS, MOVIE_GENRES, VIBES, MUSIC_GENRES, NONE, NONE_LABEL, PATTERNS, PET_KINDS, SEASONS, STYLES, codesOf, type CatalogItem, type Relation } from "./catalog";
 
@@ -131,7 +131,17 @@ export interface PetsData {
 export interface Anniversary {
   label: string;
   spec: DateSpec;
+  /**
+   * 한 번만 있는 날(약속·집들이·병원 예약 …). 해마다 돌아오지 않고 spec의 그 하루(양력 연·월·일)에 한 번 챙긴다.
+   * 지나면 다가오는 날에서 빠지지만 기록에는 남는다. spec이 양력 연·월·일을 다 갖출 때만 켜진다(아니면 해마다 도는 기념일로 본다)
+   */
+  once?: true;
 }
+
+/** 해마다 도는 기념일 수 위쪽 한도 */
+export const ANNIVERSARY_MAX = 10;
+/** 한 번만 있는 날 수 위쪽 한도(지난 것도 기록에 남으니 따로 센다) */
+export const ONCE_MAX = 20;
 
 export interface DatesData {
   birthday: DateSpec | null;
@@ -386,14 +396,16 @@ export function sanitizeSection<S extends Section>(section: S, input: unknown): 
       break;
     }
     case "dates": {
+      let yearly = 0;
+      let once = 0;
       const anniversaries = (Array.isArray(o.anniversaries) ? o.anniversaries : [])
         .map((a) => {
           const r = (a && typeof a === "object" ? a : {}) as Record<string, unknown>;
           const s = spec(r.spec);
-          return s ? { label: text(r.label, 40), spec: s } : null;
+          return s ? ({ label: text(r.label, 40), spec: s, ...(r.once === true && isOnceSpec(s) ? { once: true } : {}) } as Anniversary) : null;
         })
         .filter((a): a is Anniversary => !!a && !!a.label)
-        .slice(0, 10);
+        .filter((a) => (a.once ? ++once <= ONCE_MAX : ++yearly <= ANNIVERSARY_MAX));
       out = { birthday: spec(o.birthday), anniversaries } satisfies DatesData;
       break;
     }

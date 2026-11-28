@@ -1,5 +1,5 @@
 // 말로 적기 AI 부분 중 서버 키와 상관없는 것(요청 몸·응답 풀기). 서버 전용 표시가 없어 시험 스크립트에서도 불러 쓴다
-import { CAPTURE_FIELDS, CAPTURE_TARGETS, SPEC_YEAR_MIN, SPICY_LEVELS, clip, isValidSpec, type CaptureOp, type CaptureValue, type DateSpec, type Locale } from "@readme/core";
+import { CAPTURE_FIELDS, CAPTURE_TARGETS, SPEC_YEAR_MIN, SPICY_LEVELS, addDays, clip, fromUTC, isValidSpec, onceSpec, resolveOnce, weekday, ymdKey, type CaptureOp, type CaptureValue, type DateSpec, type Locale, type YMD } from "@readme/core";
 
 export interface CapturePerson {
   id: string;
@@ -87,7 +87,8 @@ target: the most specific field from FIELDS. Rules:
 - NEGATIVE preferences (doesn't like, avoids, can't, 싫어해, 안 좋아해, 별로, 못 먹어, 안 마셔) must NEVER be added to a "likes" field (taste.likes, taste.dessert, taste.drinks, favorites.*, culture.* text, life.*). Foods and drinks go to safety.dislikes (listed code, or the food name as text, e.g. "단 것"); gifts they don't want go to gifts.skip; anything else goes to memo, written as the negative fact.
 - Gift ideas → gifts.wishlist: things they want, and gifts the speaker plans to give them (사 줘야지, 선물해야지, 사 주고 싶다, 다음에 ~ 해 줘야지). Gifts to avoid → gifts.skip.
 - Scent and flowers they like → favorites.scent, favorites.flowers. Mood or atmosphere they like (조용한, 아늑한, 활기찬 …) → favorites.vibes. Places they like to go or hang out (바다, 한옥 카페, 성수동) → favorites.places. Places they want to travel to someday → life.travel.
-- Birthday → dates.birthday with date (lunar if 음력/lunar). Other days → dates.anniversary with label.
+- Birthday → dates.birthday with date (lunar if 음력/lunar). A day that comes back every year (wedding anniversary, 기일, 매년 …) → dates.anniversary with label.
+- A plan or event on one specific upcoming day that happens once (약속, 집들이, 병원 예약, 공연, 여행 출발, 시험, 면접, 모임 …) → dates.plan: label = short title in the speaker's language, at most 20 characters, without the date, the person's name, phone numbers, addresses or other identifiers (e.g. "꽃시장 가기", "집들이"); date = that day, solar, with year (the year is required) — work it out from TODAY and CALENDAR, which are given in the input. Relative days (오늘, 내일, 모레, 이번 주 금요일, 다음 주 토요일, 다음 달 3일 …) count from TODAY; 이번 주 means the week of TODAY, 다음 주 the week after (weeks run Monday to Sunday). A date without a year means its next occurrence from TODAY. Use dates.plan only when the day is a single specific upcoming day: events that already happened, a day that is vague (언젠가, 이번 주말, 다음에, 조만간) or an event with no day → memo or nothing, never dates.plan. When TODAY is not given, never use dates.plan.
 - Shoe size in mm (e.g. 270), ring size number (호).
 - How much spice they can take (매운 거 잘 먹어/못 먹어) → taste.spicy number: ${SPICY_LEVELS.map((l, i) => `${i}=${l.ko}`).join(", ")}.
 - Put a value only in a field whose meaning matches it: favorites.animal only for animals they like (not pets they keep), favorites.flowers for flowers and plants, favorites.idol for singers and celebrities, culture.* for movies, dramas, shows, music and books, favorites.places or life.travel for places, life.hobbies for activities. Never use a field just because it is a "favorite" slot.
@@ -125,6 +126,7 @@ const IMPORT_ADDENDUM = `IMPORT MODE: the input is not one spoken note but a mem
 - Record only facts about people that belong in FIELDS. Skip everything else (schedules, to-dos, links, prices, chat chatter).
 - NEVER output phone numbers, street addresses, emails, bank, card or ID numbers, passwords or other identifiers: not as a value and not inside a memo.
 - op is always "add". Never "replace" or "remove".
+- Never use dates.plan in import mode (dates in a pasted memo are not plans). A date that comes back every year is dates.anniversary.
 - memo target only for a useful fact that fits no field, short (under 60 characters). Never copy a whole line or chat message.
 - If you cannot tell who a fact is about, skip it. Never guess values.
 - At most ${IMPORT_ITEMS_MAX} items.
@@ -374,7 +376,7 @@ export function tidyImportItems(items: readonly CaptureItem[]): CaptureItem[] {
   const memos = new Map<string, number>();
   const kept: CaptureItem[] = [];
   for (const it of items) {
-    if (it.op === "remove") continue;
+    if (it.op === "remove" || it.target === "dates.plan") continue; // 가져오기는 지우지 않고, 한 번만 있는 일정(약속)도 만들지 않는다
     if (hasIdentifier(it.text) || hasIdentifier(it.label)) continue;
     const empty = !(it.text ?? "").trim() && !(it.codes ?? []).length && it.number == null && !it.date;
     if (empty) continue;
@@ -415,6 +417,19 @@ export function capturePeople(people: CapturePerson[], about: CapturePerson | nu
   return out;
 }
 
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/**
+ * 모델에게 '오늘'과 앞으로 세 주의 달력을 준다(사용자 시간대의 오늘). 모델이 '다음 주 토요일' 같은 말을 날짜로 바꿀 때 요일 셈을 틀리지 않도록 표로 둔다.
+ * 주는 월요일부터 일요일
+ */
+export function calendarGuide(today: YMD): string {
+  const day = (v: YMD) => `${ymdKey(v)} ${DAY_NAMES[weekday(v)]}`;
+  const monday = addDays(today, -((weekday(today) + 6) % 7));
+  const weeks = ["this week (이번 주)", "next week (다음 주)", "the week after next (다다음 주)"].map((name, w) => `${name}: ${Array.from({ length: 7 }, (_, i) => day(addDays(monday, w * 7 + i))).join(", ")}`);
+  return `TODAY: ${day(today)}\nCALENDAR (weeks run Monday to Sunday):\n${weeks.join("\n")}`;
+}
+
 /** OpenAI Responses API 요청 몸 */
 export function captureRequest(
   text: string,
@@ -424,12 +439,13 @@ export function captureRequest(
   effort: "none" | "low" | "medium" | "high" = "medium",
   about: CapturePerson | null = null,
   mentioned: CapturePerson[] = [],
+  today: YMD | null = null,
 ) {
   return {
       model,
       reasoning: { effort },
       instructions: INSTRUCTIONS,
-      input: `LANGUAGE: ${locale}\nPEOPLE: ${JSON.stringify(capturePeople(people, about, mentioned))}\n${about ? `ABOUT: ${JSON.stringify(slim(about))}\n` : ""}${mentioned.length ? `MENTIONED: ${JSON.stringify(mentioned.map(slim))}\n` : ""}NOTE: ${text}`,
+      input: `LANGUAGE: ${locale}\n${today ? `${calendarGuide(today)}\n` : ""}PEOPLE: ${JSON.stringify(capturePeople(people, about, mentioned))}\n${about ? `ABOUT: ${JSON.stringify(slim(about))}\n` : ""}${mentioned.length ? `MENTIONED: ${JSON.stringify(mentioned.map(slim))}\n` : ""}NOTE: ${text}`,
       text: { format: { type: "json_schema", name: "capture", strict: true, schema: SCHEMA } },
       store: false,
     };
@@ -453,11 +469,31 @@ export function cleanDate(d: unknown, now: Date = new Date()): DateSpec | null {
   return isValidSpec(base) ? base : null;
 }
 
-/** 항목 하나의 모양을 맞춘다(AI 응답이든 화면에서 고쳐 되돌려 보낸 것이든) */
-function cleanItem(raw: unknown, now: Date): CaptureItem {
+/** 한 번만 있는 일정 이름의 길이 위쪽 한도 */
+export const PLAN_LABEL_MAX = 20;
+
+/**
+ * 한 번만 있는 일정(dates.plan)의 날짜를 오늘(today) 기준 실제 하루로 푼다(양력 연·월·일을 다 채워 돌려준다).
+ * 이미 지난 날·너무 먼 날·없는 날은 null: 그런 일정은 적지 않는다. 연도가 없으면 오늘 이후 가장 가까운 그 날, 두 자리 연도는 2000년대로
+ */
+export function cleanPlanDate(d: unknown, today: YMD): DateSpec | null {
+  if (!d || typeof d !== "object") return null;
+  const r = d as Record<string, unknown>;
+  if (typeof r.month !== "number" || typeof r.day !== "number") return null;
+  let year: number | undefined = typeof r.year === "number" && Number.isInteger(r.year) && r.year > 0 ? r.year : undefined;
+  if (year !== undefined && year < 100) year += 2000;
+  const spec: DateSpec = { calendar: r.calendar === "lunar" ? "lunar" : "solar", month: r.month, day: r.day, ...(year !== undefined ? { year } : {}) };
+  const date = resolveOnce(spec, today);
+  return date ? onceSpec(date) : null;
+}
+
+/** 항목 하나의 모양을 맞춘다(AI 응답이든 화면에서 고쳐 되돌려 보낸 것이든). today: 사용자 시간대의 오늘(한 번만 있는 일정의 날짜를 풀 때. 없으면 now의 날짜) */
+function cleanItem(raw: unknown, now: Date, today: YMD): CaptureItem {
   const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const who = (r.who && typeof r.who === "object" ? r.who : {}) as Record<string, unknown>;
-  const date = cleanDate(r.date, now);
+  const plan = r.target === "dates.plan";
+  // 일정 이름에는 식별 정보(전화번호·주소창·긴 숫자)를 두지 않는다: 그런 일정은 날짜를 비워 적지 않는다
+  const date = plan ? (hasIdentifier(typeof r.label === "string" ? r.label : "") ? null : cleanPlanDate(r.date, today)) : cleanDate(r.date, now);
   return {
     who: {
       type: who.type === "me" || who.type === "existing" ? who.type : "new",
@@ -470,20 +506,20 @@ function cleanItem(raw: unknown, now: Date): CaptureItem {
     codes: Array.isArray(r.codes) ? r.codes.filter((c): c is string => typeof c === "string") : null,
     number: typeof r.number === "number" ? r.number : null,
     date,
-    label: typeof r.label === "string" ? clip(r.label, 40) : null,
+    label: typeof r.label === "string" ? clip(r.label, plan ? PLAN_LABEL_MAX : 40) : null,
   };
 }
 
-/** 항목 목록(기본 12개, 가져오기는 더 많이)의 모양을 맞춘다. 배열이 아니면 빈 목록 */
-export function cleanCaptureItems(items: unknown, now: Date = new Date(), max = 12): CaptureItem[] {
-  return Array.isArray(items) ? items.slice(0, max).map((raw) => cleanItem(raw, now)) : [];
+/** 항목 목록(기본 12개, 가져오기는 더 많이)의 모양을 맞춘다. 배열이 아니면 빈 목록. today: 사용자 시간대의 오늘 */
+export function cleanCaptureItems(items: unknown, now: Date = new Date(), max = 12, today: YMD = fromUTC(now.getTime())): CaptureItem[] {
+  return Array.isArray(items) ? items.slice(0, max).map((raw) => cleanItem(raw, now, today)) : [];
 }
 
 /** 응답에서 항목을 꺼내 모양을 맞춘다 */
-export function parseCapture(body: unknown, now: Date = new Date(), max = 12): CaptureItem[] {
+export function parseCapture(body: unknown, now: Date = new Date(), max = 12, today?: YMD): CaptureItem[] {
   const text = outputText(body);
   // 길이 한도에 걸려 끊긴 응답은 '이해 못 함'이 아니라 실패다(다시 해 보면 된다)
   if (!text && (body as { status?: unknown } | null)?.status === "incomplete") throw new Error("ai_incomplete");
   const parsed = JSON.parse(text || "{}") as { items?: unknown };
-  return cleanCaptureItems(parsed.items, now, max);
+  return cleanCaptureItems(parsed.items, now, max, today);
 }

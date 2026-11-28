@@ -1,5 +1,5 @@
 import "server-only";
-import { SECTIONS, defaultAskTopics, sanitizeQuestionIds, type Section } from "@readme/core";
+import { SECTIONS, defaultAskTopics, emptySections, sanitizeQuestionIds, type Section } from "@readme/core";
 import { displayName, listOpenInvites, listPeople, requireSession, todayFor } from "@/lib/data";
 import { makeT } from "@/lib/t";
 import { personHint } from "@/lib/summary";
@@ -45,7 +45,7 @@ export async function loadRequest({ searchParams }: PageInput): Promise<RequestD
       tag: p.nickname && p.nickname !== (p.name || displayName(p)) ? p.nickname : "",
       label: displayName(p),
       avatar: p.avatar,
-      missing: askable.filter((x) => !p.card[x]),
+      missing: emptySections(p.card, askable),
     }));
   const fixed = searchParams.to ? (people.find((p) => p.id === searchParams.to) ?? null) : null;
   const focus = SECTIONS.find((x) => x === searchParams.topic) ?? null;

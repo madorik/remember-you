@@ -1,8 +1,8 @@
 // 말로 적기: "와이프는 바닐라라떼를 좋아해" 같은 말을 AI가 (사람, 칸, 값)으로 나누면, 여기서 그 칸에 합친다.
 // 어느 칸에도 안 맞는 말은 그 사람의 메모로 간다(target "memo"). 순수 함수라 서버·테스트가 같이 쓴다.
 import { ALCOHOL_KINDS, ALCOHOL_LEVELS, ALLERGENS, COLORS, DIETS, DISLIKES, METALS, MOVIE_GENRES, MUSIC_GENRES, NONE, PATTERNS, PET_KINDS, SEASONS, SPICY_LEVELS, STYLES, VIBES, type CatalogItem } from "./catalog";
-import { emptySection, sanitizeSection, type CardData, type Pet, type Section } from "./card";
-import { isValidSpec, type DateSpec } from "./calendar";
+import { ONCE_MAX, emptySection, sanitizeSection, type Anniversary, type CardData, type Pet, type Section } from "./card";
+import { compareYmd, isOnceSpec, isValidSpec, onceDate, type DateSpec } from "./calendar";
 import type { Locale } from "./locale";
 import { clip } from "./text";
 
@@ -15,7 +15,8 @@ import { clip } from "./text";
  * - code: 하나만 고르는 칸(술을 얼마나·상품권). 바꾼다
  * - number: 수(매운맛 0–4, 신발 mm, 반지 호수). 바꾼다
  * - date: 생일. 바꾼다
- * - anniversary: 기념일(이름 + 날짜). 같은 이름이면 바꾸고 아니면 더한다
+ * - anniversary: 기념일(이름 + 날짜). 같은 이름이면 바꾸고 아니면 더한다.
+ *   once인 칸(dates.plan)은 한 번만 있는 날(약속·집들이 …): 양력 연·월·일이 다 있어야 하고, 같은 이름·같은 날이 아니면 따로 더한다(바꾸기는 같은 이름의 것을 바꾼다)
  * - pet: 반려동물 한 마리(label = 이름). pets.pet은 종류(codes)·품종(text), pets.treats는 좋아하는 간식·장난감(text, 쉼표), pets.note는 메모(text).
  *   이름이 같은(이름이 없으면 종류가 같은, 그것도 없으면 한 마리뿐인) 반려동물에 합치고, 없으면 새로 더한다
  */
@@ -30,6 +31,8 @@ export interface CaptureField {
   range?: [number, number];
   /** text인데 이어 붙이지 않고 바꾸는 칸 */
   replace?: boolean;
+  /** anniversary인데 해마다 돌아오지 않고 그 하루에 한 번만 있는 날(Anniversary.once) */
+  once?: boolean;
 }
 
 const f = (key: string, kind: CaptureKind, ko: string, en: string, extra: Partial<CaptureField> = {}): CaptureField => ({
@@ -86,6 +89,7 @@ export const CAPTURE_FIELDS: CaptureField[] = [
   f("pets.note", "pet", "반려동물 메모(나이·성격)", "Pet note (age, personality)", { catalog: PET_KINDS }),
   f("dates.birthday", "date", "생일", "Birthday"),
   f("dates.anniversary", "anniversary", "기념일", "Anniversary"),
+  f("dates.plan", "anniversary", "챙길 날", "Upcoming date", { once: true }),
 ];
 
 export const CAPTURE_TARGETS = [...CAPTURE_FIELDS.map((x) => x.key), "memo"] as const;
@@ -247,7 +251,25 @@ export function mergeCapture<S extends Section>(field: CaptureField, current: Ca
     case "anniversary": {
       const label = (value.label ?? "").trim();
       if (!isValidSpec(value.date) || !label) return null;
-      const list = ((base.anniversaries as { label: string; spec: DateSpec }[]) ?? []).filter((a) => !same(a.label, label));
+      const old = (base.anniversaries as Anniversary[]) ?? [];
+      if (field.once) {
+        // 한 번만 있는 날: 양력 연·월·일이 다 있어야 한다. 같은 이름·같은 날이 이미 있으면 그대로, 이름이 같아도 날이 다르면 다른 일정이다(바꾸기는 같은 이름의 것을 바꾼다)
+        const date = value.date;
+        if (!isOnceSpec(date)) return null;
+        const sameDay = (a: Anniversary) => isOnceSpec(a.spec) && compareYmd(onceDate(a.spec), onceDate(date)) === 0;
+        if (old.some((a) => a.once && same(a.label, label) && sameDay(a))) return null;
+        const list = old.filter((a) => !(a.once && same(a.label, label) && replace));
+        list.push({ label, spec: { calendar: "solar", month: date.month, day: date.day, year: date.year }, once: true });
+        // 한도를 넘으면 가장 오래된(날짜가 이른) 것부터 뺀다
+        const onces = list.filter((a) => a.once && isOnceSpec(a.spec));
+        if (onces.length > ONCE_MAX) {
+          const gone = new Set(onces.sort((a, b) => compareYmd(onceDate(a.spec as DateSpec & { year: number }), onceDate(b.spec as DateSpec & { year: number }))).slice(0, onces.length - ONCE_MAX));
+          base.anniversaries = list.filter((a) => !gone.has(a));
+        } else base.anniversaries = list;
+        break;
+      }
+      // 해마다 도는 기념일: 같은 이름이면 바꾼다(한 번만 있는 날은 건드리지 않는다)
+      const list = old.filter((a) => a.once || !same(a.label, label));
       list.push({ label, spec: value.date });
       base.anniversaries = list;
       break;
@@ -293,9 +315,9 @@ export function mergeImport<S extends Section>(field: CaptureField, current: Car
     if (filled(getRaw(base, field.key))) return null;
   } else if (field.kind === "text" && field.replace) {
     if (filled(getRaw(base, field.key))) return null;
-  } else if (field.kind === "anniversary") {
+  } else if (field.kind === "anniversary" && !field.once) {
     const label = (value.label ?? "").trim();
-    if (((base.anniversaries as { label: string }[]) ?? []).some((a) => same(a.label, label))) return null;
+    if (((base.anniversaries as { label: string; once?: boolean }[]) ?? []).some((a) => !a.once && same(a.label, label))) return null;
   }
   return mergeCapture(field, current, value, "add");
 }
@@ -362,8 +384,11 @@ function removeFrom(field: CaptureField, base: Record<string, unknown>, text: st
       const label = (value.label ?? text).trim();
       const d = value.date;
       if (!label && !d) return false;
-      const list = (base.anniversaries as { label: string; spec: DateSpec }[]) ?? [];
-      const drop = label ? new Set(findHits(solo(list.map((a) => a.label)), label)) : new Set(list.flatMap((a, i) => (a.spec.month === d!.month && a.spec.day === d!.day ? [i] : [])));
+      const list = (base.anniversaries as Anniversary[]) ?? [];
+      // 한 번만 있는 날 칸은 한 번만 있는 날만 지운다(해마다 도는 기념일을 잘못 지우지 않게)
+      const pool = list.flatMap((a, i) => (field.once && !a.once ? [] : [i]));
+      const hit = label ? findHits(solo(pool.map((i) => list[i]!.label)), label).map((k) => pool[k]!) : pool.filter((i) => list[i]!.spec.month === d!.month && list[i]!.spec.day === d!.day);
+      const drop = new Set(hit);
       base.anniversaries = list.filter((_, i) => !drop.has(i));
       return (base.anniversaries as unknown[]).length !== list.length;
     }
@@ -419,7 +444,9 @@ export function describeCapture(field: CaptureField, value: CaptureValue, locale
       const d = value.date;
       if (!d) return "";
       const md = locale === "ko" ? `${d.calendar === "lunar" ? "음력 " : ""}${d.month}월 ${d.day}일` : `${d.calendar === "lunar" ? "Lunar " : ""}${d.month}/${d.day}`;
-      return field.kind === "anniversary" ? `${value.label ?? ""} ${md}`.trim() : md;
+      if (field.kind !== "anniversary") return md;
+      // 한 번만 있는 날은 날짜가 먼저: "12월 6일 집들이"
+      return (field.once ? `${md} ${value.label ?? ""}` : `${value.label ?? ""} ${md}`).trim();
     }
     default:
       return (value.text ?? "").trim();

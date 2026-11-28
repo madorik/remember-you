@@ -7,6 +7,8 @@ import { u } from "@/lib/ui-scale";
 
 // 홈(챙길 날) 시안 'H-Home'의 조각: 날짜 머리 · 다가오는 날 카드 틀(줄무늬 테이프·D-n 도장·폴라로이드·분홍 상자·망고 단추) · 이번 주 카드.
 // 크기는 시안 px의 90%(앱 전체 배율)로 적어 둔다. 서버·클라이언트 어디서나 쓴다(훅 없음). 장식은 aria-hidden.
+// 장식 규칙(홈 한 화면): 카드마다 으뜸 장식은 하나(도장 또는 폴라로이드 강조) + 테이프 하나 + 빼꼼 캐릭터. 작은 낙서(별·하트·물결·반짝이)는 한 화면에 둘까지
+// (지금은 날짜 머리의 별 하나 + 큰 카드의 물결 하나), 같은 카드 모서리에 겹쳐 쌓지 않는다. 형광펜 밑줄은 큰 카드 제목에 쓰지 않는다(도장이 으뜸이라).
 
 const INK = "#1F2340";
 const MANGO = "#FFC23D";
@@ -107,8 +109,8 @@ export function DStamp({ children, fontSize }: { children: React.ReactNode; font
   );
 }
 
-/** 폴라로이드: 흰 틀 + 연한 망고 사진 칸 + 이름 줄(하트). 틀만 기울인다 */
-export function HeroPolaroid({ children, caption, heart = true }: { children: React.ReactNode; caption?: React.ReactNode; heart?: boolean }) {
+/** 폴라로이드: 흰 틀 + 연한 망고 사진 칸 + 이름 줄(heart면 하트). 틀만 기울인다. 큰 카드에는 도장이 으뜸 장식이라 하트는 기본으로 뺀다 */
+export function HeroPolaroid({ children, caption, heart = false }: { children: React.ReactNode; caption?: React.ReactNode; heart?: boolean }) {
   return (
     <span
       className="flex shrink-0 flex-col items-center border bg-white px-[5.4px] pt-[5.4px]"
@@ -184,7 +186,7 @@ export function HeroPickRow({ avatar, name, pickHref, giftHref, giftLabel }: { a
 }
 
 /**
- * 다가오는 날 카드 틀: 줄무늬 망고 테이프 · 왼쪽 위 작은 라벨 · 오른쪽 위 도장 · (빼꼼 캐릭터) · 폴라로이드 + 제목·날짜 · 안쪽 줄 · 단추 · 하트·물결 낙서.
+ * 다가오는 날 카드 틀: 줄무늬 망고 테이프 · 왼쪽 위 작은 라벨 · 오른쪽 위 도장(으뜸 장식) · 빼꼼 캐릭터 · 폴라로이드 + 제목·날짜 · 안쪽 줄 · 단추 · 오른쪽 아래 물결 낙서 하나.
  * 큰 카드 변형(연말·명절·새 친구·같은 날 여럿)도 같은 틀에 그림·글·단추를 끼운다
  */
 export function HeroFrame({ ariaLabel, label, stamp, art, title, sub, inner, children }: { ariaLabel: string; label: string | null; stamp: React.ReactNode; art: React.ReactNode; title: React.ReactNode; sub?: React.ReactNode; inner?: React.ReactNode; children: React.ReactNode }) {
@@ -206,11 +208,6 @@ export function HeroFrame({ ariaLabel, label, stamp, art, title, sub, inner, chi
           {stamp ? <span className="-mb-[5.4px] -mr-[3.6px] -mt-[9px]">{stamp}</span> : null}
         </div>
       ) : null}
-      {label ? (
-        <svg aria-hidden="true" viewBox="0 0 24 24" width={u(17)} height={u(17)} fill="none" stroke={INK} strokeWidth="2" strokeLinecap="round" className="pointer-events-none absolute left-[135px] top-[32.4px]">
-          <path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4" />
-        </svg>
-      ) : null}
       <div className={`${label || stamp ? "mt-[1.8px]" : ""} flex items-center gap-[13.5px]`}>
         {art}
         <div className="flex min-w-0 flex-1 flex-col gap-[5.4px]">
@@ -220,7 +217,6 @@ export function HeroFrame({ ariaLabel, label, stamp, art, title, sub, inner, chi
       </div>
       {inner}
       {children}
-      <SmallHeart size={34} fill="#F29BB0" className="pointer-events-none absolute -bottom-[14.4px] -left-[12.6px]" style={{ transform: "rotate(-14deg)" }} />
       <svg aria-hidden="true" viewBox="0 0 70 14" width={u(70)} height={u(14)} fill="none" stroke={MANGO_RING} strokeWidth="2.4" strokeLinecap="round" className="pointer-events-none absolute -bottom-[8.1px] right-[27px]">
         <path d="M2 9 C10 1 16 1 22 7 S34 13 40 7 S54 1 60 7 S66 11 68 8" />
       </svg>
@@ -245,7 +241,6 @@ export function WeekCard({ title, countText, calendarHref, calendarLabel, names,
     <section aria-label={title} className="card relative mx-4 shrink-0 px-[10.8px] pb-[5.4px] pt-[14.4px] transition-transform active:scale-[0.995]">
       {/* 카드 어디를 눌러도 달력으로(달력 단추는 그 위) */}
       <Link href={calendarHref} tabIndex={-1} aria-hidden="true" className="absolute inset-0 z-10 rounded-[16.2px]" />
-      <MangoStar size={20} className="-top-[10.8px] left-[135px]" />
       <span aria-hidden="true" className="pointer-events-none absolute -left-[12.6px] -top-[7.2px] h-[19.8px] w-[54px]" style={{ background: "rgba(249,203,213,.8)", transform: "rotate(-32deg)" }} />
       <div className="flex items-center gap-[10.8px] px-[5.4px]">
         <h2 className="hand text-[25.2px] leading-none">{title}</h2>
@@ -290,7 +285,6 @@ export function WeekCard({ title, countText, calendarHref, calendarLabel, names,
           );
         })}
       </ol>
-      <span aria-hidden="true" className="pointer-events-none absolute -bottom-[9px] -right-[10.8px] h-[19.8px] w-[57.6px]" style={{ background: "rgba(205,235,221,.9)", transform: "rotate(-28deg)" }} />
     </section>
   );
 }

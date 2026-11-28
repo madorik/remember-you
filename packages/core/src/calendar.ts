@@ -179,3 +179,39 @@ export function nextOccurrence(spec: DateSpec, today: YMD): NextOccurrence | nul
   const [date] = occurrences(spec, today, 1);
   return date ? { date, daysUntil: diffDays(today, date) } : null;
 }
+
+// ── 한 번만 있는 날(약속·집들이·병원 예약 …) ─────────────────────────────
+// 해마다 돌아오는 날이 아니라 정해진 하루(양력 연·월·일)다. 기념일 한 줄에 once 표시로 들어가고(card.ts Anniversary), 지나면 다가오는 날에서 빠진다.
+
+/** 한 번만 있는 날의 날짜가 될 수 있나: 양력이고 연·월·일이 다 있고 실제로 있는 날 */
+export function isOnceSpec(spec: unknown): spec is DateSpec & { year: number } {
+  return isValidSpec(spec) && spec.calendar === "solar" && typeof spec.year === "number";
+}
+
+/** 한 번만 있는 날의 하루 */
+export function onceDate(spec: DateSpec & { year: number }): YMD {
+  return { y: spec.year, m: spec.month, d: spec.day };
+}
+
+/** 한 번만 있는 날의 날짜를 spec으로 */
+export function onceSpec(date: YMD): DateSpec & { year: number } {
+  return { calendar: "solar", month: date.m, day: date.d, year: date.y };
+}
+
+/** 한 번만 있는 날을 이렇게 멀리까지 받는다(일). 한참 뒤(몇 년)의 날은 약속이 아니라 잘못 읽은 것으로 본다 */
+export const ONCE_HORIZON_DAYS = 800;
+
+/**
+ * 말한 날짜를 오늘(today, 사용자 시간대의 오늘) 기준 실제 하루로 푼다. 이미 지난 날·너무 먼 날·없는 날은 null.
+ * - 연도가 있으면 그 해의 그 날(음력이면 음력 연도의 그 날을 양력으로)
+ * - 연도가 없으면 오늘 이후(오늘 포함) 가장 가까운 그 날(양력·음력 모두)
+ */
+export function resolveOnce(spec: DateSpec, today: YMD, horizonDays = ONCE_HORIZON_DAYS): YMD | null {
+  if (!isValidSpec(spec)) return null;
+  let date: YMD | null;
+  if (typeof spec.year === "number") date = spec.calendar === "solar" ? { y: spec.year, m: spec.month, d: spec.day } : lunarToSolar(spec.year, spec.month, spec.day, !!spec.leap);
+  else date = nextOccurrence(spec, today)?.date ?? null;
+  if (!date) return null;
+  const left = diffDays(today, date);
+  return left >= 0 && left <= horizonDays ? date : null;
+}

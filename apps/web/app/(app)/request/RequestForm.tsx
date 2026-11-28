@@ -1,6 +1,6 @@
 "use client";
 
-import { ASK_DEFAULT_TOPICS, QUESTION_SECTION, SECTIONS, SECTIONS_BY_IMPORTANCE, aboutPrompt, askMinutes, defaultAskTopics, type AvatarConfig, type DailyQuestion, type Locale, type Section } from "@readme/core";
+import { ASK_DEFAULT_TOPICS, QUESTION_SECTION, SECTIONS, SECTIONS_BY_IMPORTANCE, aboutPrompt, askMinutes, pickAskTopics, type AvatarConfig, type DailyQuestion, type Locale, type Section } from "@readme/core";
 import { useEffect, useRef, useState } from "react";
 import { createRequest, type InviteState } from "@/app/actions/request";
 import { useT } from "@/components/editors/shared";
@@ -67,13 +67,12 @@ export function RequestForm({
 }) {
   const t = useT(locale);
   // 한 질문만 묻는 물어보기(question)는 항목을 고르지 않고 그 질문 하나만(서버가 그 질문이 속한 항목으로 저장한다)
-  // 그 밖에는 누구에게든 같은 규칙: 아직 안 적힌 것 중 중요한 것부터 3개까지만 골라 두고(나머지는 직접 고른다), 다 적혀 있으면 기본 항목
+  // 그 밖에는 누구에게든 같은 규칙: 아직 안 적힌 것 중 중요한 것부터 3개까지만 골라 두고(이미 아는 것은 처음부터 고르지 않는다, 나머지는 직접 고른다), 다 적혀 있을 때만 기본 항목
   const topicsFor = (p: AskPerson | null): Section[] => {
     if (question) return [QUESTION_SECTION[question]];
     if (focus) return [focus];
     if (xmas) return defaults;
-    const picked = p ? defaultAskTopics(p.missing) : [];
-    return picked.length ? picked : defaults;
+    return pickAskTopics(p ? p.missing : [], defaults);
   };
   const fixedPerson = fixed ? (people.find((p) => p.id === fixed) ?? null) : null;
   const [who, setWho] = useState<Who | null>(fixedPerson ? { kind: "person", person: fixedPerson } : initialName ? { kind: "new", name: initialName } : null);

@@ -74,7 +74,7 @@ export function summarize(section: Section, data: CardData[Section] | undefined,
     }
     case "dates": {
       const d = data as CardData["dates"];
-      return [d.birthday ? `${t("dates.birthday")} ${formatSpecFull(d.birthday, locale)}` : "", ...d.anniversaries.map((a) => `${a.label} ${formatSpec(a.spec, locale)}`)].filter(Boolean).join(and);
+      return [d.birthday ? `${t("dates.birthday")} ${formatSpecFull(d.birthday, locale)}` : "", ...d.anniversaries.map((a) => `${a.label} ${a.once ? formatSpecFull(a.spec, locale) : formatSpec(a.spec, locale)}`)].filter(Boolean).join(and);
     }
   }
 }

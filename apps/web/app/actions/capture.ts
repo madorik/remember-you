@@ -1,7 +1,7 @@
 "use server";
 
 import { track } from "@/lib/track";
-import { captureField, cleanMemo, clip, describeCapture, isSection, mergeCapture, mergeImport, NOTE_EFFECTS_MAX, parseEffects, recordEffect, revertEffects, sanitizeSection, splitMemo, translate, whyUnchanged, type CaptureOp, type CardData, type NoteEffect, type PartialCard, type Section } from "@readme/core";
+import { captureField, cleanMemo, clip, describeCapture, isSection, mergeCapture, mergeImport, mergeNoteEffects, parseEffects, recordEffect, revertEffects, sanitizeSection, splitMemo, translate, whyUnchanged, type CaptureOp, type CardData, type NoteEffect, type PartialCard, type Section } from "@readme/core";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { aiConfigured, classifyCapture, classifyImport, classifyImportImage, type CaptureItem, type ImageKind, type ImageReading, type ImportScope } from "@/lib/ai";
@@ -11,7 +11,7 @@ import { NEW_PEOPLE_MAX, nameKey, resolveCapture, resolveSaved, sameSectionValue
 import { markOnboarded } from "@/lib/onboarding";
 import { refundAi, reserveAi } from "@/lib/ai-quota";
 import type { Q } from "@/lib/db";
-import { displayName, listNotes, listPeopleLite, openNote, readCard, readContactCard, requireSession, sealNote, writeContactSection, writeSection, type Note, type Person, type Session } from "@/lib/data";
+import { displayName, listNotes, listPeopleLite, openNote, readCard, readContactCard, requireSession, sealNote, todayFor, writeContactSection, writeSection, type Note, type Person, type Session } from "@/lib/data";
 import { LIMITS } from "@/lib/data-core";
 import { jpegDataUrls } from "@/lib/image-form";
 import { isUuid } from "@/lib/uuid";
@@ -107,7 +107,8 @@ async function classify(raw: string, aboutId?: string, picked?: { id: string; la
   const about = aboutId ? people.find((p) => p.contactId === aboutId) : mentioned.length === 1 ? mentioned[0] : undefined;
   let items;
   try {
-    items = await classifyCapture(text, people.map(asCapture), locale, about ? asCapture(about) : null, mentioned.map(asCapture));
+    // 오늘은 그 사람 시간대로(메모에 '다음 주 토요일'이 있으면 그 오늘을 기준으로 날짜를 푼다)
+    items = await classifyCapture(text, people.map(asCapture), locale, about ? asCapture(about) : null, mentioned.map(asCapture), todayFor(s.profile));
   } catch (e) {
     // 불러 보지도 못하고 실패했으니 하루 한도는 돌려준다
     await refundAi(s.user.id, "capture");
@@ -306,7 +307,7 @@ async function apply(s: Session, people: Person[], rows: ResolvedCapture[], writ
       const row = live.get(who);
       const note = row ? openNote(row.payload, s.user.id, who) : null;
       if (!row || !note) continue; // 풀 수 없는 메모는 덮어쓰지 않는다
-      await q("update notes set payload = $2::jsonb where id = $1::uuid", [row.id, JSON.stringify(sealNote(s.user.id, who, note.body, [...note.effects, ...list].slice(0, NOTE_EFFECTS_MAX)))]);
+      await q("update notes set payload = $2::jsonb where id = $1::uuid", [row.id, JSON.stringify(sealNote(s.user.id, who, note.body, mergeNoteEffects(note.effects, list)))]);
     }
   });
   return { lines, undo, outcomes };
@@ -317,6 +318,7 @@ function committed(s: Session) {
   track("capture", { userId: s.user.id });
   revalidatePath("/people", "layout");
   revalidatePath("/home");
+  revalidatePath("/calendar");
   revalidatePath("/me");
 }
 
@@ -480,6 +482,29 @@ async function organizeMemo(s: Session, text: string, ids: string[], noteOf: Rea
     // JSON 한 줄로(객체를 그대로 찍으면 길어질 때 여러 줄로 갈라진다)
     console.info("[organize]", JSON.stringify({ result, ...stat, ms: Date.now() - t0 }));
   }
+}
+
+/**
+ * 고친 메모 하나를 그 사람 하나의 항목으로 다시 정리한다(메모 고치기 뒤, 응답 뒤(after)에 부른다): organizeMemo와 같은 길(한 사람·한 메모)이라
+ * 새로 더해진 것은 그 메모에 이미 남은 '더한 것' 뒤에 합쳐 기록되고(mergeNoteEffects: 같이 지우기·되돌리기 대상) 이미 있던 기록은 그대로다. 날짜(dates.plan 같은 한 번만 있는 일정)도 같은 흐름을 탄다.
+ * 글은 화면이 보낸 것이 아니라 DB에 있는 그 메모의 글(내가 쓴 메모만)을 읽어 쓴다 — 누가 이 함수를 직접 불러도 내 메모를 내 사람에게 다시 정리할 뿐이고, AI 하루 한도(reserveAi)를 같이 쓴다.
+ * 실패·AI 꺼짐·한도는 삼킨다(고친 글은 이미 저장됐다)
+ */
+export async function organizeNote(contactId: string, noteId: string): Promise<{ ok: boolean }> {
+  const s = await requireSession();
+  if (!isUuid(contactId) || !isUuid(noteId)) return { ok: false };
+  let body = "";
+  try {
+    body = await s.tx(async (q) => {
+      const row = await q.one<{ payload: unknown }>("select payload from notes where id = $1::uuid and contact_id = $2::uuid and author_id = $3", [noteId, contactId, s.user.id]);
+      return row ? (openNote(row.payload, s.user.id, contactId)?.body ?? "") : "";
+    });
+  } catch {
+    return { ok: false };
+  }
+  if (!body.trim()) return { ok: false };
+  await organizeMemo(s, body, [contactId], new Map([[contactId, noteId]]));
+  return { ok: true };
 }
 
 /**

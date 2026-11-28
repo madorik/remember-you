@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { PEOPLE_MAX, captureRequest, capturePeople, cleanCaptureItems, cleanDate, parseCapture, type CapturePerson } from "../capture-ai";
+import { PEOPLE_MAX, calendarGuide, captureRequest, capturePeople, cleanCaptureItems, cleanDate, cleanPlanDate, parseCapture, tidyImportItems, type CapturePerson } from "../capture-ai";
 
 const NOW = new Date(2026, 10, 18); // 2026-11-18
 
@@ -111,4 +111,86 @@ test("저장 단계로 되돌아온 항목은 모양을 다시 맞춘다: 모르
   assert.equal(cleanCaptureItems(Array.from({ length: 30 }, () => good), NOW).length, 12);
   // 값이 없는 줄이나 객체가 아닌 줄도 죽지 않는다
   assert.equal(cleanCaptureItems([null, 3, {}], NOW).length, 3);
+});
+
+// ── 한 번만 있는 일정(dates.plan) ──
+
+const TODAY = { y: 2026, m: 11, d: 28 }; // 토요일
+
+test("달력 안내: 오늘과 앞으로 세 주(월요일부터)를 요일과 함께 준다", () => {
+  const g = calendarGuide(TODAY);
+  assert.match(g, /^TODAY: 2026-11-28 Sat$/m);
+  assert.match(g, /^this week \(이번 주\): 2026-11-23 Mon, .*2026-11-28 Sat, 2026-11-29 Sun$/m);
+  assert.match(g, /^next week \(다음 주\): 2026-11-30 Mon, .*2026-12-05 Sat, 2026-12-06 Sun$/m);
+  assert.match(g, /^the week after next \(다다음 주\): 2026-12-07 Mon, .*2026-12-13 Sun$/m);
+  // 월요일이 오늘이면 그 주가 이번 주
+  assert.match(calendarGuide({ y: 2026, m: 11, d: 30 }), /^this week \(이번 주\): 2026-11-30 Mon/m);
+  // 일요일이 오늘이면 월요일은 엿새 전
+  assert.match(calendarGuide({ y: 2026, m: 11, d: 29 }), /^this week \(이번 주\): 2026-11-23 Mon/m);
+});
+
+test("요청: today를 주면 TODAY·CALENDAR가 들어가고, 안 주면 없다", () => {
+  const withToday = captureRequest("다음 주 토요일 꽃시장", [], "ko", "m", "low", null, [], TODAY);
+  assert.match(withToday.input, /TODAY: 2026-11-28 Sat/);
+  assert.match(withToday.input, /CALENDAR/);
+  assert.doesNotMatch(captureRequest("x", [], "ko").input, /TODAY|CALENDAR/);
+  assert.ok(withToday.instructions.includes("dates.plan"));
+  const schema = JSON.stringify(withToday.text.format.schema);
+  assert.ok(schema.includes("dates.plan"), "대상 목록에 한 번만 있는 일정 칸이 들어간다");
+});
+
+test("한 번만 있는 일정의 날짜: 연도가 없으면 오늘 이후 가장 가까운 날, 연도가 있으면 그 날(내년도 받는다)", () => {
+  assert.deepEqual(cleanPlanDate({ calendar: "solar", month: 12, day: 6, year: null }, TODAY), { calendar: "solar", month: 12, day: 6, year: 2026 });
+  assert.deepEqual(cleanPlanDate({ calendar: "solar", month: 3, day: 2, year: null }, TODAY), { calendar: "solar", month: 3, day: 2, year: 2027 });
+  assert.deepEqual(cleanPlanDate({ calendar: "solar", month: 1, day: 3, year: 2027 }, TODAY), { calendar: "solar", month: 1, day: 3, year: 2027 });
+  assert.deepEqual(cleanPlanDate({ calendar: "solar", month: 12, day: 6, year: 26 }, TODAY)?.year, 2026, "두 자리 연도");
+  assert.deepEqual(cleanPlanDate({ calendar: "solar", month: 11, day: 28, year: 2026 }, TODAY), { calendar: "solar", month: 11, day: 28, year: 2026 }, "오늘");
+});
+
+test("한 번만 있는 일정의 날짜: 지난 날·너무 먼 날·없는 날·숫자가 아닌 값은 버린다", () => {
+  for (const d of [
+    { calendar: "solar", month: 11, day: 27, year: 2026 },
+    { calendar: "solar", month: 12, day: 6, year: 2025 },
+    { calendar: "solar", month: 12, day: 6, year: 2031 },
+    { calendar: "solar", month: 4, day: 31, year: 2027 },
+    { calendar: "solar", month: "12", day: 6 },
+    null,
+    "2026-12-06",
+  ]) assert.equal(cleanPlanDate(d, TODAY), null, JSON.stringify(d));
+});
+
+test("응답 풀기: dates.plan 항목의 날짜는 오늘 기준으로 풀리고, 지난 일정은 날짜가 비어 적히지 않는다. 다른 칸의 날짜는 예전처럼", () => {
+  const items = parseCapture(
+    body([
+      item({ target: "dates.plan", label: "집들이", date: { calendar: "solar", month: 12, day: 6, year: null } }),
+      item({ target: "dates.plan", label: "작년 모임", date: { calendar: "solar", month: 12, day: 6, year: 2025 } }),
+      item({ target: "dates.birthday", date: { calendar: "solar", month: 3, day: 2, year: 2027 } }),
+    ]),
+    NOW,
+    12,
+    TODAY,
+  );
+  assert.deepEqual(items[0]!.date, { calendar: "solar", month: 12, day: 6, year: 2026 });
+  assert.equal(items[1]!.date, null);
+  assert.deepEqual(items[2]!.date, { calendar: "solar", month: 3, day: 2 }, "생일의 미래 연도는 예전처럼 버린다");
+});
+
+test("가져오기: 한 번만 있는 일정(약속)은 만들지 않는다", () => {
+  const plan = parseCapture(body([item({ target: "dates.plan", label: "집들이", date: { calendar: "solar", month: 12, day: 6, year: null } }), item({ target: "dates.anniversary", label: "결혼기념일", date: { calendar: "solar", month: 5, day: 3, year: null } })]), NOW, 12, TODAY);
+  assert.deepEqual(tidyImportItems(plan).map((i) => i.target), ["dates.anniversary"]);
+});
+
+test("한 번만 있는 일정 이름: 20자까지만, 식별 정보가 든 이름은 날짜를 비워 적지 않는다", () => {
+  const items = parseCapture(
+    body([
+      item({ target: "dates.plan", label: "아주아주아주아주아주아주아주아주 긴 일정 이름입니다", date: { calendar: "solar", month: 12, day: 6, year: null } }),
+      item({ target: "dates.plan", label: "집들이 010-1234-5678", date: { calendar: "solar", month: 12, day: 6, year: null } }),
+    ]),
+    NOW,
+    12,
+    TODAY,
+  );
+  assert.equal(Array.from(items[0]!.label ?? "").length, 20);
+  assert.ok(items[0]!.date);
+  assert.equal(items[1]!.date, null);
 });

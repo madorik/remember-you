@@ -7,6 +7,8 @@ import type { FolderView } from "@/lib/folders";
 export interface PeopleData {
   locale: Locale;
   rows: PersonRow[];
+  /** 최근 본 사람(contactId, 최대 6명, 가장 최근이 앞). 본 사람이 2명 미만이면 [] */
+  recent: string[];
   folders: FolderView[];
   meAvatar: AvatarConfig;
   /** 주소 ?pick=1: 고르기로 연다 */

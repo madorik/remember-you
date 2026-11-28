@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ASK_DEFAULT_TOPICS, INVITE_TTL_DAYS, INVITE_TTL_FALLBACK_DAYS, SHARE_TTL_DAYS, askMinutes, defaultAskTopics, questionSections, sanitizeQuestionIds, SECTIONS, translate } from "../index";
+import { ASK_DEFAULT_TOPICS, INVITE_TTL_DAYS, INVITE_TTL_FALLBACK_DAYS, SHARE_TTL_DAYS, askMinutes, defaultAskTopics, emptySections, pickAskTopics, questionSections, sanitizeQuestionIds, SECTIONS, translate, type PartialCard } from "../index";
 
 test("물어보기 기본 항목: 비어 있는 것 중 중요한 것부터 최대 3개", () => {
   assert.equal(ASK_DEFAULT_TOPICS, 3);
@@ -54,4 +54,21 @@ test("링크 미리보기 문구: 보낸 사람 말투로, 개수와 시간을 �
   // 가족 호칭이면 '님'을 빼고 조사를 맞춘다
   assert.equal(translate("ko", "answer.onlyFrom", { from: "엄마" }), "엄마만 볼 수 있어요");
   assert.equal(translate("en", "og.requestDesc", { n: 1, min: 1 }), "No login, 1 thing, about 1 min");
+});
+
+test("물어보기 처음 고르는 항목: 안 적은 항목이 먼저(중요한 순서 3개), 적은 항목은 빠진다", () => {
+  // 생일을 적은 사람: dates는 비지 않았으니 처음 고르지 않는다
+  const card: PartialCard = { dates: { birthday: { calendar: "solar", month: 3, day: 9 }, anniversaries: [] } };
+  const empty = emptySections(card, SECTIONS.filter((s) => s !== "pets"));
+  assert.equal(empty.includes("dates"), false);
+  assert.deepEqual(pickAskTopics(empty, ["dates", "safety", "taste"]), ["safety", "taste", "gifts"]);
+  // 카드에 있어도 비어 있으면 안 적은 항목
+  const hollow: PartialCard = { safety: { allergens: [], dislikes: [], diets: [], allergyNote: "" }, taste: { likes: ["단 것"] } as PartialCard["taste"] };
+  assert.deepEqual(emptySections(hollow, ["safety", "taste"]), ["safety"]);
+  // 안 적은 항목이 3개보다 적으면 그것만(아는 항목을 채워 넣지 않는다)
+  assert.deepEqual(pickAskTopics(["life", "culture"], ["dates", "safety", "taste"]), ["culture", "life"]);
+  assert.deepEqual(pickAskTopics(["life"], ["dates", "safety", "taste"]), ["life"]);
+  // 하나도 없을 때만 기본 항목, 아무것도 안 적은 새 사람은 중요한 순서 3개
+  assert.deepEqual(pickAskTopics([], ["dates", "safety", "taste"]), ["dates", "safety", "taste"]);
+  assert.deepEqual(pickAskTopics(emptySections({}, SECTIONS.filter((s) => s !== "pets")), ["gifts"]), ["dates", "safety", "taste"]);
 });

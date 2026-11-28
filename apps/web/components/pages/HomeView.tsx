@@ -1,4 +1,4 @@
-import { aboutPrompt, addDays, canAnswerOwn, daysOn, formatDayFull, formatDotted, formatMonthDay, formatSpec, holidayKey, mostRecentlyViewed, nextHoliday, NONE, NONE_LABEL, questionsLeft, sameYmd, solarToLunar, upcomingEvents, weekday, weekdayNames, yearEnd, type UpcomingEvent, type YMD } from "@readme/core";
+import { aboutPrompt, addDays, canAnswerOwn, daysOn, eventPath, formatDayFull, formatDotted, formatMonthDay, formatSpec, holidayKey, mostRecentlyViewed, nextHoliday, NONE, NONE_LABEL, questionsLeft, sameYmd, solarToLunar, upcomingEvents, weekday, weekdayNames, yearEnd, type UpcomingEvent, type YMD } from "@readme/core";
 import Link from "@/components/AppLink";
 import { Avatar } from "@/components/Avatar";
 import { Wordmark } from "@/components/chrome";
@@ -115,12 +115,27 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
   const nextPerson = next ? personOf(next.contactId) : null;
   // 같은 날 챙길 날이 여럿이면 모두 보인다. 얼굴·선물 힌트는 사람마다 하나
   const nextGroup = next ? events.filter((e) => e.daysUntil === next.daysUntil) : [];
-  const nextFaces = [...new Map(nextGroup.map((e) => [e.contactId, e])).values()];
+  // 사람마다 하나: 그 사람의 생일·기념일이 있으면 그것, 한 번만 있는 날(약속)뿐이면 그것(선물 힌트 단추는 선물 날에만)
+  const nextFaces = [
+    ...nextGroup
+      .reduce((m, e) => {
+        const cur = m.get(e.contactId);
+        if (!cur || (cur.once && !e.once)) m.set(e.contactId, e);
+        return m;
+      }, new Map<string, UpcomingEvent>())
+      .values(),
+  ];
   // 사람 기념일이 두 달 안에 하나도 없을 때만: 30일 안에 오는 명절·챙기는 날 중 가장 가까운 하나
   const holiday = next || xmas ? null : nextHoliday(today);
   const stampDays = next ? next.daysUntil : ((xmas ?? holiday)?.daysUntil ?? null);
   const holidayTitle = holiday ? t(holidayKey(holiday.id)) : "";
-  const hintHref = (e: UpcomingEvent) => `/people/${e.contactId}/reminder?kind=${e.kind}${e.label ? `&label=${encodeURIComponent(e.label)}` : ""}`;
+  // 생일·기념일 단추: 선물 힌트로. 한 번만 있는 날(약속)은 선물과 상관없으니 그 사람 메모장으로
+  const heroButton = (e: UpcomingEvent, o: { first?: boolean; small?: boolean } = {}) =>
+    e.once ? (
+      <HeroButton key={e.contactId} href={eventPath(e)} label={t("home.notebookFor", { name: e.name })} first={o.first} small={o.small} />
+    ) : (
+      <HeroButton key={e.contactId} href={eventPath(e)} label={o.small ? t("home.hintsFor", { name: e.name }) : t("home.hints")} first={o.first} small={o.small} />
+    );
   const remembered = nextFaces.length === 1 ? rememberedOf(nextPerson, locale) : [];
 
   // 오늘의 질문: 내가 등록한 사람 중 아직 답이 없는 칸 하나. 답은 그 사람 기록에 들어간다
@@ -175,7 +190,7 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
 
   const heroTitle = (text: string, size: number) => (
     <h2 className="hand leading-[1.05]" style={{ fontSize: size }}>
-      <span className="hl">{text}</span>
+      {text}
     </h2>
   );
 
@@ -226,9 +241,9 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
         inner={note ? <RememberedBox label={t("home.remembered")} text={note} /> : null}
       >
         {nextFaces.length > 1 ? (
-          nextFaces.map((e, i) => <HeroButton key={e.contactId} href={hintHref(e)} label={t("home.hintsFor", { name: e.name })} first={i === 0} small />)
+          nextFaces.map((e, i) => heroButton(e, { first: i === 0, small: true }))
         ) : (
-          <HeroButton href={hintHref(next)} label={t("home.hints")} />
+          heroButton(nextFaces[0] ?? next)
         )}
       </HeroFrame>
     );
@@ -246,7 +261,7 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
         }
         title={
           <h2 className="hand leading-[1.1]" style={{ fontSize: 21 }}>
-            <span className="hl">{t("home.yearEnd")}</span>
+            {t("home.yearEnd")}
           </h2>
         }
         // 답이 온 사람이 있으면 그 소식이 곧 문구(누가 답했는지), 아니면 감성 문구
@@ -310,7 +325,7 @@ export function HomeView({ locale, avatar, today, people, question: asked, quest
         }
         title={
           <h2 className="hand leading-[1.1]" style={{ fontSize: 21 }}>
-            <span className="hl">{t("home.newFriend")}</span>
+            {t("home.newFriend")}
           </h2>
         }
         // 사람은 있는데 날짜를 아는 사람이 없으면 생일·기념일을 물어볼 수도 있다

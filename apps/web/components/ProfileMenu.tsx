@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { signOut } from "@/app/actions/auth";
 import { Avatar } from "@/components/Avatar";
+import { clearAllDrafts, tabStore } from "@/lib/memo-draft";
 
 /**
  * 홈 오른쪽 위 내 얼굴: 누르면 내 프로필 / (관리자 계정이면 관리자) / 로그아웃 메뉴. 바깥을 누르거나 Esc면 닫힌다.
@@ -78,7 +79,7 @@ export function ProfileMenu({ avatar, admin = false, labels }: { avatar: AvatarC
               {labels.admin}
             </Link>
           ) : null}
-          <form action={signOut} className="border-t border-rule">
+          <form action={signOut} onSubmit={() => clearAllDrafts(tabStore())} className="border-t border-rule">
             <button role="menuitem" className="flex min-h-12 w-full items-center px-4 text-left text-[15.3px]">
               {labels.signOut}
             </button>

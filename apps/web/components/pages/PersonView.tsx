@@ -2,6 +2,7 @@ import { formatMonthDay, formatSpec, nextOccurrence, recordCompletion, solarToLu
 import Link from "@/components/AppLink";
 import { AskOnButton } from "@/app/(app)/people/[id]/AskOnButton";
 import { CompletionBar } from "@/app/(app)/people/[id]/CompletionBar";
+import { EffectToast } from "@/app/(app)/people/[id]/EffectToast";
 import { FavoriteStar } from "@/app/(app)/people/[id]/FavoriteStar";
 import { NameEditor } from "@/app/(app)/people/[id]/NameEditor";
 import { OrganizeRefresh } from "@/app/(app)/people/[id]/OrganizeRefresh";
@@ -23,6 +24,7 @@ import { SeeAnswers } from "@/components/SeeAnswers";
 import { TornTape } from "@/components/TornTape";
 import { personFolderLabels } from "@/lib/folders";
 import type { T } from "@/lib/i18n";
+import { defaultBookTab } from "@/lib/person-tab";
 import type { PersonData } from "@/lib/pages/person.data";
 import { makeT } from "@/lib/t";
 
@@ -44,6 +46,10 @@ export function PersonView({ locale, back, today, person: p, name, notes, tab, f
   const rateChips = rate.missing.map((section) => ({ section, label: t(`person.short.${section}` as "person.short.taste"), href: `/people/${p.contactId}/edit?open=${section}` }));
   const rateNames = rateChips.slice(0, 3).map((c) => c.label).join(locale === "ko" ? "·" : ", ");
   const rateMessage = !rateChips.length ? t("person.rate.done") : rateChips.length > 3 ? t("person.rate.leftMore", { names: rateNames, n: rateChips.length - 3 }) : t("person.rate.left", { names: rateNames });
+  // 말풍선 끝의 '물어보기': 물어보기 화면에는 항목을 여럿 미리 고르는 주소가 없어 가장 중요한 남은 항목 하나(topic)로 연다
+  const rateAsk = rateChips[0] ? { label: t("person.askMore"), href: `/request?to=${p.contactId}&topic=${rateChips[0].section}` } : null;
+  // 바인더가 처음 여는 칸: 주소(?tab=)가 먼저, 없으면 메모는 거의 없는데 기록이 풍부한 사람은 기억해 둔 것, 아니면 메모장
+  const defaultTab = defaultBookTab(notes.length, filled.length);
   const displayName = p.name || name;
 
   return (
@@ -90,6 +96,8 @@ export function PersonView({ locale, back, today, person: p, name, notes, tab, f
       <ViewBeacon contactId={p.contactId} />
       {/* 메모를 막 저장하고 왔으면 AI 정리가 끝날 즈음 화면을 다시 받아 온다 */}
       <OrganizeRefresh contactId={p.contactId} />
+      {/* 정리가 끝나 방금 저장한 메모가 더한 것이 보이면 한 번 알리고 되돌리기를 준다 */}
+      <EffectToast contactId={p.contactId} locale={locale} notes={notes.map((n) => ({ id: n.id, createdAt: n.createdAt, adds: n.adds }))} />
       {/* 온보딩에서 첫 메모를 저장하고 막 왔을 때(?welcome=1) 한 번 뜨는 알림 */}
       <WelcomeToast text={t("person.welcome", { name: displayName })} />
       {p.askOff ? (
@@ -148,7 +156,7 @@ export function PersonView({ locale, back, today, person: p, name, notes, tab, f
               ) : null}
             </span>
           ) : null}
-          <CompletionBar pct={rate.pct} label={t("person.rate", { pct: rate.pct })} message={rateMessage} chips={rateChips} />
+          <CompletionBar pct={rate.pct} label={t("person.rate", { pct: rate.pct })} message={rateMessage} chips={rateChips} ask={rateAsk} />
         </div>
       </section>
 
@@ -175,8 +183,10 @@ export function PersonView({ locale, back, today, person: p, name, notes, tab, f
         name={displayName}
         locale={locale}
         today={today}
-        notes={notes.map((n) => ({ id: n.id, body: n.body, date: n.date, adds: n.adds }))}
-        initialTab={tab}
+        notes={notes.map((n) => ({ id: n.id, body: n.body, date: n.date, adds: n.adds, fx: n.fx }))}
+        initialTab={tab ?? defaultTab}
+        defaultTab={defaultTab}
+        auto={tab == null}
         canWrite={ai}
         labels={{
           memo: t("memo.tab"),
@@ -189,6 +199,11 @@ export function PersonView({ locale, back, today, person: p, name, notes, tab, f
           delWith: t("memo.deleteWith"),
           edit: t("common.edit"),
           error: t("common.error"),
+          fix: t("memo.fix"),
+          save: t("common.save"),
+          cancel: t("common.cancel"),
+          search: t("memo.search"),
+          searchEmpty: t("memo.searchEmpty"),
         }}
         remembered={
           <RememberedList

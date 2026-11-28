@@ -1,5 +1,5 @@
 import "server-only";
-import { eventTitle, nextOccurrence, type DateSpec } from "@readme/core";
+import { eventTitle, nextDay, type DateSpec } from "@readme/core";
 import { notFound } from "next/navigation";
 import { parseSkip } from "@/components/GiftPicksView";
 import { displayName, listPeople, requireSession, todayFor, unreadAnswers } from "@/lib/data";
@@ -32,7 +32,7 @@ export async function startPersonReminder({ params, searchParams: sp }: PageInpu
   const eventKnown = xmas || sp.kind === "birthday" || sp.kind === "anniversary";
   const anniversary = !xmas && sp.kind === "anniversary" ? dates?.anniversaries.find((a) => a.label === sp.label) : undefined;
   const spec: DateSpec | null = xmas ? { calendar: "solar", month: 12, day: 25 } : (anniversary?.spec ?? dates?.birthday ?? null);
-  const next = spec ? nextOccurrence(spec, today) : null;
+  const next = spec ? nextDay(spec, today, anniversary?.once === true) : null;
   const event = xmas
     ? t("reminder.xmasEvent")
     : spec && next

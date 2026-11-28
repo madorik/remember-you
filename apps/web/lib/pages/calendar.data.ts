@@ -14,7 +14,8 @@ export interface CalPerson {
   name: string;
   avatar: AvatarConfig | null;
   birthday: DateSpec | null;
-  anniversaries: { label: string; spec: DateSpec }[];
+  /** once: 한 번만 있는 날(약속·집들이 …) */
+  anniversaries: { label: string; spec: DateSpec; once?: true }[];
 }
 
 export interface CalendarData {

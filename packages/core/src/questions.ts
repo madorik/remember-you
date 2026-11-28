@@ -193,18 +193,35 @@ export function isCloseEnough(p: { askOff: boolean; favorite: boolean; closeFold
  * 가장 최근에 사람 화면을 연 사람: 연 날(viewedOn 'YYYY-MM-DD')이 늦은 순 → 연 날 수가 많은 순 → 받은 순서(앞선 사람).
  * 연 적이 없는 사람(viewedOn 없음)은 맨 뒤. 목록이 비면 null
  */
-export function mostRecentlyViewed<T extends { viewedOn: string | null; viewDays: number }>(list: readonly T[]): T | null {
+export function mostRecentlyViewed<T extends ViewedPerson>(list: readonly T[]): T | null {
   let best: T | null = null;
   for (const p of list) {
-    if (!best) {
-      best = p;
-      continue;
-    }
-    const a = p.viewedOn ?? "";
-    const b = best.viewedOn ?? "";
-    if (a > b || (a === b && p.viewDays > best.viewDays)) best = p;
+    if (!best || viewedLater(p, best)) best = p;
   }
   return best;
+}
+
+interface ViewedPerson {
+  viewedOn: string | null;
+  viewDays: number;
+}
+
+/** a가 b보다 나중에(같은 날이면 더 많이) 열린 사람인가 */
+function viewedLater(a: ViewedPerson, b: ViewedPerson): boolean {
+  const x = a.viewedOn ?? "";
+  const y = b.viewedOn ?? "";
+  return x > y || (x === y && a.viewDays > b.viewDays);
+}
+
+/**
+ * 사람 화면을 연 적 있는 사람을 mostRecentlyViewed와 같은 순서(늦게 연 날 → 연 날 수 → 받은 순서)로 최대 limit명.
+ * 연 적이 없는 사람(viewedOn 없음)은 넣지 않는다
+ */
+export function recentlyViewed<T extends ViewedPerson>(list: readonly T[], limit: number): T[] {
+  return list
+    .filter((p) => p.viewedOn)
+    .sort((a, b) => (viewedLater(a, b) ? -1 : viewedLater(b, a) ? 1 : 0))
+    .slice(0, Math.max(0, limit));
 }
 
 /** 질문에 답이 들어갈 항목(물어보기로 그 항목만 물어볼 때) */

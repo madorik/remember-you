@@ -57,7 +57,7 @@ export function sectionShareLines(section: Section, card: PartialCard, locale: L
     case "dates": {
       const d = card.dates!;
       if (d.birthday) out.push(line(t("dates.birthday"), formatSpecFull(d.birthday, locale)));
-      for (const a of d.anniversaries) out.push(line(a.label, formatSpec(a.spec, locale)));
+      for (const a of d.anniversaries) out.push(line(a.label, a.once ? formatSpecFull(a.spec, locale) : formatSpec(a.spec, locale)));
       break;
     }
     case "safety": {

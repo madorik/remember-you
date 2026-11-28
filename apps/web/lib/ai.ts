@@ -1,5 +1,5 @@
 import "server-only";
-import type { Locale } from "@readme/core";
+import type { Locale, YMD } from "@readme/core";
 import { IMPORT_ITEMS_MAX, captureRequest, importImageRequest, importRequest, parseCapture, parseImportImage, parseTranscript, transcribeImageRequest, type CaptureItem, type CapturePerson, type ImageKind, type ImageReading, type ImageTranscript, type ImportScope } from "./capture-ai";
 
 // 말로 적기: 한 문장을 (누구, 어느 칸, 값) 여러 개로 나눈다. OpenAI Responses API + JSON 스키마(구조화 출력). 요청 몸·응답 풀기는 capture-ai.ts.
@@ -17,19 +17,19 @@ function captureEffort(): "none" | "low" | "medium" | "high" {
   return v === "none" || v === "low" || v === "medium" || v === "high" ? v : "medium";
 }
 
-/** 문장 하나를 나눈다. 실패하면 throw */
-export async function classifyCapture(text: string, people: CapturePerson[], locale: Locale, about: CapturePerson | null = null, mentioned: CapturePerson[] = []): Promise<CaptureItem[]> {
+/** 문장 하나를 나눈다. today는 사용자 시간대의 오늘('다음 주 토요일'을 날짜로 풀 기준, 없으면 한 번만 있는 일정은 만들지 않는다). 실패하면 throw */
+export async function classifyCapture(text: string, people: CapturePerson[], locale: Locale, about: CapturePerson | null = null, mentioned: CapturePerson[] = [], today: YMD | null = null): Promise<CaptureItem[]> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error("ai_off");
   const base = (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/+$/, "");
   const res = await fetch(`${base}/responses`, {
     method: "POST",
     headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
-    body: JSON.stringify(captureRequest(text, people, locale, process.env.OPENAI_MODEL || "gpt-6-luna", captureEffort(), about, mentioned)),
+    body: JSON.stringify(captureRequest(text, people, locale, process.env.OPENAI_MODEL || "gpt-6-luna", captureEffort(), about, mentioned, today)),
     signal: AbortSignal.timeout(25_000),
   });
   if (!res.ok) throw new Error(`ai_http_${res.status}`);
-  return parseCapture(await res.json());
+  return parseCapture(await res.json(), new Date(), 12, today ?? undefined);
 }
 
 /** 메모 가져오기의 추론 강도: OPENAI_IMPORT_EFFORT(none·low·medium·high). 기본 low(긴 글을 조각마다 훑는 일이라 말로 적기보다 가볍게) */

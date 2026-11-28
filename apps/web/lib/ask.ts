@@ -1,7 +1,7 @@
 import "server-only";
 import { QUESTIONS, QUESTION_SECTION, applyAnswer, canAnswerOwn, hashToken, isLocale, isSection, questionSections, sanitizeAvatar, sanitizeQuestionIds, sanitizeSection, sanitizeSections, type AvatarConfig, type DailyQuestion, type PartialCard, type Section } from "@readme/core";
 import { cache } from "react";
-import { keepAnswered, keepAskerWishes, prefillForRecipient } from "./ask-core";
+import { keepAnswered, keepAskerPlans, keepAskerWishes, prefillForRecipient } from "./ask-core";
 import { aad, open } from "./crypto";
 import { isLockedPayload, LIMITS } from "./data-core";
 import { openContactSections, openPrefill, sealContactSections, sealPrefill, type Session } from "./data";
@@ -128,6 +128,11 @@ export async function answerAsk(
       if (answer.gifts) {
         const existing = openContactSections(row.inviter_id!, row.contact_id!, { gifts: mine?.sections?.gifts }).gifts;
         stored.gifts = sanitizeSection("gifts", keepAskerWishes(answer.gifts, existing));
+      }
+      // 생일·기념일 칸은 내가 적어 둔 한 번만 있는 날(약속)을 지킨다
+      if (answer.dates) {
+        const existing = openContactSections(row.inviter_id!, row.contact_id!, { dates: mine?.sections?.dates }).dates;
+        stored.dates = sanitizeSection("dates", keepAskerPlans(answer.dates, existing));
       }
       await q("select submit_request_answer($1, $2, $3, $4)", [hash, JSON.stringify(sealContactSections(row.inviter_id!, row.contact_id!, stored)), consent, answererId]);
       return { ok: true as const, answer, inviter: row.inviter_id!, name: (row.recipient_name ?? "").trim(), contactId: row.contact_id! };

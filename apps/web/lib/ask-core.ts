@@ -1,4 +1,4 @@
-import { isEmptySection, type GiftsData, type PartialCard, type Section, type WishItem } from "@readme/core";
+import { isEmptySection, type DatesData, type GiftsData, type PartialCard, type Section, type WishItem } from "@readme/core";
 
 // 물어보기에서 서버 전용 모듈 없이 시험할 수 있는 순수 함수
 
@@ -8,12 +8,36 @@ import { isEmptySection, type GiftsData, type PartialCard, type Section, type Wi
  * 선물 칸에서 상대가 맞는지 확인할 수 있는 건 상품권·피하고 싶은 것·좋아하는 브랜드뿐. 그것도 없으면 칸을 통째로 뺀다(빈 칸을 '맞아요?'로 묻지 않게)
  */
 export function prefillForRecipient(card: PartialCard): PartialCard {
-  const g = card.gifts;
-  if (!g) return card;
+  const rest = withoutPlans(card);
+  const g = rest.gifts;
+  if (!g) return rest;
+  const out = { ...rest };
+  delete out.gifts;
+  if (g.giftCard == null && !g.skip.length && !g.brands.length) return out;
+  return { ...out, gifts: { ...g, wishlist: [] } };
+}
+
+/**
+ * 한 번만 있는 날(약속·집들이 …)은 상대에게 보이지 않게 뺀다: 상대에게 말 안 한 약속(깜짝 파티 같은)이 새면 안 된다. 생일·해마다 도는 기념일만 남기고, 그것도 없으면 칸째 뺀다
+ */
+function withoutPlans(card: PartialCard): PartialCard {
+  const d = card.dates;
+  if (!d?.anniversaries.some((a) => a.once)) return card;
   const rest = { ...card };
-  delete rest.gifts;
-  if (g.giftCard == null && !g.skip.length && !g.brands.length) return rest;
-  return { ...rest, gifts: { ...g, wishlist: [] } };
+  const dates = { ...d, anniversaries: d.anniversaries.filter((a) => !a.once) };
+  if (isEmptySection("dates", dates)) delete rest.dates;
+  else rest.dates = dates;
+  return rest;
+}
+
+/**
+ * 상대가 생일·기념일 칸에 답하면 칸 전체가 새 값으로 바뀌는데, 상대는 내 한 번만 있는 날(약속)을 보지 못했으니(prefillForRecipient) 그냥 두면 사라진다.
+ * 내가 적어 둔 약속은 그대로 두고, 상대가 적은 기념일에서는 한 번만 있는 날을 받지 않는다(약속은 내 메모로만 생긴다)
+ */
+export function keepAskerPlans(answer: DatesData, existing: DatesData | null | undefined): DatesData {
+  const plans = (existing?.anniversaries ?? []).filter((a) => a.once);
+  if (!plans.length && !answer.anniversaries.some((a) => a.once)) return answer;
+  return { ...answer, anniversaries: [...answer.anniversaries.filter((a) => !a.once), ...plans] };
 }
 
 const wishKey = (w: WishItem) => `${w.title}\n${w.url}`;

@@ -6,7 +6,8 @@ import { Client } from "pg";
 import { aad, sealWith } from "../lib/crypto-core";
 
 // 사람 화면 프로필 카드의 '기억해 둔 것 작성률' 막대(app/(app)/people/[id]/CompletionBar.tsx).
-// 분모는 오늘의 질문이 묻는 칸 11개(packages/core recordCompletion). 사람 기록은 DB에 직접 심는다(진짜와 같은 암호화).
+// 분모는 오늘의 질문이 묻는 칸 11개 + 생일·알레르기·사이즈·반려동물 4칸 = 15(packages/core recordCompletion). 사람 기록은 DB에 직접 심는다(진짜와 같은 암호화).
+// 생일·사이즈 같은 질문 밖 항목과 말풍선의 물어보기 링크는 person-book.spec.ts에서 시험한다.
 
 const ENV = readFileSync(resolve(process.cwd(), ".env.local"), "utf8");
 const DB_URL = /^DATABASE_URL=(.*)$/m.exec(ENV)?.[1]?.trim();
@@ -72,8 +73,8 @@ test("작성률 막대: 빈 사람은 0%, 눌러 말풍선을 열면 남은 항�
   await bar(page, "0").tap();
   await expect(bar(page, "0")).toHaveAttribute("aria-expanded", "true");
   await expect(bubble(page)).toBeVisible();
-  await expect(bubble(page).getByText("음식·선물·취향 외 2개 항목 채우기가 남았어요")).toBeVisible();
-  await expect(bubble(page).getByRole("link")).toHaveText(["음식", "선물", "취향", "문화", "생활"]);
+  await expect(bubble(page).getByText("생일·알레르기·음식 외 6개 항목 채우기가 남았어요")).toBeVisible();
+  await expect(bubble(page).getByRole("link")).toHaveText(["생일", "알레르기", "음식", "선물", "사이즈", "취향", "문화", "생활", "반려동물", "물어보기"]);
   await expect(bubble(page).getByRole("link", { name: "선물" })).toHaveAttribute("href", `/people/${contactId}/edit?open=gifts`);
   // 화면 밖으로 나가지 않는다
   const vw = page.viewportSize()!.width;
@@ -99,20 +100,25 @@ test("작성률 막대: 빈 사람은 0%, 눌러 말풍선을 열면 남은 항�
   await bubble(page).getByRole("link", { name: "취향" }).tap();
   await expect(page).toHaveURL(new RegExp(`/people/${contactId}/edit\\?open=favorites`));
 
-  // 오늘의 질문과 같은 칸(음료·매운맛)에 답이 들어가면 오른다: 2 / 11 = 18%, 입맛은 다 차서 남은 항목에서 빠진다
+  // 오늘의 질문과 같은 칸(음료·매운맛)에 답이 들어가면 오른다: 2 / 15 = 13%, 입맛은 다 차서 남은 항목에서 빠진다
   await putSection(author, contactId, "taste", { ...emptySection("taste"), drinks: "라떼", spicy: 2 });
   await page.goto(`/people/${contactId}`);
-  await expect(bar(page, "18")).toBeVisible();
-  await bar(page, "18").tap();
-  await expect(bubble(page).getByText("선물·취향·문화 외 1개 항목 채우기가 남았어요")).toBeVisible();
-  await expect(bubble(page).getByRole("link")).toHaveText(["선물", "취향", "문화", "생활"]);
-  await shot(page, "rate-bubble-18");
+  await expect(bar(page, "13")).toBeVisible();
+  await bar(page, "13").tap();
+  await expect(bubble(page).getByText("생일·알레르기·선물 외 5개 항목 채우기가 남았어요")).toBeVisible();
+  await expect(bubble(page).getByRole("link")).toHaveText(["생일", "알레르기", "선물", "사이즈", "취향", "문화", "생활", "반려동물", "물어보기"]);
+  await shot(page, "rate-bubble-13");
 
   // '없어요'로 답한 칸도 채운 것이고, 모든 칸을 채우면 100%: 말풍선은 한 줄뿐
   await putSection(author, contactId, "gifts", { ...emptySection("gifts"), giftCard: "no" });
   await putSection(author, contactId, "life", { ...emptySection("life"), seasons: ["none"] });
   await putSection(author, contactId, "favorites", { ...emptySection("favorites"), scent: "없음", flowers: "없음", patterns: ["none"], metals: ["none"], styles: ["none"] });
   await putSection(author, contactId, "culture", { ...emptySection("culture"), musicGenres: ["none"], movieGenres: ["none"] });
+  // 질문이 묻지 않는 항목도 채워야 100%: 생일 · 알레르기 없음 · 사이즈 · 반려동물 없음
+  await putSection(author, contactId, "dates", { birthday: { calendar: "solar", month: 3, day: 14 }, anniversaries: [] });
+  await putSection(author, contactId, "safety", { ...emptySection("safety"), allergens: ["none"] });
+  await putSection(author, contactId, "sizes", { ...emptySection("sizes"), shoe: 245 });
+  await putSection(author, contactId, "pets", { pets: [], none: true });
   await page.goto(`/people/${contactId}`);
   await expect(bar(page, "100")).toBeVisible();
   await bar(page, "100").tap();
@@ -147,7 +153,7 @@ test("작성률 막대: 마우스를 올리면 말풍선이 뜨고(칩으로 옮
   await expect(bar(page, "0")).toBeFocused();
   await expect(bubble(page)).toBeVisible();
   await page.keyboard.press("Tab");
-  await expect(bubble(page).getByRole("link", { name: "음식" })).toBeFocused();
+  await expect(bubble(page).getByRole("link", { name: "생일" })).toBeFocused(); // 맨 앞 칩(가장 중요한 남은 항목)
   await expect(bubble(page)).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(bubble(page)).toBeHidden();

@@ -43,6 +43,8 @@ interface Labels {
   folders: string;
   /** 즐겨찾기 구역 제목(폴더 위, 접고 펴는) */
   favorites: string;
+  /** 찾기 칸 밑 '최근 본 사람' 줄 제목 */
+  recent: string;
   /** 아래 목록 제목: 폴더 없음 */
   unfiled: string;
   /** 찾기 칸: "이름이나 태그로 찾기" */
@@ -136,6 +138,7 @@ const LAZY_ROW = "[content-visibility:auto] [contain-intrinsic-size:auto_57px]";
 export function PeopleBoard({
   locale,
   rows,
+  recent,
   folders,
   meAvatar,
   initialPick,
@@ -148,6 +151,8 @@ export function PeopleBoard({
 }: {
   locale: Locale;
   rows: PersonRow[];
+  /** 최근 본 사람 contactId(가장 최근이 앞, 본 사람이 2명 미만이면 비어 있다) */
+  recent: string[];
   folders: FolderView[];
   meAvatar: AvatarConfig | null;
   initialPick: boolean;
@@ -246,6 +251,8 @@ export function PeopleBoard({
   const few = rows.length > 0 && rows.length <= FEW_PEOPLE;
 
   const byId = new Map(rows.map((r) => [r.contactId, r]));
+  // 찾기 칸 밑 '최근 본 사람'(폴더 안에 있어도 한 번에 간다): 고르는 중·찾는 중에는 숨긴다
+  const recentRows = recent.map((id) => byId.get(id)).filter((r): r is PersonRow => !!r);
   const facesOf = (f: FolderView) =>
     membersOf(f)
       .map((id) => byId.get(id))
@@ -459,6 +466,23 @@ export function PeopleBoard({
         </div>
       ) : null}
 
+      {/* 최근 본 사람: 둥근 얼굴 + 짧은 이름 한 줄(가로로 밀린다). 누르면 그 사람 화면 */}
+      {picking || searching || recentRows.length < 2 ? null : (
+        <section aria-label={labels.recent} className="relative pt-4">
+          <h2 className="hand px-5 text-[16.2px] leading-none">{labels.recent}</h2>
+          <ul className="mt-1.5 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {recentRows.map((r) => (
+              <li key={r.contactId} className="w-[54px] shrink-0">
+                <Link href={`/people/${r.contactId}`} className="flex min-h-[72px] flex-col items-center gap-1 pt-1.5 active:opacity-70">
+                  <Avatar config={r.avatar} size={44} label={r.name} decorative />
+                  <span className="hand w-full truncate text-center text-[15.3px] leading-[1.1]">{r.name}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {/* 물어보기: 찾기 칸 밑 한 줄(카드 전체를 누른다). 점선 카드 + 편지 든 캐릭터 + 고르게 두 줄 + 물어보기 알약. 찾는 중·선택 중에는 숨긴다 */}
       {picking || searching || !rows.length ? null : (
         <Link
@@ -507,7 +531,7 @@ export function PeopleBoard({
                 >
                   <FolderMini color={f.color} size={18} />
                   {f.name}
-                  <span className="num text-[12.8px] text-muted">{ids.length}</span>
+                  <span className={`num text-[12.8px] ${all ? "text-ink-2" : "text-muted"}`}>{ids.length}</span>
                 </button>
               );
             })}

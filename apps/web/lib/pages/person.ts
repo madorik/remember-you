@@ -3,6 +3,7 @@ import { describeEffect, revertEffects, todayIn, type EffectLine, type Locale, t
 import { notFound } from "next/navigation";
 import { aiConfigured } from "@/lib/ai";
 import { displayName, folderViews, listFolders, listNotes, listPeople, requireSession, todayFor, unreadAnswers, type Note } from "@/lib/data";
+import { parseBookTab } from "@/lib/person-tab";
 import { makeT } from "@/lib/t";
 import type { PersonData } from "./person.data";
 import type { PageInput } from "./routes";
@@ -46,8 +47,8 @@ export async function loadPerson({ params, searchParams: sp }: PageInput): Promi
     today,
     person: { contactId: p.contactId, personId: p.personId, name: p.name, nickname: p.nickname, avatar: p.avatar, card: p.card, favorite: p.favorite, askOff: p.askOff, folderIds: p.folderIds, answered: p.answered },
     name,
-    notes: notes.map((n) => ({ id: n.id, label: n.label, body: n.body, createdAt: n.createdAt, date: todayIn(s.profile.timeZone, new Date(n.createdAt)), adds: addedBy(n, notes, p.card, locale) })),
-    tab: sp.tab === "remembered" ? "remembered" : "memo",
+    notes: notes.map((n) => ({ id: n.id, label: n.label, body: n.body, createdAt: n.createdAt, date: todayIn(s.profile.timeZone, new Date(n.createdAt)), adds: addedBy(n, notes, p.card, locale), fx: n.effects.length })),
+    tab: parseBookTab(sp.tab),
     folders: folderViews(folders, people, t),
     answered: answered.length > 0,
     waiting,

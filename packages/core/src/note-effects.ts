@@ -30,6 +30,16 @@ function eq(a: unknown, b: unknown): boolean {
   return stable(a) === stable(b);
 }
 
+/**
+ * 메모에 이미 남은 일(existing) 뒤에 이번 정리가 한 일(added)을 합친다. 이미 있는 일은 그대로 두고(순서도 그대로라 앞쪽 몇 개가 '그 전 일'로 남는다),
+ * 똑같은 일(같은 칸·같은 모양·같은 값)은 다시 넣지 않는다 — 고친 메모를 다시 정리할 때 '다시 말했다' 표시가 쌓이지 않게. 한도(NOTE_EFFECTS_MAX)를 넘는 뒤쪽은 버린다
+ */
+export function mergeNoteEffects(existing: readonly NoteEffect[], added: readonly NoteEffect[]): NoteEffect[] {
+  const out = [...existing];
+  for (const e of added) if (!out.some((x) => eq(x, e))) out.push(e);
+  return out.slice(0, NOTE_EFFECTS_MAX);
+}
+
 type Form = "items" | "one" | "anniversary" | "pet";
 
 /** 이 칸에 이 말을 합치면 어떤 모양의 일이 되나(글 한 줄은 이어 붙이면 조각 더하기, 바꾸면 한 칸짜리) */
@@ -71,6 +81,8 @@ function oneOf(field: CaptureField, data: unknown): unknown {
 
 const petsOf = (data: unknown): Pet[] => ((data as { pets?: Pet[] } | null | undefined)?.pets ?? []).slice();
 const anniversariesOf = (data: unknown): Anniversary[] => ((data as { anniversaries?: Anniversary[] } | null | undefined)?.anniversaries ?? []).slice();
+/** 같은 기념일인가: 이름·날짜가 같고, 한 번만 있는 날인지도 같다 */
+const sameAnn = (a: Anniversary, b: Anniversary) => same(a.label, b.label) && eq(a.spec, b.spec) && !!a.once === !!b.once;
 
 /**
  * 말 하나(value·op)가 칸(before)에 합쳐진 일을 기록할 모양으로. merged는 mergeCapture가 돌려준 합친 뒤의 칸(합칠 게 없었으면 null).
@@ -107,12 +119,14 @@ export function recordEffect(field: CaptureField, value: CaptureValue, op: Captu
     case "anniversary": {
       const was = anniversariesOf(before);
       if (merged) {
-        const next = anniversariesOf(merged).find((a) => !was.some((b) => same(a.label, b.label) && eq(a.spec, b.spec)));
+        const now = anniversariesOf(merged);
+        const next = now.find((a) => !was.some((b) => sameAnn(a, b)));
         if (!next) return null;
-        return { f: field.key, t: "one", next, prev: was.find((b) => same(b.label, next.label)) ?? null };
+        // 바뀐 전 값: 같은 이름(한 번만 있는 날은 같은 종류)의 것 중 이 말로 없어진 것
+        return { f: field.key, t: "one", next, prev: was.find((b) => !!b.once === !!next.once && same(b.label, next.label) && !now.some((a) => sameAnn(a, b))) ?? null };
       }
-      const next = stated ? anniversariesOf(stated)[0] : undefined;
-      return next && anniversariesOf(prior).some((b) => same(b.label, next.label) && eq(b.spec, next.spec)) ? { f: field.key, t: "one", next, ok: 1 } : null;
+      const next = stated ? anniversariesOf(stated).find((a) => !!a.once === !!field.once) : undefined;
+      return next && anniversariesOf(prior).some((b) => sameAnn(b, next)) ? { f: field.key, t: "one", next, ok: 1 } : null;
     }
     case "pet": {
       const was = petsOf(before);
@@ -149,8 +163,8 @@ export function whyUnchanged(field: CaptureField, value: CaptureValue, op: Captu
     case "one":
       return eq(oneOf(field, was), oneOf(field, stated)) ? "same" : "capped";
     case "anniversary": {
-      const next = anniversariesOf(stated)[0];
-      return next && anniversariesOf(was).some((b) => same(b.label, next.label) && eq(b.spec, next.spec)) ? "same" : "capped";
+      const next = anniversariesOf(stated).find((a) => !!a.once === !!field.once);
+      return next && anniversariesOf(was).some((b) => sameAnn(b, next)) ? "same" : "capped";
     }
     case "pet": {
       const said = petsOf(stated)[0];

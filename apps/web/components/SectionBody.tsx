@@ -28,8 +28,9 @@ import {
   describeShoe,
   describeTop,
   formatSpec,
+  formatSpecFull,
   monthName,
-  nextOccurrence,
+  nextDay,
 } from "@readme/core";
 import type { T } from "@/lib/i18n";
 import { ChiliMeter } from "./Chili";
@@ -75,17 +76,17 @@ function CalendarLeaf({ m, d, locale }: { m: number; d: number; locale: Locale }
 /** 생일·기념일: 작은 달력 + '양력 5월 3일'(기념일은 이름을 앞에). 날마다 한 줄 */
 function DateLines({ dates, today, locale }: { dates: DatesData | undefined; today: YMD; locale: Locale }) {
   const items = [
-    ...(dates?.birthday ? [{ label: "", spec: dates.birthday }] : []),
-    ...(dates?.anniversaries ?? []).map((a) => ({ label: a.label, spec: a.spec })),
+    ...(dates?.birthday ? [{ label: "", spec: dates.birthday, once: false }] : []),
+    ...(dates?.anniversaries ?? []).map((a) => ({ label: a.label, spec: a.spec, once: a.once === true })),
   ].slice(0, 4);
   return (
     <ul className="flex flex-col gap-1.5">
       {items.map((item, i) => {
-        const next = nextOccurrence(item.spec, today);
+        const next = nextDay(item.spec, today, item.once);
         return (
           <li key={i} className="flex items-center gap-2">
             <CalendarLeaf m={next ? next.date.m : item.spec.month} d={next ? next.date.d : item.spec.day} locale={locale} />
-            <span className="hand-written min-w-0 text-[18.6px] leading-[1.1]">{[item.label, formatSpec(item.spec, locale)].filter(Boolean).join(" · ")}</span>
+            <span className="hand-written min-w-0 text-[18.6px] leading-[1.1]">{[item.label, item.once ? formatSpecFull(item.spec, locale) : formatSpec(item.spec, locale)].filter(Boolean).join(" · ")}</span>
           </li>
         );
       })}

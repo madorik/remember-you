@@ -6,6 +6,7 @@ import {
   daysInMonth,
   daysOn,
   diffDays,
+  eventPath,
   formatDotted,
   formatSpec,
   holidayRuns,
@@ -43,7 +44,8 @@ const MAX_YEAR = 2099;
 const inRange = (v: Month) => v.y >= MIN_YEAR && v.y <= MAX_YEAR;
 
 /** 그 날의 선물 힌트 화면(홈 '선물 힌트 보기'와 같은 곳) */
-const hintHref = (e: UpcomingEvent) => `/people/${e.contactId}/reminder?kind=${e.kind}${e.label ? `&label=${encodeURIComponent(e.label)}` : ""}`;
+// 생일·기념일은 선물 힌트로, 한 번만 있는 날(약속)은 그 사람 화면으로
+const hintHref = eventPath;
 
 /** 선물을 챙기는 날(명절·크리스마스·어버이날 같은 홈의 '챙기는 날', 손그림이 있는 날): 누르면 사람을 골라 선물 고르기로 */
 const GIFT_DAYS = new Set(["seollal", "chuseok", "christmas", "childrensDay", "parentsDay", "teachersDay", "valentine", "whiteDay", "pepero"]);

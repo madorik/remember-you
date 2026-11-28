@@ -2,6 +2,7 @@ import "server-only";
 import { personRows } from "@/components/PeopleList";
 import { aiConfigured } from "@/lib/ai";
 import { folderViews, listFolders, listPeople, requireSession, todayFor } from "@/lib/data";
+import { recentIds } from "@/lib/recent-people";
 import { makeT } from "@/lib/t";
 import type { PeopleData } from "./people.data";
 import type { PageInput } from "./routes";
@@ -16,6 +17,7 @@ export async function loadPeople({ searchParams: sp }: PageInput): Promise<Peopl
   return {
     locale: s.profile.locale,
     rows,
+    recent: recentIds(people),
     folders: views,
     meAvatar: s.profile.avatar,
     initialPick: sp.pick === "1",

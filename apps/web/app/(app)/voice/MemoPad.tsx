@@ -14,6 +14,7 @@ import { Mascot } from "@/components/Mascot";
 import { markSaved } from "@/components/ReviewAsk";
 import { prepareImage, type PrepProblem } from "@/lib/image-prep";
 import { appendBlock } from "@/lib/memo-append";
+import { clearDraft, draftKey, readDraft, tabStore, writeDraft } from "@/lib/memo-draft";
 import { markOrganizing } from "@/lib/organizing";
 import { NEW_NAME_MAX, tidyName } from "@/lib/capture-target";
 import { startListenGuard, type ListenGuard, type StopReason } from "@/lib/listen-guard";
@@ -183,7 +184,7 @@ function NewFace({ name, size = 24, dashed = false }: { name: string; size?: num
   return (
     <span
       aria-hidden="true"
-      className={`hand flex shrink-0 items-center justify-center rounded-full bg-[#FFF7E6] leading-none text-mango-deep ${dashed ? "border-[1.1px] border-dashed border-ink/40" : "border border-edge"}`}
+      className={`hand flex shrink-0 items-center justify-center rounded-full bg-[#FFF7E6] leading-none text-accent ${dashed ? "border-[1.1px] border-dashed border-ink/40" : "border border-edge"}`}
       style={{ width: u(size), height: u(size), fontSize: u(size * 0.54) }}
     >
       {name.trim().slice(0, 1)}
@@ -449,6 +450,30 @@ export function MemoPad({
     textRef.current = text;
   });
 
+  // ── 쓰던 글 이어 쓰기: 이 탭(sessionStorage)에만 남기고, 같은 곳(온보딩 / 같은 ?to)으로 다시 열면 되살린다. 저장하거나 글을 다 지우면 지운다 ──
+  const draftId = draftKey({ onboarding: !!onboarding, to: fixed?.id ?? null });
+  const [draftReady, setDraftReady] = useState(false);
+  useEffect(() => {
+    // 저장소는 화면을 그릴 때 읽을 수 없어(서버 그림과 어긋난다) 열린 뒤에 읽는다. 이미 글이 있으면 덮지 않는다
+    if (!textRef.current.trim()) {
+      const d = readDraft(tabStore(), draftId, MAX);
+      if (d) {
+        textRef.current = d.text;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setText(d.text);
+        setTags(d.tags);
+        dropped.current = new Set(d.dropped);
+        setNaming(!!onboarding && !d.tags.length);
+      }
+    }
+    setDraftReady(true);
+    // 처음 열릴 때 한 번(공유로 받은 글은 다음 효과가 이 글 뒤에 붙인다)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (draftReady) writeDraft(tabStore(), draftId, { text, tags, dropped: [...dropped.current] });
+  }, [draftReady, draftId, text, tags]);
+
   useEffect(() => {
     alive.current = true;
     return () => {
@@ -492,8 +517,7 @@ export function MemoPad({
       /* 저장소를 못 쓰면 빈 채로 연다 */
     }
     if (got.trim()) {
-      const next = appendBlock(text, got, MAX);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      const next = appendBlock(textRef.current, got, MAX);
       setText(next.text);
       if (next.clipped) say(labels.sharedClipped);
     }
@@ -723,6 +747,7 @@ export function MemoPad({
         const r = await saveFirstMemo(body, ids, via, newNames, browserZone()).catch(() => null);
         if (!r?.ok) return say(labels.error, true);
         voiced.current = false;
+        clearDraft(tabStore(), draftId);
         markOrganizing(r.ids);
         return router.push(onboarding.next !== "/home" ? onboarding.next : `/people/${r.ids[0]}?welcome=1`);
       }
@@ -731,6 +756,7 @@ export function MemoPad({
       markSaved();
       markOrganizing(r.ids);
       voiced.current = false;
+      clearDraft(tabStore(), draftId);
       if (r.ids.length === 1) return router.push(`/people/${r.ids[0]}`);
       // 여러 사람이면 이 화면에 남아 누구 메모장에 적었는지 알리고, 다음 메모를 위해 비운다
       const names = r.ids.map((id) => (byId.has(id) ? nameOf(byId.get(id)!) : (r.created.find((c) => c.id === id)?.name ?? ""))).filter(Boolean);
@@ -748,6 +774,7 @@ export function MemoPad({
   // 건너뛰기: 첫 메모 없이 온보딩을 마친다(가려던 곳이 있으면 거기로, 아니면 홈)
   const skip = () => {
     if (!onboarding || saving || skipping) return;
+    clearDraft(tabStore(), draftId);
     startSkip(async () => {
       await skipOnboarding(browserZone(), onboarding.next).catch(() => say(labels.error, true));
     });
@@ -935,11 +962,11 @@ export function MemoPad({
                   {c.person ? <Face p={c.person} /> : <NewFace name={label} />}
                   <span className="hand text-[18px] leading-none">{label}</span>
                   {c.person ? null : (
-                    <span className="inline-flex items-center rounded-full border border-edge bg-white text-mango-deep" style={{ height: u(18), padding: `0 ${u(6)}px`, fontSize: u(10.5) }}>
+                    <span className="inline-flex items-center rounded-full border border-edge bg-white text-accent" style={{ height: u(18), padding: `0 ${u(6)}px`, fontSize: u(10.5) }}>
                       {labels.newBadge}
                     </span>
                   )}
-                  <button type="button" aria-label={labels.removeTag.replace("{name}", label)} onClick={() => dropTag(c.key)} className="relative flex items-center justify-center rounded-full before:absolute before:-inset-[6px]" style={{ width: u(24), height: u(24) }}>
+                  <button type="button" aria-label={labels.removeTag.replace("{name}", label)} onClick={() => dropTag(c.key)} className="relative flex items-center justify-center rounded-full before:absolute before:-inset-x-[6px] before:-inset-y-[11.2px]" style={{ width: u(24), height: u(24) }}>
                     <svg aria-hidden="true" viewBox="0 0 24 24" width={u(12)} height={u(12)} fill="none" stroke="#5B5F78" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M6 6l12 12M18 6L6 18" />
                     </svg>
@@ -948,7 +975,7 @@ export function MemoPad({
               );
             })}
             {naming ? (
-              <label className="relative inline-flex shrink-0 items-center rounded-full border-[1.35px] border-sky bg-white shadow-[0_0_0_2.7px_rgb(255_194_61/0.22)]" style={{ height: u(34), minWidth: u(starting ? 168 : 118), padding: `0 ${u(12)}px` }}>
+              <label className="relative inline-flex shrink-0 items-center rounded-full border-[1.35px] border-sky bg-white shadow-[0_0_0_2.7px_rgb(255_194_61/0.22)] before:absolute before:-inset-y-[7px] before:inset-x-0" style={{ height: u(34), minWidth: u(starting ? 168 : 118), padding: `0 ${u(12)}px` }}>
                 {/* 글자 수만큼 넓어지는 입력 칸: 같은 칸에 겹친 보이지 않는 글자가 폭을 정한다 */}
                 <span className="inline-grid">
                   <span aria-hidden="true" className="hand invisible col-start-1 row-start-1 whitespace-pre text-[18px] leading-none">
@@ -985,7 +1012,7 @@ export function MemoPad({
                     autoCorrect="off"
                     spellCheck={false}
                     enterKeyHint="done"
-                    className="hand col-start-1 row-start-1 w-full min-w-0 border-0 bg-transparent p-0 text-[18px] leading-none caret-mango-deep outline-none placeholder:text-ink/[.38]"
+                    className="hand col-start-1 row-start-1 w-full min-w-0 border-0 bg-transparent p-0 text-[18px] leading-none caret-mango-deep outline-none placeholder:text-ink/65"
                   />
                 </span>
               </label>
@@ -994,7 +1021,7 @@ export function MemoPad({
                 type="button"
                 aria-label={labels.addPerson}
                 onClick={openNaming}
-                className={`relative flex shrink-0 items-center justify-center rounded-full border border-dashed border-ink/40 before:absolute before:-inset-[6px] ${picking ? "bg-sky-soft" : ""}`}
+                className={`relative flex shrink-0 items-center justify-center rounded-full border border-dashed border-ink/40 before:absolute before:-inset-[8.5px] ${picking ? "bg-sky-soft" : ""}`}
                 style={{ width: u(30), height: u(30) }}
               >
                 <Svg size={14} strokeWidth={2}>
@@ -1004,7 +1031,7 @@ export function MemoPad({
             )}
             {listOpen
               ? rest.map((p) => (
-                  <button key={p.id} type="button" onClick={() => addTag({ kind: "person", id: p.id })} className="inline-flex shrink-0 items-center gap-[5.4px] rounded-full border border-edge bg-white pl-[2.7px] pr-[9.9px]" style={{ height: u(30) }}>
+                  <button key={p.id} type="button" onClick={() => addTag({ kind: "person", id: p.id })} className="relative inline-flex shrink-0 items-center gap-[5.4px] rounded-full border border-edge bg-white pl-[2.7px] pr-[9.9px] before:absolute before:-inset-y-[8.5px] before:inset-x-0" style={{ height: u(30) }}>
                     <Face p={p} />
                     <span className="hand text-[18px] leading-none">{nameOf(p)}</span>
                   </button>
@@ -1033,7 +1060,7 @@ export function MemoPad({
                   key={name}
                   type="button"
                   onClick={() => addTag({ kind: "new", name })}
-                  className="hand inline-flex shrink-0 items-center gap-[4.5px] rounded-full border border-dashed border-ink/40 bg-white text-[17.1px] leading-none"
+                  className="hand relative inline-flex shrink-0 items-center gap-[4.5px] rounded-full border border-dashed border-ink/40 bg-white text-[17.1px] leading-none before:absolute before:-inset-y-[7.6px] before:inset-x-0"
                   style={{ height: u(32), padding: `0 ${u(12)}px 0 ${u(8)}px` }}
                 >
                   <svg aria-hidden="true" viewBox="0 0 24 24" width={u(13)} height={u(13)} fill="none" stroke="#E09A12" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
@@ -1089,7 +1116,7 @@ export function MemoPad({
                 aria-label={placeholder}
                 aria-controls={atOpen ? atId : undefined}
                 aria-activedescendant={atOpen ? `${atId}-${atCurrent}` : undefined}
-                className={`hand-written block w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-[20.7px] leading-[30.6px] caret-mango-deep outline-none ${onboarding ? "placeholder:text-ink/[.34]" : "placeholder:text-ink/40"}`}
+                className="hand-written block w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-[20.7px] leading-[30.6px] caret-mango-deep outline-none placeholder:text-ink/65"
               />
             )}
             {/* 본문에서 @를 치면 뜨는 목록: 글 바로 밑(아래 메뉴에 가리지 않게 여유) */}

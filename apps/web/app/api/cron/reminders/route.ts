@@ -1,4 +1,4 @@
-import { diffDays, dueHolidays, dueWithCatchUp, eventTitle, holidayNoticeTitle, isLocale, sanitizeOffsets, sanitizeSection, todayIn, translate, type DatesData, type PersonDates } from "@readme/core";
+import { diffDays, dueHolidays, dueWithCatchUp, eventPath, eventTitle, holidayNoticeTitle, isLocale, reminderBody, sanitizeOffsets, sanitizeSection, todayIn, translate, type DatesData, type PersonDates } from "@readme/core";
 import { NextResponse, type NextRequest } from "next/server";
 import { aad, open } from "@/lib/crypto";
 import { asSystem, systemQuery } from "@/lib/db";
@@ -129,8 +129,7 @@ async function remindPeople(profile: Profile, sources: Source[], tokens: Token[]
       // 남은 날은 오늘 기준으로(어제 것을 오늘 보내면 offset보다 하루 적다)
       const left = diffDays(today, e.date);
       const title = left <= 0 ? translate(locale, "notif.today", { event }) : translate(locale, "notif.left", { event, n: left });
-      const path = `/people/${e.contactId}/reminder?kind=${e.kind}${e.label ? `&label=${encodeURIComponent(e.label)}` : ""}`;
-      await deliver(me, tokens, n.id, title, translate(locale, "notif.body"), path, counts);
+      await deliver(me, tokens, n.id, title, reminderBody(locale, e, left), eventPath(e), counts);
     } catch (err) {
       counts.failed++;
       console.warn("reminder send failed", err instanceof Error ? err.message : err);

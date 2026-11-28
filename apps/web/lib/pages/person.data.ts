@@ -26,9 +26,9 @@ export interface PersonData {
   /** 부를 이름(내가 정한 부르는 말, 없으면 그 사람 이름) */
   name: string;
   /** 나만 보는 메모(최근 것부터). date: 적은 날(내 시간대) */
-  notes: { id: string; label: string; body: string; createdAt: string; date: YMD; /** 같이 지우기로 지금 되돌려지는 것(없으면 빈 목록) */ adds: EffectLine[] }[];
-  /** 처음 열리는 바인더 칸(?tab=remembered면 기억해 둔 것, 아니면 메모장) */
-  tab: "memo" | "remembered";
+  notes: { id: string; label: string; body: string; createdAt: string; date: YMD; /** 같이 지우기로 지금 되돌려지는 것(없으면 빈 목록) */ adds: EffectLine[]; /** 이 메모에 저장된 '더한 것'(일)의 수(메모 고치기 뒤 다시 정리해 새로 붙은 것만 되돌릴 때의 기준) */ fx: number }[];
+  /** 주소가 정한 바인더 칸(?tab=memo·?tab=remembered). 없으면 null: 화면이 메모·기록의 양을 보고 정한다(lib/person-tab) */
+  tab: "memo" | "remembered" | null;
   folders: FolderView[];
   /** 아직 안 본 답이 있다(화면을 열면 읽은 것으로) */
   answered: boolean;

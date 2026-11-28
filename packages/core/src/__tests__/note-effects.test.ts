@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { captureField, describeEffect, emptySection, mergeCapture, parseEffects, recordEffect, revertEffects, sanitizeSection, whyUnchanged, type CaptureOp, type CaptureValue, type NoteEffect, type PartialCard, type Section } from "../index";
+import { captureField, describeEffect, emptySection, mergeCapture, mergeNoteEffects, NOTE_EFFECTS_MAX, parseEffects, recordEffect, revertEffects, sanitizeSection, whyUnchanged, type CaptureOp, type CaptureValue, type NoteEffect, type PartialCard, type Section } from "../index";
 
 const field = (key: string) => {
   const f = captureField(key);
@@ -309,4 +309,23 @@ test("모든 칸 종류에 대해: 합치고 기록한 일을 그대로 되돌�
     const after = sanitizeSection(f.section as Section, r.sections[f.section]);
     assert.deepEqual(after, sanitizeSection(f.section as Section, emptySection(f.section)), key);
   }
+});
+
+test("고친 메모를 다시 정리할 때: 이미 있던 일은 그대로(순서도) 두고 새 일만 뒤에 붙이며, 똑같은 일은 다시 넣지 않는다", () => {
+  const likes = (...add: string[]): NoteEffect => ({ f: "taste.likes", t: "items", add });
+  const known = (...k: string[]): NoteEffect => ({ f: "taste.likes", t: "items", add: [], known: k });
+  const shoe = (next: number, prev: number): NoteEffect => ({ f: "sizes.shoe", t: "one", next, prev });
+  const first = [likes("마라탕"), shoe(245, 240)];
+  assert.deepEqual(mergeNoteEffects([], first), first);
+  // 새 것만 뒤에: 앞의 둘은 '그 전 일'로 그대로
+  const merged = mergeNoteEffects(first, [likes("짜장면")]);
+  assert.deepEqual(merged, [...first, likes("짜장면")]);
+  // 똑같은 일은 건너뛴다(대소문자·순서 차이가 없는 같은 값): '다시 말했다' 표시가 쌓이지 않는다
+  assert.deepEqual(mergeNoteEffects([...first, known("마라탕")], [known("마라탕"), likes("마라탕"), shoe(245, 240), likes("우동")]), [...first, known("마라탕"), likes("우동")]);
+  // 이번에 새로 더한 것 안의 똑같은 일도 한 번만
+  assert.deepEqual(mergeNoteEffects([], [likes("a"), likes("a")]), [likes("a")]);
+  // 한도를 넘으면 뒤를 버리고 앞(그 전 일)은 지킨다
+  const many = Array.from({ length: NOTE_EFFECTS_MAX }, (_, i) => likes(`항목${i}`));
+  assert.deepEqual(mergeNoteEffects(many, [likes("넘침")]), many);
+  assert.equal(mergeNoteEffects(many.slice(0, 23), [likes("x"), likes("y")]).length, NOTE_EFFECTS_MAX);
 });

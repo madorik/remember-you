@@ -8,12 +8,16 @@ import {
   daysInMonth,
   formatDateLong,
   formatDayFull,
+  isOnceSpec,
   occurrences,
+  onceSpec,
+  parseYmd,
   solarToLunar,
   todayIn,
   weekday,
   weekdayNames,
   diffDays,
+  ymdKey,
   type DateSpec,
   type DatesData,
   type Locale,
@@ -244,7 +248,7 @@ export function DatesEditor({ value, onChange, locale }: { value: DatesData; onC
   const latest = useLatest({ value, onChange });
   const undo = useUndoToast(locale);
   const list = value.anniversaries;
-  const rows: { label: string; spec: DateSpec | null }[] = pending ? [...list, pending] : list;
+  const rows: { label: string; spec: DateSpec | null; once?: true }[] = pending ? [...list, pending] : list;
 
   const setLabel = (i: number, label: string) => {
     if (i < list.length) onChange({ ...value, anniversaries: list.map((x, j) => (j === i ? { ...x, label } : x)) });
@@ -290,7 +294,7 @@ export function DatesEditor({ value, onChange, locale }: { value: DatesData; onC
         {/* 기념일 제목 줄 오른쪽에 추가 버튼 */}
         <div className="flex min-h-9 items-center justify-between">
           <SectionHeading>{t("dates.anniversaries")}</SectionHeading>
-          {list.length < 10 && !pending ? (
+          {list.filter((a) => !a.once).length < 10 && !pending ? (
             <button
               type="button"
               onClick={() => {
@@ -313,7 +317,19 @@ export function DatesEditor({ value, onChange, locale }: { value: DatesData; onC
                   <span className="text-[10.8px] text-muted">{t("dates.anniversaryLabel")}</span>
                   <input value={a.label} onChange={(e) => setLabel(i, e.target.value)} placeholder={t("dates.anniversaryPlaceholder")} className={`${UNDERLINE_INPUT} h-10 text-[22.5px]`} />
                 </label>
-                {!isNew && open !== i ? (
+                {!isNew && a.once && isOnceSpec(a.spec) ? (
+                  // 한 번만 있는 날(약속): 연·월·일을 직접 고친다
+                  <input
+                    type="date"
+                    value={ymdKey({ y: a.spec.year, m: a.spec.month, d: a.spec.day })}
+                    aria-label={`${a.label} ${t("common.edit")}`}
+                    onChange={(e) => {
+                      const v = parseYmd(e.target.value);
+                      if (v) onChange({ ...value, anniversaries: list.map((x, j) => (j === i ? { ...x, spec: onceSpec(v) } : x)) });
+                    }}
+                    className="hand h-10 shrink-0 bg-transparent text-[17px] leading-none"
+                  />
+                ) : !isNew && open !== i ? (
                   <button
                     type="button"
                     onClick={() => setOpen(i)}

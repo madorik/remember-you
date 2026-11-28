@@ -11,17 +11,23 @@ export interface RateChip {
   href: string;
 }
 
+/** 말풍선 맨 끝의 '물어보기' 링크: 남은 항목을 이 사람에게 물어보는 화면 */
+export interface RateAsk {
+  label: string;
+  href: string;
+}
+
 /** 말풍선이 프로필 카드 안쪽 양옆에서 띄우는 거리 */
 const SIDE = 14;
 
 /**
  * 프로필 카드의 '기억해 둔 것 작성률' 막대(시안 Rate-A): 망고 빗금으로 N%만큼 찬 둥근 막대 + 오른쪽에 손글씨 N%.
  * 막대는 진짜 <button>이라, 마우스를 올리면(키보드 포커스도) 말풍선이 막대 밑에 뜨고, 터치에서는 누를 때마다 열고 닫는다(마우스로 누르면 고정되어 올려 둔 채 칩으로 옮겨 갈 수 있다).
- * 말풍선은 '어느 항목 채우기가 남았어요' 한 줄과 그 항목 칩(누르면 그 항목이 펼쳐진 고치는 화면). 다 채웠으면 한 줄만.
+ * 말풍선은 '어느 항목 채우기가 남았어요' 한 줄과 그 항목 칩(누르면 그 항목이 펼쳐진 고치는 화면), 칩 끝에 작은 '물어보기' 링크(ask: 물어보기 화면이 이 사람과 남은 항목으로 열린다). 다 채웠으면 한 줄만.
  * 바깥을 누르거나 Esc면 닫힌다. 말풍선은 가장 가까운 relative 조상(프로필 카드) 안쪽 양옆에 맞춰 화면 밖으로 나가지 않고,
  * 꼬리만 막대 가운데를 가리킨다(이 요소 자체는 relative가 아니다)
  */
-export function CompletionBar({ pct, label, message, chips }: { pct: number; label: string; message: string; chips: RateChip[] }) {
+export function CompletionBar({ pct, label, message, chips, ask = null }: { pct: number; label: string; message: string; chips: RateChip[]; ask?: RateAsk | null }) {
   const bubbleId = useId();
   const messageId = useId();
   // 눌러서 연 것(터치·마우스 클릭) · 마우스를 올린 것 · 키보드 포커스. 하나라도 있으면 보인다
@@ -154,6 +160,21 @@ export function CompletionBar({ pct, label, message, chips }: { pct: number; lab
                 </Link>
               </li>
             ))}
+            {ask ? (
+              <li>
+                <Link
+                  href={ask.href}
+                  onClick={closeAll}
+                  className="hand relative inline-flex h-[30.6px] items-center gap-[4.5px] rounded-full border border-dashed border-ink/50 bg-white pl-[9px] pr-[11.7px] text-[16.2px] leading-none before:absolute before:-inset-y-[7px] before:inset-x-0"
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24" width="15.3" height="15.3" fill="none" stroke="#1F2340" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    <rect x="3" y="6" width="18" height="13" rx="2" fill="#F9CBD5" />
+                    <path d="M3.8 7l8.2 6.2L20.2 7" />
+                  </svg>
+                  {ask.label}
+                </Link>
+              </li>
+            ) : null}
           </ul>
         ) : null}
       </div>

@@ -1,7 +1,7 @@
 // 초대 링크·코드. 토큰은 해시만 저장하고, 링크가 안 열릴 때(앱을 새로 깔았을 때 등)를 위해 짧은 코드도 같이 준다.
 // Web Crypto만 써서 브라우저·Node 둘 다에서 돈다.
 
-import { SECTIONS_BY_IMPORTANCE, type Section } from "./card";
+import { SECTIONS_BY_IMPORTANCE, isEmptySection, type PartialCard, type Section } from "./card";
 import { QUESTIONS, QUESTION_SECTION, type DailyQuestion } from "./questions";
 
 /** 물어보기 링크가 열려 있는 날수. 개인정보 처리방침에 '7일'로 적혀 있어 방침을 고치기 전까지 7일(DB 제약은 0033에서 31일까지 풀어 둠, 30으로 올리면 됨) */
@@ -21,6 +21,20 @@ export const ASK_DEFAULT_TOPICS = 3;
  */
 export function defaultAskTopics(missing: readonly Section[], limit: number = ASK_DEFAULT_TOPICS): Section[] {
   return SECTIONS_BY_IMPORTANCE.filter((s) => missing.includes(s)).slice(0, limit);
+}
+
+/** among 중 이 기록에 아직 아무것도 안 적힌 항목(카드에 없거나, 있어도 비어 있다) */
+export function emptySections(card: PartialCard, among: readonly Section[]): Section[] {
+  return among.filter((s) => isEmptySection(s, card[s]));
+}
+
+/**
+ * 물어보기에서 처음 골라 두는 항목: 그 사람이 아직 안 적은 항목(missing)을 중요한 순서로 3개까지.
+ * 비어 있는 게 3개보다 적어도 그것만 고른다(이미 아는 항목을 다시 묻지 않고, 더 묻고 싶으면 직접 더 고른다). 하나도 없을 때만 기본 항목(fallback)
+ */
+export function pickAskTopics(missing: readonly Section[], fallback: readonly Section[]): Section[] {
+  const empty = defaultAskTopics(missing);
+  return empty.length ? empty : [...fallback];
 }
 
 /** 항목마다 받는 사람이 답하는 데 드는 대략의 초 */

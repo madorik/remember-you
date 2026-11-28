@@ -1,4 +1,4 @@
-import { addDays, holidayReminders, translate, type Locale, type ReminderOffset, type UpcomingEvent, type YMD } from "@readme/core";
+import { addDays, eventPath, holidayReminders, reminderBody, translate, type Locale, type ReminderOffset, type UpcomingEvent, type YMD } from "@readme/core";
 import type { LocalReminder } from "@/components/native";
 import { makeT } from "./i18n";
 import { eventName } from "./events";
@@ -22,11 +22,11 @@ export function localReminders(events: UpcomingEvent[], offsets: readonly Remind
       out.push({
         id: hashId(`${e.contactId}:${e.kind}:${e.label ?? ""}:${e.date.y}-${e.date.m}-${e.date.d}:${offset}`),
         title: offset === 0 ? translate(locale, "notif.today", { event }) : translate(locale, "notif.left", { event, n: offset }),
-        body: translate(locale, "notif.body"),
+        body: reminderBody(locale, e, offset),
         y: day.y,
         m: day.m,
         d: day.d,
-        path: `/people/${e.contactId}/reminder?kind=${e.kind}${e.label ? `&label=${encodeURIComponent(e.label)}` : ""}`,
+        path: eventPath(e),
       });
     }
   }

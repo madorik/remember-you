@@ -4,13 +4,14 @@ import type { PeopleData } from "@/lib/pages/people.data";
 import { makeT } from "@/lib/t";
 
 // 내 사람들: 폴더 칸 + 폴더 없는 사람(끌어서 폴더에 넣는다). 오른쪽 위에 사람 더하기(직접 적기)와 선택(사람을 골라 메뉴 고르기·폴더에 넣기·지우기)
-export function PeopleView({ locale, rows, folders, meAvatar, initialPick, initial, initialMe, initialGift, initialXmas }: PeopleData) {
+export function PeopleView({ locale, rows, recent, folders, meAvatar, initialPick, initial, initialMe, initialGift, initialXmas }: PeopleData) {
   const t = makeT(locale);
   return (
     <>
       <PeopleBoard
         locale={locale}
         rows={rows}
+        recent={recent}
         folders={folders}
         meAvatar={meAvatar}
         initialPick={initialPick}
@@ -40,6 +41,7 @@ export function PeopleView({ locale, rows, folders, meAvatar, initialPick, initi
           empty: t("people.empty"),
           folders: t("folder.label"),
           favorites: t("people.favorites"),
+          recent: t("people.recent"),
           unfiled: t("folder.none"),
           search: t("people.search"),
           searchEmpty: t("people.searchEmpty"),
