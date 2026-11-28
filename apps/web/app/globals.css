@@ -1139,11 +1139,11 @@ html.ry-seen .ry-boot {
   z-index: 2;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 500ms ease-out;
+  transition: opacity 300ms ease-out;
 }
 @media (prefers-reduced-motion: no-preference) {
   .picks-stage[data-phase="done"] [data-picks-content] {
-    animation: picks-reveal 520ms ease-out backwards;
+    animation: picks-reveal 300ms ease-out backwards;
   }
 }
 /* 소녀의 말풍선이 톡 튀어나온다 */

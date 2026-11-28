@@ -75,13 +75,13 @@ export function PicksStage({ children, lines, shout, compact }: { children: Reac
 
     const reveal = () => {
       setPhase("done");
-      // 흐려지는 동안(0.5초)만 남기고 정리: 장면을 놓고 WebGL도 돌려준다
+      // 흐려지는 동안(0.3초)만 남기고 정리: 장면을 놓고 WebGL도 돌려준다(CSS picks-scene 흐려지기 300ms보다 길게)
       later(() => {
         scene?.dispose();
         scene = null;
         release();
         setGone(true);
-      }, 700);
+      }, 400);
     };
 
     const ready = () => {
@@ -105,8 +105,8 @@ export function PicksStage({ children, lines, shout, compact }: { children: Reac
         reveal();
       };
       scene.finale(show, () => setYap(true));
-      // 탭이 가려져 화면이 안 그려져도(번쩍임이 안 오면) 멈춰 있지 않게
-      later(show, 1800);
+      // 탭이 가려져 화면이 안 그려져도(번쩍임이 안 오면) 멈춰 있지 않게(정상이면 모으기 0.25초 + 번쩍임 0.2초 = 0.45초 만에 온다)
+      later(show, 900);
     };
 
     const mo = new MutationObserver(() => {

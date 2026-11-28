@@ -6,7 +6,7 @@ import { refundAi, reserveAi } from "./ai-quota";
 import { open, seal } from "./crypto";
 import { displayName, folderName, listFolders, listNotes, type Person, type Session } from "./data";
 import { asSystem } from "./db";
-import { GIFT_CATALOG, type PriceBand } from "./gift-catalog";
+import { GIFT_CATALOG, type CatalogGift, type PriceBand } from "./gift-catalog";
 import { makeT } from "./i18n";
 import {
   COUPANG_SEARCH_PATH,
@@ -17,6 +17,9 @@ import {
   acceptNote,
   cleanNote,
   catalogRequest,
+  groupByBand,
+  mergeBandAnswers,
+  noteBand,
   groundBasis,
   leftOut,
   defaultBand,
@@ -27,6 +30,7 @@ import {
   ruleCatalogPicks,
   sanitizeCatalogPicks,
   openCard,
+  type BandAnswer,
   type BandPicks,
   type CatalogPick,
   type GiftCard,
@@ -191,6 +195,32 @@ export async function giftIdeas(s: Session, p: Person, ctx: GiftContext, locale:
 }
 
 /**
+ * 가격대마다 따로, 동시에 AI에 물어 고른 것을 모은다(한 번에 스무 개를 고르게 하면 답이 길어 10초, 가격대마다 다섯씩 네 번을 동시에 부르면 3~4초).
+ * 하루 한도는 한 번만 잡고, 가격대 요청이 하나도 못 불렀을 때(전부 실패)만 돌려준다.
+ * 가격대 하나가 실패하면 그 가격대만 기록으로 채워진다. complete: 모든 가격대가 고른 것을 줬는지(그럴 때만 저장한다)
+ */
+async function askCatalogBands(
+  s: Session,
+  groups: { band: PriceBand; items: CatalogGift[] }[],
+  makeBody: (band: PriceBand, items: CatalogGift[]) => unknown,
+  ground: (raw: unknown) => string[],
+): Promise<{ answers: BandAnswer[]; complete: boolean }> {
+  const settled = await Promise.allSettled(groups.map((g) => askAI(makeBody(g.band, g.items))));
+  const answers: BandAnswer[] = [];
+  let failed = 0;
+  settled.forEach((r, i) => {
+    if (r.status === "fulfilled") {
+      answers.push({ band: groups[i]!.band, ...parseCatalogPicks(r.value, groups[i]!.items, ground) });
+      return;
+    }
+    failed += 1;
+    console.warn("gift picks failed", r.reason instanceof Error ? r.reason.message : r.reason);
+  });
+  if (failed === groups.length) await refundAi(s.user.id, "gift");
+  return { answers, complete: !failed && answers.every((a) => a.picks.length > 0) };
+}
+
+/**
  * 목록 방식: 가격대마다 다섯(AI가 고르고, 모자라면 기록만으로 채운다)과 처음 열어 둘 가격대. skip = 다시 고르기로 넘긴, 지난번에 보인 것.
  * note: 무엇을 보고 어떻게 골랐는지 풀어 쓴 한두 문장(AI가 쓰고, 없으면 근거·빼 둔 것으로 만든다)
  */
@@ -202,21 +232,22 @@ export async function giftLinkPicks(s: Session, p: Person, ctx: GiftContext, not
   const rules = ruleCatalogPicks(p.card, ctx, locale, eligible, profile.notes);
   const corpus = basisCorpus(profile, ctx);
   const ground = (raw: unknown) => groundBasis(raw, corpus, profile.wishes, locale);
+  const want = defaultBand(ctx);
   // 둔 것: { picks, note }(예전 것은 고른 것 배열만)
   const kept = (await readKept(s, p.contactId, basis)) as { picks?: unknown; note?: unknown } | unknown[] | null;
   let ai: CatalogPick[] = sanitizeCatalogPicks(Array.isArray(kept) ? kept : kept?.picks, eligible, ground);
   let aiNote = Array.isArray(kept) ? "" : cleanNote(kept?.note);
   if (!ai.length && aiConfigured() && eligible.length && (await aiAllowed(s))) {
-    try {
-      ({ picks: ai, note: aiNote } = parseCatalogPicks(await askPaidAI(s, catalogRequest(profile, ctx, locale, model(), eligible)), eligible, ground));
-    } catch (e) {
-      console.warn("gift picks failed", e instanceof Error ? e.message : e);
-    }
-    if (ai.length) await keep(s, p.contactId, basis, { picks: ai, note: aiNote });
+    const groups = groupByBand(eligible);
+    // 고른 생각은 처음 열어 둘 가격대 요청에서만 쓰게 한다(나머지는 답만 짧게)
+    const withNote = noteBand(groups, want);
+    const { answers, complete } = await askCatalogBands(s, groups, (band, items) => catalogRequest(profile, ctx, locale, model(), band, items, band === withNote), ground);
+    ({ picks: ai, note: aiNote } = mergeBandAnswers(answers, eligible));
+    // 일부 가격대가 실패했으면 고른 것은 보여 주되 저장하지 않는다(다음에 열 때 다시 고른다)
+    if (ai.length && complete) await keep(s, p.contactId, basis, { picks: ai, note: aiNote });
   }
   const wishes = profile.wishes.map((w) => w.replace(/\s+/g, ""));
   const bands = bandPicks(ai, rules, eligible, (x) => catalogBasis(x, corpus, wishes, ctx, locale), ctx.season);
-  const want = defaultBand(ctx);
   return {
     bands,
     initial: bands.some((b) => b.band === want) ? want : (bands[0]?.band ?? want),

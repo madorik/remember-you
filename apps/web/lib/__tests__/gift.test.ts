@@ -12,6 +12,9 @@ import {
   basisSummary,
   catalogBasis,
   catalogRequest,
+  groupByBand,
+  mergeBandAnswers,
+  noteBand,
   fallbackBasis,
   groundBasis,
   acceptNote,
@@ -207,9 +210,83 @@ test("목록 고르기: 처음 가격대는 관계로, 기록만으로는 맞는
   assert.equal(bands.length, 4);
   for (const b of bands) assert.equal(b.items.length, PICKS_PER_BAND);
   assert.deepEqual(bands.find((b) => b.band === "5")!.items.slice(0, 2).map((i) => i.id), ai.slice(0, 2).map((p) => p.id));
-  const req = catalogRequest(giftProfile(card), ctx, "ko", "m", eligible.slice(0, 3));
-  assert.deepEqual(req.text.format.schema.properties.picks.items.properties.id.enum, eligible.slice(0, 3).map((x) => x.id));
+  const three = eligible.filter((x) => x.band === "5").slice(0, 3);
+  const req = catalogRequest(giftProfile(card), ctx, "ko", "m", "5", three);
+  assert.deepEqual(req.text.format.schema.properties.picks.items.properties.id.enum, three.map((x) => x.id));
   assert.match(req.input, /CATALOG:\n/);
+});
+
+test("가격대 하나씩 고르는 AI 요청: 그 가격대 것만, 다섯 개, 생각 없이(effort none), 고른 생각은 부탁한 요청에만", () => {
+  const eligible = eligibleCatalog(GIFT_CATALOG, card, ctx);
+  const items = eligible.filter((x) => x.band === "3");
+  assert.ok(items.length > PICKS_PER_BAND);
+  const plain = catalogRequest(giftProfile(card), ctx, "ko", "m", "3", items);
+  assert.deepEqual(plain.reasoning, { effort: "none" });
+  assert.equal(plain.model, "m");
+  // id는 이 가격대 것만, 목록 줄에도 이 가격대 것만
+  const ids = plain.text.format.schema.properties.picks.items.properties.id.enum;
+  assert.deepEqual(ids, items.map((x) => x.id));
+  const lines = plain.input.split("CATALOG:\n")[1]!.split("\n");
+  assert.equal(lines.length, items.length);
+  for (const line of lines) assert.ok(ids.includes(line.split(" | ")[0]!), line);
+  assert.ok(lines.every((l) => l.split(" | ")[2] === "3"));
+  // 안내: 가격대 하나, 정확히 다섯, 가격대마다라는 말은 없다
+  assert.match(plain.instructions, /holds a single price band: 3 = about ₩30,000s/);
+  assert.match(plain.instructions, new RegExp(`Pick exactly ${PICKS_PER_BAND} items from the CATALOG, best first`));
+  assert.doesNotMatch(plain.instructions, /from each band|in each band/);
+  // PITCH·BASIS는 그대로, 길이·형식 줄을 영어로 덧붙이지 않는다(일본어로 나온 적이 있다)
+  assert.match(plain.instructions, /reason: a short, warm pitch in LANGUAGE/);
+  assert.match(plain.instructions, /basis: 1 or 2 very short labels/);
+  assert.match(plain.instructions, /For parents and elders/);
+  // 생각(note): 부탁하지 않으면 안내에도 틀에도 없다
+  assert.doesNotMatch(plain.instructions, /note: one short sentence/);
+  assert.deepEqual(plain.text.format.schema.required, ["picks"]);
+  assert.deepEqual(Object.keys(plain.text.format.schema.properties), ["picks"]);
+  const noted = catalogRequest(giftProfile(card), ctx, "ko", "m", "3", items, true);
+  assert.match(noted.instructions, /note: one short sentence/);
+  assert.deepEqual(noted.text.format.schema.required, ["note", "picks"]);
+  assert.deepEqual(Object.keys(noted.text.format.schema.properties), ["note", "picks"]);
+  assert.equal(noted.text.format.strict, true);
+  // 고를 게 다섯도 안 되는 가격대는 있는 만큼만
+  const few = catalogRequest(giftProfile(card), ctx, "ko", "m", "3", items.slice(0, 2));
+  assert.match(few.instructions, /Pick exactly 2 items from the CATALOG/);
+});
+
+test("가격대로 나누기·생각 맡을 가격대·답 합치기", () => {
+  const eligible = eligibleCatalog(GIFT_CATALOG, card, ctx);
+  // 가격대 순서로, 빈 가격대는 뺀다
+  const groups = groupByBand(eligible);
+  assert.deepEqual(groups.map((g) => g.band), PRICE_BANDS.filter((b) => eligible.some((x) => x.band === b)));
+  assert.equal(groups.reduce((n, g) => n + g.items.length, 0), eligible.length);
+  for (const g of groups) assert.ok(g.items.every((x) => x.band === g.band));
+  assert.deepEqual(groupByBand(eligible.filter((x) => x.band === "5" || x.band === "1")).map((g) => g.band), ["1", "5"]);
+  assert.deepEqual(groupByBand([]), []);
+  // 생각은 처음 열어 둘 가격대에서, 그 가격대가 없으면 첫 가격대
+  assert.equal(noteBand(groups, "5"), "5");
+  assert.equal(noteBand([{ band: "1" }, { band: "3" }], "5"), "1");
+  assert.equal(noteBand([], "5"), undefined);
+  // 합치기: 가격대 순서로 이어 붙이고, 겹침·다른 가격대 것·고를 수 없는 것은 버리고, 가격대마다 다섯까지, 생각은 있는 것 하나
+  const of = (b: "1" | "3" | "5" | "10", n: number) => eligible.filter((x) => x.band === b).slice(0, n).map((x) => ({ id: x.id, reason: `r-${x.id}`, basis: ["등산"] }));
+  const five = of("5", 7);
+  const merged = mergeBandAnswers(
+    [
+      { band: "5", picks: five, note: "등산을 보고 골랐어요" },
+      { band: "1", picks: [...of("1", 2), { id: "no-such", reason: "x", basis: [] }], note: "" },
+      { band: "3", picks: [...of("3", 1), ...of("3", 1)], note: "" },
+    ],
+    eligible,
+  );
+  assert.deepEqual(merged.picks.map((p) => p.id), [...of("1", 2), ...of("3", 1), ...five.slice(0, PICKS_PER_BAND)].map((p) => p.id));
+  assert.equal(merged.note, "등산을 보고 골랐어요");
+  assert.deepEqual(merged.picks[0]!.basis, ["등산"]);
+  assert.deepEqual(mergeBandAnswers([], eligible), { picks: [], note: "" });
+  assert.deepEqual(mergeBandAnswers([{ band: "3", picks: [], note: "" }], eligible), { picks: [], note: "" });
+  // 합친 것은 bandPicks에 그대로 들어가고, 못 받은 가격대는 기록으로 채워진다
+  const rules = ruleCatalogPicks(card, ctx, "ko", eligible);
+  const bands = bandPicks(merged.picks, rules, eligible);
+  assert.equal(bands.length, PRICE_BANDS.length);
+  assert.deepEqual(bands.find((b) => b.band === "5")!.items.slice(0, PICKS_PER_BAND).map((i) => i.id), five.slice(0, PICKS_PER_BAND).map((p) => p.id));
+  for (const b of bands) assert.equal(b.items.length, PICKS_PER_BAND);
 });
 
 test("다시 고르기: 지난번에 보인 것을 빼고, 가격대에 둘도 안 남으면 그 가격대는 처음부터", () => {
@@ -278,7 +355,7 @@ test("고른 근거: 기록에 있는 말만 남기고(지어낸 골프는 버�
   // 빼고 고른 것: 이미 준 지갑, 사양하는 텀블러, 안 마시는 술, 땅콩 알레르기
   assert.deepEqual(leftOut(GIFT_CATALOG, card, notes, "ko"), ["지갑", "텀블러", "술", "땅콩"]);
   // AI에 근거를 달라고 한다
-  const req = catalogRequest(profile, ctx, "ko", "m", eligible.slice(0, 2));
+  const req = catalogRequest(profile, ctx, "ko", "m", "1", eligible.filter((x) => x.band === "1").slice(0, 2), true);
   assert.deepEqual(req.text.format.schema.properties.picks.items.required, ["id", "reason", "basis"]);
   assert.match(req.instructions, /basis: 1 or 2 very short labels/);
   assert.deepEqual(req.text.format.schema.required, ["note", "picks"]);

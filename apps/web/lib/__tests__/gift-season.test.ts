@@ -129,12 +129,12 @@ test("AI가 제철 선물을 못 넣어도 가격대마다 제철 선물을 채�
 
 test("AI 요청: 제철이면 SEASON 줄과 SEASON:christmas 표시, 아니면 none", () => {
   const eligible = eligibleCatalog(GIFT_CATALOG, hiking, xmas);
-  const req = catalogRequest(giftProfile(hiking), xmas, "ko", "m", eligible);
+  const req = catalogRequest(giftProfile(hiking), xmas, "ko", "m", "3", eligible.filter((x) => x.band === "3"));
   assert.match(req.input, /^SEASON: christmas/m);
   assert.match(req.input, /OCCASION: none/);
   assert.match(req.input, /xmas-cake \| 크리스마스 케이크 \| 3 \| 20-60 \| .*SEASON:christmas/);
-  assert.match(req.instructions, new RegExp(`at least ${SEASON_MIN} of the ${PICKS_PER_BAND} picks in each band must be items tagged SEASON:christmas`));
-  const none = catalogRequest(giftProfile(hiking), base, "ko", "m", eligibleCatalog(GIFT_CATALOG, hiking, base));
+  assert.match(req.instructions, new RegExp(`at least ${SEASON_MIN} of the ${PICKS_PER_BAND} picks must be items tagged SEASON:christmas`));
+  const none = catalogRequest(giftProfile(hiking), base, "ko", "m", "3", eligibleCatalog(GIFT_CATALOG, hiking, base).filter((x) => x.band === "3"));
   assert.match(none.input, /^SEASON: none/m);
   assert.ok(!none.input.includes("xmas-cake"));
   assert.match(ideasRequest(giftProfile(hiking), xmas, "ko", "m").input, /^SEASON: christmas/m);

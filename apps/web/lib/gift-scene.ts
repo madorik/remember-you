@@ -62,10 +62,13 @@ const ease = (x: number) => {
 };
 
 // 모으는 동안(초) → 얍!(CHARGE) → 번쩍임이 가장 환함(+FLASH_UP) → 소녀의 '얍!'을 보여 준 뒤 선물로 바꿈(+REVEAL) → 번쩍임이 잦아듦
-const CHARGE = 0.5;
-const FLASH_UP = 0.14;
-const FLASH_DOWN = 0.6;
-const REVEAL = 0.34;
+// 선물이 이미 와 있는 걸 기다리게 하지 않으려고 예전(CHARGE 0.5, FLASH_UP 0.14, FLASH_DOWN 0.6, REVEAL 0.34)의 대략 0.6배로 줄였다.
+// 소녀·구슬·꽃가루의 움직임은 같은 모양 그대로 SPEED배 빠르게 흐른다(아래 render의 a)
+const CHARGE = 0.25;
+const FLASH_UP = 0.08;
+const FLASH_DOWN = 0.36;
+const REVEAL = 0.2;
+const SPEED = 1.7;
 
 /** 구슬 속에서 도는 선물 하나가 구슬 안벽·유리와 어울리는 데 쓰는 셰이더 */
 const GLASS_VERT = "varying vec3 vN; varying vec3 vV; void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }";
@@ -646,12 +649,14 @@ export function createGiftScene(canvas: HTMLCanvasElement, opts: { still?: boole
 
   const render = (t: number) => {
     const dt = Math.min(0.05, Math.max(0, t - last));
+    const sdt = dt * SPEED; // 꽃가루는 얍! 뒤 시계로
     last = t;
     const u = fin ? t - fin.t0 : -1;
     const hit = !!fin && u >= CHARGE;
-    const after = hit ? u - CHARGE : 0;
+    const after = hit ? u - CHARGE : 0; // 얍! 뒤 실제 초(번쩍임·선물 드러내기)
+    const a = after * SPEED; // 소녀·구슬·꽃가루의 움직임 시계(예전 속도 기준 초)
     const charge = fin ? ease(u / CHARGE) : 0; // 0 → 1 모으는 동안
-    const calm = hit ? Math.exp(-after * 3.2) : 1; // 얍! 뒤로 잦아드는 정도
+    const calm = hit ? Math.exp(-a * 3.2) : 1; // 얍! 뒤로 잦아드는 정도
 
     pointer.x += (pointer.tx - pointer.x) * 0.06;
     pointer.y += (pointer.ty - pointer.y) * 0.06;
@@ -659,22 +664,22 @@ export function createGiftScene(canvas: HTMLCanvasElement, opts: { still?: boole
     world.rotation.x = pointer.y * 0.05;
 
     // 소녀: 모을 땐 살짝 웅크리며 손을 올려 떨고, 얍! 하면 손을 내밀며 통통 뛴다
-    const jump = hit ? 0.42 * Math.sin(Math.min(after / 0.55, 1) * Math.PI) : -0.14 * charge;
+    const jump = hit ? 0.42 * Math.sin(Math.min(a / 0.55, 1) * Math.PI) : -0.14 * charge;
     body.position.y = Math.sin(t * 2.1) * 0.05 + jump;
     head.rotation.z = Math.sin(t * 1.57) * 0.045;
     head.rotation.y = Math.sin(t * 0.9) * 0.1;
     head.rotation.x = Math.sin(t * 1.2) * 0.02 + (hit ? -0.16 * calm : 0.12 * charge);
-    const shout = hit && after < 0.8; // 얍! 하는 동안: 눈을 꼭 감고 입을 벌린다
+    const shout = hit && a < 0.8; // 얍! 하는 동안: 눈을 꼭 감고 입을 벌린다
     eyes.scale.y = shout ? 0.14 : blink(t) * (1 + 0.15 * charge * calm);
     mouth.visible = !shout;
     mouthO.visible = shout;
-    mouthO.scale.setScalar(shout ? 1 + 0.25 * Math.exp(-after * 6) : 1);
-    tip.rotation.z = -0.9 + Math.sin(t * 1.85) * 0.14 + (hit ? Math.sin(after * 18) * 0.38 * Math.exp(-after * 4) : 0);
+    mouthO.scale.setScalar(shout ? 1 + 0.25 * Math.exp(-a * 6) : 1);
+    tip.rotation.z = -0.9 + Math.sin(t * 1.85) * 0.14 + (hit ? Math.sin(a * 18) * 0.38 * Math.exp(-a * 4) : 0);
     tails.forEach((o, i) => {
       o.tail.rotation.z = Math.sin(t * 1.9 + i * 1.6) * 0.1 * -o.side * (1 + (hit ? 2.4 * calm : 0));
     });
     hands.forEach((o, i) => {
-      const lift = hit ? 0.32 * (1 - ease(after / 0.06)) - 0.12 * ease(after / 0.06) * Math.exp(-Math.max(0, after - 0.06) * 3.5) : 0.32 * charge;
+      const lift = hit ? 0.32 * (1 - ease(a / 0.06)) - 0.12 * ease(a / 0.06) * Math.exp(-Math.max(0, a - 0.06) * 3.5) : 0.32 * charge;
       o.hand.position.y = lift;
       o.hand.rotation.z = Math.sin(t * 1.96 + i * 1.9) * 0.22 * o.side + (fin && !hit ? Math.sin(t * 40 + i) * 0.07 * charge : 0);
       o.hand.rotation.x = Math.sin(t * 1.96 + i * 1.9 + 1.2) * 0.1;
@@ -682,7 +687,7 @@ export function createGiftScene(canvas: HTMLCanvasElement, opts: { still?: boole
     cape.scale.x = 1 + Math.sin(t * 1.8) * 0.015 + (hit ? 0.09 * calm : 0.03 * charge);
 
     // 구슬: 모으는 동안 선물이 빨리 돌고 빛이 커진다
-    const glowK = charge * (hit ? Math.exp(-after * 2.4) : 1);
+    const glowK = charge * (hit ? Math.exp(-a * 2.4) : 1);
     spin += dt * (0.75 + 6 * glowK);
     orbit.rotation.y = spin;
     gifts.forEach((g, i) => {
@@ -691,7 +696,7 @@ export function createGiftScene(canvas: HTMLCanvasElement, opts: { still?: boole
       g.obj.rotation.z = Math.sin(t * 1.7 + i) * 0.25;
       g.holder.position.y = Math.sin(t * 2 + g.phase * 2) * 0.14;
     });
-    const pop = hit ? Math.exp(-after * 5) * 2 : 0;
+    const pop = hit ? Math.exp(-a * 5) * 2 : 0;
     orbGlow.scale.setScalar(3.1 + Math.sin(t * 2.4) * 0.34 + glowK * 4.2 + pop);
     orbGlow.material.opacity = Math.min(1, 0.62 + Math.sin(t * 2.4) * 0.2 + glowK * 0.5);
     orbLight.intensity = 1 + glowK * 3.5 + pop;
@@ -717,24 +722,24 @@ export function createGiftScene(canvas: HTMLCanvasElement, opts: { still?: boole
       }
       burst.forEach((p) => {
         if (!p.s.visible) return;
-        p.age += dt;
+        p.age += sdt;
         if (p.age >= p.life) {
           p.s.visible = false;
           return;
         }
         const k = p.age / p.life;
-        p.s.position.addScaledVector(p.v, dt);
+        p.s.position.addScaledVector(p.v, sdt);
         p.v.multiplyScalar(0.965);
         p.s.scale.setScalar(p.size * (0.5 + 0.9 * Math.sin(k * Math.PI)));
         p.s.material.opacity = 1 - k * k;
       });
-      ring.scale.setScalar(2.2 + after * 12);
-      ring.material.opacity = Math.max(0, 0.95 - after * 1.5);
+      ring.scale.setScalar(2.2 + a * 12);
+      ring.material.opacity = Math.max(0, 0.95 - a * 1.5);
       // 번쩍임: 구슬에서 빛이 크게 터지고(가운데는 새하얗게), 화면 전체가 살짝 환해졌다 가라앉는다
       const up = after < FLASH_UP ? after / FLASH_UP : 1;
       const down = after < FLASH_UP ? 1 : Math.max(0, 1 - (after - FLASH_UP) / FLASH_DOWN);
       flashMat.opacity = 0.22 * up * down;
-      burstGlow.scale.setScalar(4.5 + 7.5 * ease(after / (FLASH_UP + 0.3)));
+      burstGlow.scale.setScalar(4.5 + 7.5 * ease(a / (FLASH_UP * SPEED + 0.3)));
       burstGlow.material.opacity = 0.85 * up * down;
       if (!fin.peaked && after >= REVEAL) {
         fin.peaked = true;

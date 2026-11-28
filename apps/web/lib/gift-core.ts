@@ -496,7 +496,12 @@ const BAND_WORDS: Record<PriceBand, string> = { "1": "₩10,000s", "3": "₩30,0
 const NOTE = `note: one short sentence in LANGUAGE telling the user what you went by (when SEASON is christmas, say briefly that you picked for Christmas and the year-end too, e.g. "크리스마스를 맞아 …"): the 1 or 2 key facts from WISHES, HINTS or NOTES that shaped the picks, and, if any, one thing left out because NOTES say it was already given or it is in AVOID. Korean 18 to 40 characters ending with 골랐어요; English up to 80 characters. Never name or address the person: no CALL words (엄마, 아빠, 아내 …), no names, no honorific subject. Only facts in the input. No lists of three or more, quotes or emoji.
 Good: "걷기와 트로트를 보고, 작년에 드린 홍삼은 빼고 골랐어요", "적어 둔 안마 쿠션과 수국 취향을 보고 골랐어요", "우디 향과 미니멀한 취향을 보고 골랐어요".`;
 
-const CATALOG_INSTRUCTIONS = `You pick gifts for one person from a fixed list (CATALOG) of Coupang searches, grouped by price band (${PRICE_BANDS.map((b) => `${b} = about ${BAND_WORDS[b]}`).join(", ")}).
+/**
+ * 목록에서 고르기 안내(가격대 하나). 가격대마다 따로 부르면 한 번에 다 고르는 것보다 훨씬 빨라서(답이 짧아 4개를 한꺼번에 불러 4분의 1 시간) 한 요청에 가격대 하나만 담는다.
+ * withNote: 고른 생각(note)도 쓰게 할지(처음 열어 둘 가격대 요청에서만: 나머지에서는 답이 길어질 뿐이다)
+ */
+function catalogInstructions(band: PriceBand, count: number, withNote: boolean): string {
+  return `You pick gifts for one person from a fixed list (CATALOG) of Coupang searches. The CATALOG holds a single price band: ${band} = about ${BAND_WORDS[band]}.
 Input:
 - CALL: what the user calls this person (e.g. 아내, 아빠, or a name)
 - GROUPS: the user's folders this person is in (e.g. 가족, 회사, 친구들)
@@ -509,20 +514,43 @@ Input:
 - GIFT_CARD: whether they like gift cards
 - NOTES: the user's own notes about this person, newest first. A gift already given (e.g. "작년 생일에 지갑 선물함") must not be picked again, not even the same kind. Worries or wants in notes (e.g. "요즘 허리가 아프대", "캠핑 시작했대") are strong hints.
 - CATALOG: one item per line: id | search | band | ages | tags (items for the Christmas and year-end season carry the tag SEASON:christmas)
-Pick exactly ${PICKS_PER_BAND} items from each band (${PRICE_BANDS.length * PICKS_PER_BAND} in total), best first within a band. When SEASON is christmas, at least ${SEASON_MIN} of the ${PICKS_PER_BAND} picks in each band must be items tagged SEASON:christmas (whenever the band has them), choosing the ones that fit this person best; the rest follow their tastes. Prefer items that match their wishes, hobbies, tastes and notes; fill the rest with safe picks that suit their age, the relationship (CALL, GROUPS) and the occasion. Never pick anything in AVOID or something the notes say was already given.
+Pick exactly ${count} items from the CATALOG, best first. When SEASON is christmas, at least ${Math.min(SEASON_MIN, count)} of the ${count} picks must be items tagged SEASON:christmas (whenever the CATALOG has them), choosing the ones that fit this person best; the rest follow their tastes. Prefer items that match their wishes, hobbies, tastes and notes; fill the rest with safe picks that suit their age, the relationship (CALL, GROUPS) and the occasion. Never pick anything in AVOID or something the notes say was already given.
 For parents and elders (엄마, 아빠, 부모님, 어머니, 아버님, 할머니, 할아버지 …): Korean parents most want cash (용돈 박스), clothes, travel and health foods, so favor health foods and supplements, comfort and massage items (효도), outdoor clothing, and gear for their hobbies (등산, 골프, 파크골프, 여행) unless their records point elsewhere.
 ${PITCH}
-${BASIS}
-${NOTE}`;
+${BASIS}${withNote ? `\n${NOTE}` : ""}`;
+}
 
-/** 목록에서 고르기 AI 요청 몸(고를 수 있는 것만 보여 주고, id는 그 안에서만) */
-export function catalogRequest(profile: GiftProfile, ctx: GiftContext, locale: Locale, model: string, eligible: CatalogGift[]) {
+/** 가격대별로 나눈 고를 수 있는 것(PRICE_BANDS 순서, 빈 가격대는 뺀다) */
+export function groupByBand(eligible: CatalogGift[]): { band: PriceBand; items: CatalogGift[] }[] {
+  return PRICE_BANDS.map((band) => ({ band, items: eligible.filter((x) => x.band === band) })).filter((g) => g.items.length);
+}
+
+/** 고른 생각(note)을 부탁할 가격대: 처음 열어 둘 가격대(want), 그 가격대가 비었으면 첫 가격대 */
+export function noteBand(groups: { band: PriceBand }[], want: PriceBand): PriceBand | undefined {
+  return groups.some((g) => g.band === want) ? want : groups[0]?.band;
+}
+
+/**
+ * 목록에서 고르기 AI 요청 몸: 가격대 하나(items는 그 가격대 것만, id는 그 안에서만). 생각을 거치지 않고(effort none) 짧게 답하게 한다.
+ * 한 가격대씩 따로 부르는 이유는 위 catalogInstructions 설명 참고. 안내 뒤에 길이·형식 줄을 영어로 덧붙이면 이유가 일본어로 나오는 일이 있어서 PITCH·BASIS·NOTE 안내만 쓴다
+ */
+export function catalogRequest(profile: GiftProfile, ctx: GiftContext, locale: Locale, model: string, band: PriceBand, items: CatalogGift[], withNote = false) {
   const base = ideasRequest(profile, ctx, locale, model);
   // 제철(크리스마스·연말) 선물에는 SEASON:christmas 표시를 붙여 AI가 가려내게 한다
-  const lines = eligible.map((x) => `${x.id} | ${x.q} | ${x.band} | ${x.ages[0]}-${x.ages[1]} | ${[...x.tags, ...x.seasons.map((z) => `SEASON:${z}`)].join(",")}`);
+  const lines = items.map((x) => `${x.id} | ${x.q} | ${x.band} | ${x.ages[0]}-${x.ages[1]} | ${[...x.tags, ...x.seasons.map((z) => `SEASON:${z}`)].join(",")}`);
+  const picks = {
+    type: "array",
+    items: {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "reason", "basis"],
+      properties: { id: { type: "string", enum: items.map((x) => x.id) }, reason: { type: "string" }, basis: { type: "array", items: { type: "string" } } },
+    },
+  };
   return {
     ...base,
-    instructions: CATALOG_INSTRUCTIONS,
+    reasoning: { effort: "none" },
+    instructions: catalogInstructions(band, Math.min(PICKS_PER_BAND, items.length), withNote),
     input: `${base.input}\nCATALOG:\n${lines.join("\n")}`,
     text: {
       format: {
@@ -532,19 +560,8 @@ export function catalogRequest(profile: GiftProfile, ctx: GiftContext, locale: L
         schema: {
           type: "object",
           additionalProperties: false,
-          required: ["note", "picks"],
-          properties: {
-            note: { type: "string" },
-            picks: {
-              type: "array",
-              items: {
-                type: "object",
-                additionalProperties: false,
-                required: ["id", "reason", "basis"],
-                properties: { id: { type: "string", enum: eligible.map((x) => x.id) }, reason: { type: "string" }, basis: { type: "array", items: { type: "string" } } },
-              },
-            },
-          },
+          required: withNote ? ["note", "picks"] : ["picks"],
+          properties: withNote ? { note: { type: "string" }, picks } : { picks },
         },
       },
     },
@@ -577,6 +594,22 @@ export function parseCatalogPicks(body: unknown, eligible: CatalogGift[], ground
   } catch {
     return { picks: [], note: "" };
   }
+}
+
+/** 가격대 하나에 받은 AI 답(parseCatalogPicks 결과) */
+export interface BandAnswer {
+  band: PriceBand;
+  picks: CatalogPick[];
+  note: string;
+}
+
+/**
+ * 가격대마다 받은 답을 하나로: 고른 것은 가격대 순서로 이어 붙여 고를 수 있는 것 안에서 다시 걸러 담고(가격대마다 PICKS_PER_BAND개까지, 겹침 없음),
+ * 고른 생각(note)은 부탁한 가격대에서 온 첫 번째 것. 이미 기록으로 거른 근거라 다시 기록과 견주지 않는다
+ */
+export function mergeBandAnswers(answers: BandAnswer[], eligible: CatalogGift[]): { picks: CatalogPick[]; note: string } {
+  const ordered = [...answers].sort((a, b) => PRICE_BANDS.indexOf(a.band) - PRICE_BANDS.indexOf(b.band));
+  return { picks: sanitizeCatalogPicks(ordered.flatMap((a) => a.picks), eligible), note: ordered.find((a) => a.note)?.note ?? "" };
 }
 
 /** 이유로 쓰지 않는 맞춤 말(취향이 아니라 상황) */
